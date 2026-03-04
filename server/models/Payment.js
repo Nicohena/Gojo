@@ -76,6 +76,7 @@ const paymentSchema = new mongoose.Schema({
   // Stripe-specific fields
   stripe: {
     paymentIntentId: String,
+    checkoutSessionId: String,
     chargeId: String,
     customerId: String,
     paymentMethodId: String,

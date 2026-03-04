@@ -12,18 +12,19 @@ import {
   ArrowRight,
 } from "lucide-react";
 import logger from "../../utils/logger";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const PaymentModal = ({ booking, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("chapa");
 
   // Constants
   const rentAmount = booking.totalAmount || 0;
   const serviceFee = Math.round(rentAmount * 0.05);
   const totalAmount = rentAmount + serviceFee;
 
-  const handlePayWithChapa = async () => {
+  const handleInitiatePayment = async () => {
     try {
       setLoading(true);
 
@@ -34,7 +35,7 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
 
       const payload = {
         bookingId: booking._id,
-        paymentMethod: "chapa",
+        paymentMethod,
       };
 
       const result = await paymentService.initiatePayment(payload);
@@ -42,14 +43,14 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
       if (result.data?.checkoutUrl) {
         setRedirecting(true);
         toast.success("Redirecting to secure payment gateway...");
-        logger.info("Payment initiated", { bookingId: booking._id });
+        logger.info("Payment initiated", { bookingId: booking._id, paymentMethod });
 
-        // Redirect to Chapa checkout page
+        // Redirect to provider checkout page
         setTimeout(() => {
           window.location.href = result.data.checkoutUrl;
         }, 1500);
       } else {
-        throw new Error("Failed to get checkout URL");
+        throw new Error("Failed to get checkout URL from payment provider");
       }
     } catch (err) {
       logger.error("Payment initiation failed", err);
@@ -182,13 +183,46 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
                   Encrypted Payment
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  Transactions are secured and verified via Chapa.
+                  Transactions are secured and verified via{" "}
+                  {paymentMethod === "stripe" ? "Stripe" : "Chapa"}.
                 </p>
               </div>
             </div>
 
+            <div className="rounded-2xl border border-slate-200 p-4">
+              <p className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3">
+                Select Payment Method
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("chapa")}
+                  disabled={loading || redirecting}
+                  className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                    paymentMethod === "chapa"
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  Chapa (ETB)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("stripe")}
+                  disabled={loading || redirecting}
+                  className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                    paymentMethod === "stripe"
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  Stripe (USD)
+                </button>
+              </div>
+            </div>
+
             <button
-              onClick={handlePayWithChapa}
+              onClick={handleInitiatePayment}
               disabled={loading || redirecting}
               className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
             >
@@ -198,13 +232,16 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
                   <span>
                     {redirecting
                       ? "Forwarding to Gateway..."
-                      : "Preparing secure hash..."}
+                      : "Preparing secure checkout..."}
                   </span>
                 </>
               ) : (
                 <>
                   <CreditCard className="h-5 w-5" />
-                  <span>Proceed to Payment</span>
+                  <span>
+                    Proceed with{" "}
+                    {paymentMethod === "stripe" ? "Stripe" : "Chapa"}
+                  </span>
                   <ArrowRight
                     size={18}
                     className="translate-x-0 group-hover:translate-x-1 transition-transform"

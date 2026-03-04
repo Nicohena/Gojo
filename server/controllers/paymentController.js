@@ -57,9 +57,14 @@ const generateTxRef = () => {
  */
 const initiatePayment = asyncHandler(async (req, res) => {
   const { bookingId, paymentMethod = 'chapa', returnUrl, callbackUrl } = req.body;
+  const normalizedMethod = String(paymentMethod || 'chapa').toLowerCase();
 
   if (!bookingId) {
     throw new ApiError('Please provide bookingId', 400);
+  }
+
+  if (!['chapa', 'stripe'].includes(normalizedMethod)) {
+    throw new ApiError('Invalid payment method. Supported methods: chapa, stripe', 400);
   }
 
   // Get booking details
@@ -103,18 +108,20 @@ const initiatePayment = asyncHandler(async (req, res) => {
   const serviceFee = Math.round(rentAmount * 0.05); // 5% service fee
   const totalAmount = rentAmount + serviceFee;
 
-  console.log(`[Payment] Initiating ${paymentMethod} payment for booking ${bookingId}. Total: ${totalAmount}`);
+  console.log(`[Payment] Initiating ${normalizedMethod} payment for booking ${bookingId}. Total: ${totalAmount}`);
 
-  // Use Chapa for Ethiopian payments
-  if (paymentMethod === 'chapa' || !stripe) {
+  if (normalizedMethod === 'chapa') {
     return await initiateChapaPayment({
       req, res, booking, totalAmount, rentAmount, serviceFee, returnUrl, callbackUrl
     });
   }
 
-  // Fall back to Stripe for international payments
+  if (!stripe) {
+    throw new ApiError('Stripe payment gateway not configured', 500);
+  }
+
   return await initiateStripePayment({
-    req, res, booking, totalAmount, rentAmount, serviceFee
+    req, res, booking, totalAmount, rentAmount, serviceFee, returnUrl
   });
 });
 
@@ -285,30 +292,19 @@ const initiateChapaPayment = async ({
  * Initiate Stripe payment (International)
  */
 const initiateStripePayment = async ({
-  req, res, booking, totalAmount, rentAmount, serviceFee
+  req, res, booking, totalAmount, rentAmount, serviceFee, returnUrl
 }) => {
   if (!stripe) {
     throw new ApiError('Stripe payment gateway not configured', 500);
   }
 
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalAmount * 100, // Stripe uses cents
-      currency: 'usd',
-      metadata: {
-        bookingId: booking._id.toString(),
-        userId: req.user._id.toString(),
-        houseId: booking.houseId._id.toString()
-      },
-      description: `Rental payment for ${booking.houseId.title}`
-    });
-
     // Create payment record
     const payment = await Payment.createPaymentRecord({
       userId: req.user._id,
       houseId: booking.houseId._id,
       bookingId: booking._id,
-      ownerId: booking.ownerId,
+      ownerId: booking.ownerId._id || booking.ownerId,
       amount: totalAmount,
       currency: 'USD',
       method: 'stripe',
@@ -324,9 +320,46 @@ const initiateStripePayment = async ({
       }
     });
 
+    const successUrl = returnUrl || `${process.env.CLIENT_URL || 'http://localhost:3000'}/payment/success?status=success&provider=stripe`;
+    const cancelUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/payment/success?status=failed&provider=stripe`;
+
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      customer_email: req.user.email,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            unit_amount: Math.round(totalAmount * 100),
+            product_data: {
+              name: `Rental payment: ${booking.houseId.title}`,
+              description: `Booking ${booking._id}`
+            }
+          }
+        }
+      ],
+      metadata: {
+        paymentId: payment._id.toString(),
+        bookingId: booking._id.toString(),
+        userId: req.user._id.toString()
+      },
+      payment_intent_data: {
+        metadata: {
+          paymentId: payment._id.toString(),
+          bookingId: booking._id.toString(),
+          userId: req.user._id.toString(),
+          houseId: booking.houseId._id.toString()
+        }
+      }
+    });
+
     payment.stripe = {
-      paymentIntentId: paymentIntent.id,
-      clientSecret: paymentIntent.client_secret
+      checkoutSessionId: checkoutSession.id,
+      paymentIntentId: null,
+      clientSecret: null
     };
     payment.status = PAYMENT_STATUS.PROCESSING;
     await payment.save();
@@ -342,7 +375,7 @@ const initiateStripePayment = async ({
       amount: totalAmount,
       currency: 'USD',
       method: 'stripe',
-      details: { paymentIntentId: paymentIntent.id, bookingId: booking._id }
+      details: { checkoutSessionId: checkoutSession.id, bookingId: booking._id }
     });
 
     res.status(200).json({
@@ -350,7 +383,8 @@ const initiateStripePayment = async ({
       message: 'Stripe payment initiated',
       data: {
         paymentId: payment._id,
-        clientSecret: paymentIntent.client_secret,
+        checkoutUrl: checkoutSession.url,
+        checkoutSessionId: checkoutSession.id,
         amount: totalAmount,
         currency: 'USD',
         breakdown: payment.breakdown
@@ -638,15 +672,73 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
   const io = req.app.get('io');
 
   switch (event.type) {
-    case 'payment_intent.succeeded': {
-      const paymentIntent = event.data.object;
-      const payment = await Payment.findOne({ 'stripe.paymentIntentId': paymentIntent.id });
+    case 'checkout.session.completed': {
+      const session = event.data.object;
+      const paymentId = session.metadata?.paymentId;
+      const payment = paymentId
+        ? await Payment.findById(paymentId)
+        : await Payment.findOne({ 'stripe.checkoutSessionId': session.id });
 
       if (payment) {
+        if (payment.status === PAYMENT_STATUS.SUCCEEDED) {
+          break;
+        }
+
+        payment.status = PAYMENT_STATUS.SUCCEEDED;
+        payment.paidAt = new Date();
+        payment.transactionId = session.payment_intent || session.id;
+        payment.stripe.checkoutSessionId = session.id;
+        if (session.payment_intent) {
+          payment.stripe.paymentIntentId = session.payment_intent;
+        }
+        await payment.save();
+
+        await BookingRequest.findByIdAndUpdate(payment.bookingId, { paymentStatus: 'paid' });
+
+        await logPaymentEvent({
+          action: 'PAYMENT_PROCESSED',
+          paymentId: payment._id,
+          userId: payment.userId,
+          amount: payment.amount,
+          currency: 'USD',
+          method: 'stripe',
+          details: { checkoutSessionId: session.id }
+        });
+
+        if (io) {
+          io.to(`user_${payment.userId}`).emit('payment:success', {
+            paymentId: payment._id,
+            amount: payment.amount,
+            message: 'Stripe payment successful!'
+          });
+          io.to(`user_${payment.ownerId}`).emit('payment:received', {
+            paymentId: payment._id,
+            amount: payment.amount,
+            tenantId: payment.userId,
+            message: 'Stripe payment received!'
+          });
+        }
+      }
+      break;
+    }
+
+    case 'payment_intent.succeeded': {
+      const paymentIntent = event.data.object;
+      const paymentId = paymentIntent.metadata?.paymentId;
+      const payment = paymentId
+        ? await Payment.findById(paymentId)
+        : await Payment.findOne({ 'stripe.paymentIntentId': paymentIntent.id });
+
+      if (payment) {
+        if (payment.status === PAYMENT_STATUS.SUCCEEDED) {
+          break;
+        }
+
         payment.status = PAYMENT_STATUS.SUCCEEDED;
         payment.paidAt = new Date();
         payment.transactionId = paymentIntent.latest_charge;
         payment.stripe.chargeId = paymentIntent.latest_charge;
+        payment.stripe.paymentIntentId = paymentIntent.id;
         await payment.save();
 
         await BookingRequest.findByIdAndUpdate(payment.bookingId, { paymentStatus: 'paid' });
@@ -680,9 +772,16 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
 
     case 'payment_intent.payment_failed': {
       const failedIntent = event.data.object;
-      const payment = await Payment.findOne({ 'stripe.paymentIntentId': failedIntent.id });
+      const paymentId = failedIntent.metadata?.paymentId;
+      const payment = paymentId
+        ? await Payment.findById(paymentId)
+        : await Payment.findOne({ 'stripe.paymentIntentId': failedIntent.id });
 
       if (payment) {
+        if (payment.status === PAYMENT_STATUS.FAILED) {
+          break;
+        }
+
         payment.status = PAYMENT_STATUS.FAILED;
         await payment.save();
 
