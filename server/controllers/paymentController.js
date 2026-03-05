@@ -16,9 +16,15 @@
 const Payment = require('../models/Payment');
 const BookingRequest = require('../models/BookingRequest');
 const House = require('../models/House');
+const User = require('../models/User');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { verifyPaymentWithChapa } = require('../middlewares/chapaMiddleware');
 const { PAYMENT_STATUS, logPaymentEvent } = require('../utils/paymentUtils');
+const {
+  sendPaymentSuccessEmails,
+  sendPaymentFailedEmail,
+  sendRefundProcessedEmail
+} = require('../utils/emailNotifications');
 const fs = require('fs');
 
 // Helper for file logging
@@ -40,6 +46,51 @@ const axios = require('axios');
 // Chapa API configuration
 const CHAPA_BASE_URL = process.env.CHAPA_BASE_URL || 'https://api.chapa.co';
 const CHAPA_SECRET_KEY = process.env.CHAPA_SECRET_KEY;
+
+const sendPaymentSuccessNotifications = async (payment) => {
+  const [tenant, owner, house] = await Promise.all([
+    User.findById(payment.userId).select('name email'),
+    User.findById(payment.ownerId).select('name email'),
+    House.findById(payment.houseId).select('title')
+  ]);
+
+  if (!tenant?.email || !owner?.email) {
+    return;
+  }
+
+  await sendPaymentSuccessEmails({
+    tenantName: tenant.name,
+    tenantEmail: tenant.email,
+    ownerName: owner.name,
+    ownerEmail: owner.email,
+    houseTitle: house?.title || 'your property',
+    amount: payment.amount,
+    currency: payment.currency,
+    method: payment.method,
+    transactionId: payment.transactionId,
+    invoiceNumber: payment.invoiceNumber
+  });
+};
+
+const sendPaymentFailureNotification = async (payment, reason) => {
+  const [tenant, house] = await Promise.all([
+    User.findById(payment.userId).select('name email'),
+    House.findById(payment.houseId).select('title')
+  ]);
+
+  if (!tenant?.email) {
+    return;
+  }
+
+  await sendPaymentFailedEmail({
+    tenantName: tenant.name,
+    tenantEmail: tenant.email,
+    houseTitle: house?.title || 'your booking',
+    amount: payment.amount,
+    currency: payment.currency,
+    reason
+  });
+};
 
 /**
  * Generate unique transaction reference for Chapa
@@ -442,6 +493,8 @@ const handleChapaWebhook = asyncHandler(async (req, res) => {
         severity: 'high'
       });
 
+      sendPaymentFailureNotification(payment, verification.error).catch(() => {});
+
       return { success: false, message: 'Verification failed' };
     }
 
@@ -467,6 +520,8 @@ const handleChapaWebhook = asyncHandler(async (req, res) => {
       method: 'chapa',
       details: { txRef: tx_ref, paymentType: payment.chapa.paymentMethod }
     });
+
+    sendPaymentSuccessNotifications(payment).catch(() => {});
 
     return { success: true };
   };
@@ -542,6 +597,8 @@ const getPaymentStatus = asyncHandler(async (req, res) => {
         method: 'chapa',
         details: { txRef: payment.chapa.txRef, source: 'polling' }
       });
+
+      sendPaymentSuccessNotifications(payment).catch(() => {});
     }
   }
 
@@ -610,6 +667,8 @@ const updatePaymentStatus = asyncHandler(async (req, res) => {
       method: payment.method,
       details: { source: 'manual_update', oldStatus }
     });
+
+    sendPaymentSuccessNotifications(payment).catch(() => {});
   }
 
   if (status === PAYMENT_STATUS.FAILED) {
@@ -624,6 +683,8 @@ const updatePaymentStatus = asyncHandler(async (req, res) => {
       details: { source: 'manual_update', oldStatus },
       severity: 'high'
     });
+
+    sendPaymentFailureNotification(payment, 'Status manually updated to failed').catch(() => {});
   }
 
   await payment.save();
@@ -705,6 +766,8 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
           details: { checkoutSessionId: session.id }
         });
 
+        sendPaymentSuccessNotifications(payment).catch(() => {});
+
         if (io) {
           io.to(`user_${payment.userId}`).emit('payment:success', {
             paymentId: payment._id,
@@ -753,6 +816,8 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
           details: { paymentIntentId: paymentIntent.id }
         });
 
+        sendPaymentSuccessNotifications(payment).catch(() => {});
+
         if (io) {
           io.to(`user_${payment.userId}`).emit('payment:success', {
             paymentId: payment._id,
@@ -797,6 +862,8 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
           details: { error: failedIntent.last_payment_error?.message },
           severity: 'high'
         });
+
+        sendPaymentFailureNotification(payment, failedIntent.last_payment_error?.message).catch(() => {});
 
         if (io) {
           io.to(`user_${payment.userId}`).emit('payment:failed', {
@@ -886,6 +953,22 @@ const processRefund = asyncHandler(async (req, res) => {
       reason,
       message: 'Your refund has been processed.'
     });
+  }
+
+  const [tenant, house] = await Promise.all([
+    User.findById(payment.userId).select('name email'),
+    House.findById(payment.houseId).select('title')
+  ]);
+
+  if (tenant?.email) {
+    sendRefundProcessedEmail({
+      tenantName: tenant.name,
+      tenantEmail: tenant.email,
+      houseTitle: house?.title || 'your booking',
+      amount: refundAmount,
+      currency: payment.currency,
+      reason
+    }).catch(() => {});
   }
 
   res.status(200).json({
