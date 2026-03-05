@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import paymentService from "../../api/paymentService";
 import Navbar from "../../components/layout/Navbar";
 import { TableRowSkeleton } from "../../components/ui/Skeleton";
-import { Receipt, RotateCcw, Loader2, Filter, Search, ChevronLeft, ChevronRight, Info, ExternalLink, CheckCircle2, AlertCircle, Clock, ShieldCheck } from "lucide-react";
+import { Receipt, RotateCcw, Loader2, Filter, Search, ChevronLeft, ChevronRight, Info, ExternalLink, CheckCircle2, AlertCircle, Clock, ShieldCheck, X } from "lucide-react";
 import logger from "../../utils/logger";
 import { useAuth } from "../../context/AuthContext";
 import socket from "../../utils/socket";
