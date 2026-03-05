@@ -4,7 +4,12 @@ import Navbar from "../../components/layout/Navbar";
 import { Link } from "react-router-dom";
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    verifiedHouses: 0,
+    pendingHouses: 0,
+    totalBookings: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,8 +18,19 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const data = await adminService.getStats();
-      setStats(data);
+      const analyticsResponse = await adminService.getAnalytics("30d");
+      const overview = analyticsResponse?.data?.overview || {};
+
+      const totalHouses = Number(overview.totalHouses || 0);
+      const pendingHouses = Number(overview.pendingVerifications || 0);
+      const verifiedHouses = Math.max(0, totalHouses - pendingHouses);
+
+      setStats({
+        totalUsers: Number(overview.totalUsers || 0),
+        verifiedHouses,
+        pendingHouses,
+        totalBookings: Number(overview.totalBookings || 0),
+      });
     } catch (err) {
       console.error("Failed to fetch admin stats", err);
     } finally {

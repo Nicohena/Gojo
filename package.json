@@ -7,5 +7,8 @@
     "server-dev": "npm run dev --prefix server",
     "server-start": "npm start --prefix server",
     "install-all": "npm install --prefix server"
+  },
+  "dependencies": {
+    "mongosh": "^2.7.0"
   }
 }

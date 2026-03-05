@@ -32,7 +32,10 @@ const AuditLogs = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const data = await adminService.getLogs();
+      const data = await adminService.getLogs({
+        action: filterAction || undefined,
+        severity: filterSeverity || undefined,
+      });
       const logsList = data?.data?.logs || data?.logs || data || [];
       setLogs(Array.isArray(logsList) ? logsList : []);
     } catch (err) {
@@ -42,11 +45,7 @@ const AuditLogs = () => {
     }
   };
 
-  const filteredLogs = logs.filter((log) => {
-    if (filterAction && !log.action?.includes(filterAction)) return false;
-    if (filterSeverity && log.severity !== filterSeverity) return false;
-    return true;
-  });
+  const filteredLogs = logs;
 
   const uniqueActions = [...new Set(logs.map((l) => l.action).filter(Boolean))];
 

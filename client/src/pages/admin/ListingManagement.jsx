@@ -19,7 +19,10 @@ const ListingManagement = () => {
     try {
       setLoading(true);
       const data = await adminService.getPendingListings();
-      setPendingListings(data);
+      const listings = Array.isArray(data)
+        ? data
+        : data?.data?.listings;
+      setPendingListings(Array.isArray(listings) ? listings : []);
     } catch (err) {
       logger.error("Failed to fetch pending listings", err);
       toast.error("Failed to load pending listings. Please try again.");
@@ -40,7 +43,7 @@ const ListingManagement = () => {
       onConfirm: async () => {
         try {
           await adminService.verifyListing(id, decision);
-          setPendingListings(pendingListings.filter((item) => item._id !== id));
+          setPendingListings((prev) => prev.filter((item) => item._id !== id));
           toast.success(`Listing ${actionText}ed successfully! 🎉`);
           logger.info(`Listing ${actionText}ed`, { listingId: id, decision });
         } catch (err) {

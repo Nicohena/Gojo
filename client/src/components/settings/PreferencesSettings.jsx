@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Bell, Mail } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import userService from "../../api/userService";
@@ -11,6 +11,33 @@ const PreferencesSettings = () => {
     emailNotifications: true,
     marketingEmails: false,
   });
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      const userId = user?.id || user?._id;
+      if (!userId) return;
+
+      try {
+        const response = await userService.getPreferences(userId);
+        const saved = response?.data?.preferences || {};
+        setPreferences((prev) => ({
+          ...prev,
+          emailNotifications:
+            typeof saved.emailNotifications === "boolean"
+              ? saved.emailNotifications
+              : prev.emailNotifications,
+          marketingEmails:
+            typeof saved.marketingEmails === "boolean"
+              ? saved.marketingEmails
+              : prev.marketingEmails,
+        }));
+      } catch (error) {
+        // Keep local defaults if fetch fails.
+      }
+    };
+
+    loadPreferences();
+  }, [user]);
 
   const handleToggle = async (key) => {
     // Use user.id (from getPublicProfile) not user._id
@@ -30,9 +57,7 @@ const PreferencesSettings = () => {
       }));
 
       // Auto-save to backend
-      await userService.updatePreferences(userId, {
-        [key]: newValue,
-      });
+      await userService.updatePreferences(userId, { [key]: newValue });
 
       toast.success("Preferences updated");
     } catch (error) {

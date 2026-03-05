@@ -34,7 +34,7 @@ const userService = {
   },
 
   updatePreferences: async (id, preferences) => {
-    const response = await apiClient.patch(`/users/${id}/preferences`, preferences);
+    const response = await apiClient.patch(`/users/${id}/preferences`, { preferences });
     return response.data;
   },
 

@@ -157,9 +157,10 @@ const updatePreferences = asyncHandler(async (req, res) => {
     throw new ApiError('Not authorized to update preferences', 403);
   }
 
-  const { preferences } = req.body;
+  // Accept both { preferences: {...} } and flat payloads for compatibility.
+  const preferences = req.body?.preferences || req.body;
 
-  if (!preferences) {
+  if (!preferences || typeof preferences !== 'object' || Object.keys(preferences).length === 0) {
     throw new ApiError('Please provide preferences object', 400);
   }
 
@@ -190,6 +191,14 @@ const updatePreferences = asyncHandler(async (req, res) => {
 
   if (preferences.maxDistance) {
     validPreferences['preferences.maxDistance'] = Math.max(1, Math.min(500, preferences.maxDistance));
+  }
+
+  if (typeof preferences.emailNotifications === 'boolean') {
+    validPreferences['preferences.emailNotifications'] = preferences.emailNotifications;
+  }
+
+  if (typeof preferences.marketingEmails === 'boolean') {
+    validPreferences['preferences.marketingEmails'] = preferences.marketingEmails;
   }
 
   if (preferences.preferredCoordinates) {

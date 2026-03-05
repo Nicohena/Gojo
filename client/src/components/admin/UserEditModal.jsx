@@ -83,7 +83,8 @@ const UserEditModal = ({ isOpen, onClose, user, onUserUpdated }) => {
       // Import adminService dynamically to avoid circular dependencies
       const { default: adminService } = await import("../../api/adminService");
 
-      const updatedUser = await adminService.updateUser(user._id, formData);
+      const response = await adminService.updateUser(user._id, formData);
+      const updatedUser = response?.data?.user || response?.user || response;
 
       toast.success("User updated successfully! 🎉");
       logger.info("User updated", { userId: user._id });

@@ -22,7 +22,10 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const data = await adminService.getUsers();
-      setUsers(data);
+      const usersList = Array.isArray(data)
+        ? data
+        : data?.data?.users;
+      setUsers(Array.isArray(usersList) ? usersList : []);
     } catch (err) {
       logger.error("Failed to fetch users", err);
       toast.error("Failed to load users. Please try again.");
@@ -36,7 +39,9 @@ const UserManagement = () => {
   };
 
   const handleUserUpdated = (updatedUser) => {
-    setUsers(users.map((u) => (u._id === updatedUser._id ? updatedUser : u)));
+    setUsers((prev) =>
+      prev.map((u) => (u._id === updatedUser._id ? updatedUser : u))
+    );
     setEditingUser(null);
   };
 
@@ -50,7 +55,7 @@ const UserManagement = () => {
       onConfirm: async () => {
         try {
           await adminService.deleteUser(user._id);
-          setUsers(users.filter((u) => u._id !== user._id));
+          setUsers((prev) => prev.filter((u) => u._id !== user._id));
           toast.success(`User "${user.name}" deleted successfully.`);
           logger.info("User deleted", { userId: user._id });
         } catch (err) {

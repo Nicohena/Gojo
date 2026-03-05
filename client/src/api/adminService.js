@@ -7,7 +7,9 @@ const adminService = {
   },
 
   verifyListing: async (id, decision) => {
-    const response = await apiClient.patch(`/admin/listings/${id}/verify`, { decision });
+    const approved =
+      typeof decision === 'string' ? decision === 'approve' : Boolean(decision);
+    const response = await apiClient.patch(`/admin/listings/${id}/verify`, { approved });
     return response.data;
   },
 
@@ -31,13 +33,13 @@ const adminService = {
     return response.data;
   },
 
-  getAnalytics: async () => {
-    const response = await apiClient.get('/admin/analytics');
+  getAnalytics: async (period = '30d') => {
+    const response = await apiClient.get('/admin/analytics', { params: { period } });
     return response.data;
   },
 
-  getLogs: async () => {
-    const response = await apiClient.get('/admin/logs');
+  getLogs: async (params = {}) => {
+    const response = await apiClient.get('/admin/logs', { params });
     return response.data;
   },
 

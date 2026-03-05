@@ -100,6 +100,15 @@ const userSchema = new mongoose.Schema({
       type: Number,
       default: 50
     },
+    // Notification preferences
+    emailNotifications: {
+      type: Boolean,
+      default: true
+    },
+    marketingEmails: {
+      type: Boolean,
+      default: false
+    },
     // Preferred coordinates for location-based matching
     preferredCoordinates: {
       lat: { type: Number },

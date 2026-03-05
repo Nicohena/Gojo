@@ -67,7 +67,7 @@ const AdminAnalytics = () => {
     setLoading(true);
     try {
       const [analyticsData, statsData] = await Promise.all([
-        adminService.getAnalytics(),
+        adminService.getAnalytics(period),
         adminService.getStats(),
       ]);
       setAnalytics(analyticsData?.data || analyticsData);
