@@ -24,6 +24,9 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
   const [unavailableDates, setUnavailableDates] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [fetchingDates, setFetchingDates] = useState(true);
+  const [fetchingUserBookings, setFetchingUserBookings] = useState(false);
+  const [hasApprovedBookingForHouse, setHasApprovedBookingForHouse] =
+    useState(false);
   const [occupants, setOccupants] = useState({ adults: 1, children: 0 });
 
   const isOwner = (user?._id || user?.id) === house.ownerId?._id;
@@ -48,6 +51,39 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
     };
     fetchDates();
   }, [house._id]);
+
+  // 1b. Check if tenant already has an approved booking for this house.
+  useEffect(() => {
+    const checkExistingApprovedBooking = async () => {
+      if (!user || user.role !== "tenant" || !house?._id) {
+        setHasApprovedBookingForHouse(false);
+        return;
+      }
+
+      try {
+        setFetchingUserBookings(true);
+        const response = await bookingService.getBookings();
+        const bookings = response?.data?.bookings || [];
+        const hasApproved = bookings.some((booking) => {
+          const bookingHouseId =
+            typeof booking.houseId === "string"
+              ? booking.houseId
+              : booking.houseId?._id;
+          return (
+            bookingHouseId === house._id &&
+            booking.status === "approved"
+          );
+        });
+        setHasApprovedBookingForHouse(hasApproved);
+      } catch (err) {
+        setHasApprovedBookingForHouse(false);
+      } finally {
+        setFetchingUserBookings(false);
+      }
+    };
+
+    checkExistingApprovedBooking();
+  }, [user, house?._id]);
 
   // 2. Auto-adjust end date based on min lease when start date changes
   useEffect(() => {
@@ -91,6 +127,29 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
 
     if (isOwner) {
       toast.error("You cannot book your own property");
+      return;
+    }
+
+    let alreadyApprovedForHouse = hasApprovedBookingForHouse;
+    if (user.role === "tenant") {
+      try {
+        const response = await bookingService.getBookings();
+        const bookings = response?.data?.bookings || [];
+        alreadyApprovedForHouse = bookings.some((booking) => {
+          const bookingHouseId =
+            typeof booking.houseId === "string"
+              ? booking.houseId
+              : booking.houseId?._id;
+          return bookingHouseId === house._id && booking.status === "approved";
+        });
+        setHasApprovedBookingForHouse(alreadyApprovedForHouse);
+      } catch (err) {
+        // Fallback to cached flag when refresh check fails.
+      }
+    }
+
+    if (alreadyApprovedForHouse) {
+      toast.error("You are already booked for the house");
       return;
     }
 
@@ -221,6 +280,7 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
           bookingLoading ||
           isOwner ||
           fetchingDates ||
+          fetchingUserBookings ||
           hasOverlapError ||
           authLoading
         }
