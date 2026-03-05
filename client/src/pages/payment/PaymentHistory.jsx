@@ -32,8 +32,37 @@ const PaymentHistory = () => {
       });
       
       if (result.success) {
-        setPayments(result.data.payments);
+        const fetchedPayments = result.data.payments || [];
+        setPayments(fetchedPayments);
         setPagination(result.data.pagination);
+
+        // Re-check processing payments to prevent stale "processing" state.
+        const processingPayments = fetchedPayments.filter(
+          (p) => p.status === "processing"
+        );
+
+        if (processingPayments.length > 0) {
+          const statusChecks = await Promise.allSettled(
+            processingPayments.map((p) => paymentService.getPaymentStatus(p._id))
+          );
+
+          const statusMap = {};
+          statusChecks.forEach((check, index) => {
+            if (check.status === "fulfilled") {
+              const paymentId = processingPayments[index]._id;
+              const updatedStatus = check.value?.data?.status;
+              if (updatedStatus) statusMap[paymentId] = updatedStatus;
+            }
+          });
+
+          if (Object.keys(statusMap).length > 0) {
+            setPayments((prev) =>
+              prev.map((p) =>
+                statusMap[p._id] ? { ...p, status: statusMap[p._id] } : p
+              )
+            );
+          }
+        }
       }
     } catch (err) {
       logger.error("Failed to fetch payments", err);

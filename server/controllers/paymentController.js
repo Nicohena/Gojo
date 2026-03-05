@@ -150,6 +150,26 @@ const initiatePayment = asyncHandler(async (req, res) => {
     throw new ApiError('Booking has already been paid', 400);
   }
 
+  // Prevent duplicate payments when a payment has already been initiated.
+  if (booking.paymentId) {
+    const existingPayment = await Payment.findById(booking.paymentId).select('status');
+    if (existingPayment) {
+      if (existingPayment.status === PAYMENT_STATUS.SUCCEEDED) {
+        throw new ApiError('Booking has already been paid', 400);
+      }
+
+      if (
+        existingPayment.status === PAYMENT_STATUS.PENDING ||
+        existingPayment.status === PAYMENT_STATUS.PROCESSING
+      ) {
+        throw new ApiError(
+          'A payment is already in progress for this booking. Please complete it before trying again.',
+          400
+        );
+      }
+    }
+  }
+
   // Calculate amounts
   const rentAmount = booking.totalAmount || 0;
   if (rentAmount <= 0) {
@@ -371,8 +391,12 @@ const initiateStripePayment = async ({
       }
     });
 
-    const successUrl = returnUrl || `${process.env.CLIENT_URL || 'http://localhost:3000'}/payment/success?status=success&provider=stripe`;
-    const cancelUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/payment/success?status=failed&provider=stripe`;
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    const successParams = `status=success&provider=stripe&paymentId=${payment._id}&session_id={CHECKOUT_SESSION_ID}`;
+    const successUrl = returnUrl
+      ? `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}${successParams}`
+      : `${clientUrl}/payment/success?${successParams}`;
+    const cancelUrl = `${clientUrl}/payment/success?status=failed&provider=stripe&paymentId=${payment._id}`;
 
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -446,6 +470,86 @@ const initiateStripePayment = async ({
     console.error('[Stripe] Error:', stripeError);
     throw new ApiError('Failed to create Stripe payment intent', 500);
   }
+};
+
+const verifyStripePaymentState = async ({ payment, sessionId, source = 'stripe_verification' }) => {
+  if (!stripe) {
+    throw new ApiError('Stripe payment gateway not configured', 500);
+  }
+
+  const checkoutSessionId = sessionId || payment.stripe?.checkoutSessionId;
+  let checkoutSession = null;
+  let paymentIntent = null;
+  let paymentIntentId = payment.stripe?.paymentIntentId || null;
+
+  if (checkoutSessionId) {
+    checkoutSession = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
+      expand: ['payment_intent']
+    });
+
+    if (checkoutSession?.payment_intent) {
+      paymentIntentId =
+        typeof checkoutSession.payment_intent === 'string'
+          ? checkoutSession.payment_intent
+          : checkoutSession.payment_intent.id;
+      paymentIntent =
+        typeof checkoutSession.payment_intent === 'string'
+          ? null
+          : checkoutSession.payment_intent;
+    }
+  }
+
+  if (!paymentIntent && paymentIntentId) {
+    paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  }
+
+  const checkoutPaid =
+    checkoutSession &&
+    (checkoutSession.payment_status === 'paid' || checkoutSession.status === 'complete');
+  const intentPaid = paymentIntent?.status === 'succeeded';
+  const verified = Boolean(checkoutPaid || intentPaid);
+
+  if (verified && payment.status !== PAYMENT_STATUS.SUCCEEDED) {
+    payment.status = PAYMENT_STATUS.SUCCEEDED;
+    payment.paidAt = payment.paidAt || new Date();
+
+    payment.stripe = {
+      ...(payment.stripe || {}),
+      checkoutSessionId: checkoutSession?.id || payment.stripe?.checkoutSessionId || null,
+      paymentIntentId: paymentIntentId || payment.stripe?.paymentIntentId || null,
+      chargeId: paymentIntent?.latest_charge || payment.stripe?.chargeId || null
+    };
+
+    payment.transactionId =
+      payment.transactionId ||
+      paymentIntent?.latest_charge ||
+      paymentIntentId ||
+      checkoutSession?.id ||
+      null;
+
+    await payment.save();
+
+    await BookingRequest.findByIdAndUpdate(payment.bookingId, { paymentStatus: 'paid' });
+
+    await logPaymentEvent({
+      action: 'PAYMENT_PROCESSED',
+      paymentId: payment._id,
+      userId: payment.userId,
+      amount: payment.amount,
+      currency: payment.currency,
+      method: 'stripe',
+      details: { source, checkoutSessionId: checkoutSession?.id, paymentIntentId }
+    });
+
+    sendPaymentSuccessNotifications(payment).catch(() => {});
+  }
+
+  return {
+    verified,
+    checkoutSessionId: checkoutSession?.id || checkoutSessionId || payment.stripe?.checkoutSessionId,
+    paymentIntentId: paymentIntentId || payment.stripe?.paymentIntentId,
+    paymentStatus: verified ? PAYMENT_STATUS.SUCCEEDED : payment.status
+  };
 };
 
 /**
@@ -600,6 +704,15 @@ const getPaymentStatus = asyncHandler(async (req, res) => {
 
       sendPaymentSuccessNotifications(payment).catch(() => {});
     }
+  } else if (payment.method === 'stripe' && payment.status === PAYMENT_STATUS.PROCESSING) {
+    try {
+      await verifyStripePaymentState({
+        payment,
+        source: 'polling'
+      });
+    } catch (err) {
+      console.error('[Stripe] Polling verification failed:', err.message);
+    }
   }
 
   res.status(200).json({
@@ -614,6 +727,148 @@ const getPaymentStatus = asyncHandler(async (req, res) => {
       transactionId: payment.transactionId,
       paidAt: payment.paidAt,
       bookingStatus: payment.bookingId?.status
+    }
+  });
+});
+
+/**
+ * @desc    Verify Chapa payment by txRef (used after return_url redirect)
+ * @route   POST /api/payments/chapa/verify
+ * @access  Private
+ */
+const verifyChapaPayment = asyncHandler(async (req, res) => {
+  const { txRef, paymentId } = req.body;
+
+  if (!txRef && !paymentId) {
+    throw new ApiError('Please provide txRef or paymentId', 400);
+  }
+
+  const payment = paymentId
+    ? await Payment.findById(paymentId)
+    : await Payment.findByChapaRef(txRef);
+
+  if (!payment) {
+    throw new ApiError('Payment record not found', 404);
+  }
+
+  if (
+    payment.userId.toString() !== req.user._id.toString() &&
+    payment.ownerId.toString() !== req.user._id.toString() &&
+    req.user.role !== 'admin'
+  ) {
+    throw new ApiError('Not authorized to verify this payment', 403);
+  }
+
+  if (payment.method !== 'chapa') {
+    throw new ApiError('This endpoint only supports Chapa payments', 400);
+  }
+
+  if (payment.status === PAYMENT_STATUS.SUCCEEDED) {
+    return res.status(200).json({
+      success: true,
+      message: 'Payment already verified',
+      data: {
+        paymentId: payment._id,
+        status: payment.status,
+        transactionId: payment.transactionId,
+        paidAt: payment.paidAt
+      }
+    });
+  }
+
+  const refToVerify = txRef || payment.chapa?.txRef;
+  if (!refToVerify) {
+    throw new ApiError('Chapa transaction reference not found for this payment', 400);
+  }
+
+  const verification = await verifyPaymentWithChapa(refToVerify);
+
+  if (verification.verified) {
+    payment.status = PAYMENT_STATUS.SUCCEEDED;
+    payment.paidAt = payment.paidAt || new Date();
+    payment.transactionId = payment.transactionId || verification.data?.reference;
+    payment.chapa = {
+      ...payment.chapa,
+      verified: true,
+      paymentMethod: verification.data?.payment_type || payment.chapa?.paymentMethod,
+      chapaResponse: verification.data
+    };
+    await payment.save();
+
+    await BookingRequest.findByIdAndUpdate(payment.bookingId, { paymentStatus: 'paid' });
+
+    await logPaymentEvent({
+      action: 'PAYMENT_PROCESSED',
+      paymentId: payment._id,
+      userId: payment.userId,
+      amount: payment.amount,
+      method: 'chapa',
+      details: { txRef: refToVerify, source: 'return_url_verification' }
+    });
+
+    sendPaymentSuccessNotifications(payment).catch(() => {});
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: verification.verified ? 'Payment verified successfully' : 'Payment is still processing',
+    data: {
+      paymentId: payment._id,
+      status: verification.verified ? PAYMENT_STATUS.SUCCEEDED : payment.status,
+      transactionId: payment.transactionId,
+      paidAt: payment.paidAt
+    }
+  });
+});
+
+/**
+ * @desc    Verify Stripe payment after redirect by sessionId/paymentId
+ * @route   POST /api/payments/stripe/verify
+ * @access  Private
+ */
+const verifyStripePayment = asyncHandler(async (req, res) => {
+  const { sessionId, paymentId } = req.body;
+
+  if (!sessionId && !paymentId) {
+    throw new ApiError('Please provide sessionId or paymentId', 400);
+  }
+
+  const payment = paymentId
+    ? await Payment.findById(paymentId)
+    : await Payment.findOne({ 'stripe.checkoutSessionId': sessionId });
+
+  if (!payment) {
+    throw new ApiError('Payment record not found', 404);
+  }
+
+  if (
+    payment.userId.toString() !== req.user._id.toString() &&
+    payment.ownerId.toString() !== req.user._id.toString() &&
+    req.user.role !== 'admin'
+  ) {
+    throw new ApiError('Not authorized to verify this payment', 403);
+  }
+
+  if (payment.method !== 'stripe') {
+    throw new ApiError('This endpoint only supports Stripe payments', 400);
+  }
+
+  const verification = await verifyStripePaymentState({
+    payment,
+    sessionId,
+    source: 'return_url_verification'
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: verification.verified ? 'Payment verified successfully' : 'Payment is still processing',
+    data: {
+      paymentId: payment._id,
+      status: verification.paymentStatus,
+      transactionId: payment.transactionId,
+      paidAt: payment.paidAt,
+      checkoutSessionId: verification.checkoutSessionId,
+      paymentIntentId: verification.paymentIntentId
     }
   });
 });
@@ -1006,6 +1261,7 @@ const getPaymentHistory = asyncHandler(async (req, res) => {
       .populate('houseId', 'title images location')
       .populate('bookingId', 'startDate endDate status')
       .populate('userId', 'name email')
+      .populate('ownerId', 'name email')
       .sort('-createdAt')
       .skip(skip)
       .limit(Number(limit)),
@@ -1062,6 +1318,8 @@ module.exports = {
   handleChapaWebhook,
   handleStripeWebhook,
   getPaymentStatus,
+  verifyChapaPayment,
+  verifyStripePayment,
   updatePaymentStatus,
   processRefund,
   getPaymentHistory,

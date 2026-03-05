@@ -6,8 +6,8 @@ import paymentService from "../../api/paymentService";
 /**
  * PaymentSuccess
  *
- * Chapa redirects here after the user completes (or cancels) checkout.
- * The URL will contain ?trx_ref=<tx_ref>&status=success|failed
+ * Payment providers redirect here after checkout.
+ * Chapa may return trx_ref / tx_ref. Stripe returns session_id.
  *
  * We show an appropriate success / failure screen and let the user
  * navigate to their payment history.
@@ -15,12 +15,65 @@ import paymentService from "../../api/paymentService";
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [verifying, setVerifying] = useState(false);
+  const [verifiedStatus, setVerifiedStatus] = useState(null);
 
   // Chapa appends ?trx_ref=... and ?status=success|failed to the return_url
   const status = searchParams.get("status");
-  const trxRef = searchParams.get("trx_ref");
+  const provider = (searchParams.get("provider") || "").toLowerCase();
+  const trxRef =
+    searchParams.get("trx_ref") ||
+    searchParams.get("tx_ref") ||
+    searchParams.get("txRef");
+  const stripeSessionId =
+    searchParams.get("session_id") ||
+    searchParams.get("sessionId");
+  const paymentId = searchParams.get("paymentId");
+  const activeProvider =
+    provider ||
+    (stripeSessionId || paymentId ? "stripe" : trxRef ? "chapa" : "");
 
   const isSuccess = status === "success";
+
+  useEffect(() => {
+    const verifyReturnedPayment = async () => {
+      if (!isSuccess) return;
+      if (activeProvider === "chapa" && !trxRef) return;
+      if (activeProvider === "stripe" && !stripeSessionId && !paymentId) return;
+      if (!activeProvider) return;
+
+      try {
+        setVerifying(true);
+        let latestStatus = null;
+
+        // Poll a few times since gateway confirmation can arrive slightly late.
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          const result =
+            activeProvider === "stripe"
+              ? await paymentService.verifyStripePayment({
+                  sessionId: stripeSessionId,
+                  paymentId,
+                })
+              : await paymentService.verifyChapaPayment({ txRef: trxRef });
+          latestStatus = result?.data?.status || null;
+          setVerifiedStatus(latestStatus);
+
+          if (latestStatus && latestStatus !== "processing" && latestStatus !== "pending") {
+            break;
+          }
+
+          // Wait 2 seconds before next check.
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        setVerifiedStatus(null);
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyReturnedPayment();
+  }, [isSuccess, activeProvider, trxRef, stripeSessionId, paymentId]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -38,11 +91,19 @@ const PaymentSuccess = () => {
               Payment Successful!
             </h1>
             <p className="text-slate-500 font-medium mb-2">
-              Your rental payment has been received and is being verified.
+              {verifiedStatus === "succeeded"
+                ? "Your rental payment has been confirmed and recorded."
+                : "Your rental payment has been received and is being verified."}
             </p>
-            {trxRef && (
+            {verifying && (
+              <div className="inline-flex items-center gap-2 text-xs text-slate-500 mb-2">
+                <Loader2 size={14} className="animate-spin" />
+                Verifying payment status...
+              </div>
+            )}
+            {(trxRef || stripeSessionId || paymentId) && (
               <p className="text-xs text-slate-400 mb-8 font-mono bg-slate-50 rounded-xl p-2 border border-slate-100">
-                Reference: {trxRef}
+                Reference: {trxRef || stripeSessionId || paymentId}
               </p>
             )}
           </>

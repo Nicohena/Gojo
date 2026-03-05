@@ -21,6 +21,16 @@ const paymentService = {
     return response.data;
   },
 
+  verifyChapaPayment: async (payload) => {
+    const response = await apiClient.post('/payments/chapa/verify', payload);
+    return response.data;
+  },
+
+  verifyStripePayment: async (payload) => {
+    const response = await apiClient.post('/payments/stripe/verify', payload);
+    return response.data;
+  },
+
   updatePaymentStatus: async (id, status) => {
     const response = await apiClient.patch(`/payments/${id}/status`, { status });
     return response.data;

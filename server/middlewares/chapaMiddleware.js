@@ -87,9 +87,20 @@ const verifyPaymentWithChapa = async (txRef) => {
       }
     );
 
+    const topLevelStatus = String(response.data?.status || '').toLowerCase();
+    const transactionStatus = String(response.data?.data?.status || '').toLowerCase();
+    const verifiedStates = new Set(['success', 'successful', 'completed', 'paid']);
+
+    const isVerified =
+      topLevelStatus === 'success' &&
+      (
+        !transactionStatus ||
+        verifiedStates.has(transactionStatus)
+      );
+
     return {
       success: true,
-      verified: response.data.status === 'success',
+      verified: isVerified,
       data: response.data.data
     };
   } catch (error) {

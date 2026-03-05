@@ -91,6 +91,10 @@ const BookingList = ({ role }) => {
         <tbody className="divide-y divide-gray-200">
           {bookings.map((booking) => (
             <tr key={booking._id}>
+              {/*
+                Consider an existing payment reference as in-progress until marked paid.
+                This prevents repeated payment attempts for the same booking.
+              */}
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-medium text-gray-900">
                   {booking.houseId?.title || "Unknown"}
@@ -129,6 +133,11 @@ const BookingList = ({ role }) => {
                     Paid
                   </span>
                 )}
+                {booking.paymentStatus !== "paid" && booking.paymentId && (
+                  <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-sm uppercase">
+                    Processing
+                  </span>
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-black font-mono">
                 ETB {booking.totalAmount?.toLocaleString()}
@@ -156,12 +165,34 @@ const BookingList = ({ role }) => {
                 )}
                 {role === "tenant" &&
                   booking.status === "approved" &&
-                  booking.paymentStatus !== "paid" && (
+                  booking.paymentStatus !== "paid" &&
+                  !booking.paymentId && (
                     <button
                       onClick={() => handlePayment(booking)}
                       className="px-4 py-1.5 bg-primary text-white text-xs font-black rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95"
                     >
                       PAY NOW
+                    </button>
+                  )}
+                {role === "tenant" &&
+                  booking.status === "approved" &&
+                  booking.paymentStatus !== "paid" &&
+                  booking.paymentId && (
+                    <button
+                      disabled
+                      className="px-4 py-1.5 bg-amber-100 text-amber-800 text-xs font-black rounded-lg cursor-not-allowed"
+                    >
+                      PAYMENT PROCESSING
+                    </button>
+                  )}
+                {role === "tenant" &&
+                  booking.status === "approved" &&
+                  booking.paymentStatus === "paid" && (
+                    <button
+                      disabled
+                      className="px-4 py-1.5 bg-emerald-100 text-emerald-800 text-xs font-black rounded-lg cursor-not-allowed"
+                    >
+                      PAID
                     </button>
                   )}
                 {booking.status !== "cancelled" &&

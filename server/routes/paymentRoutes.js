@@ -22,6 +22,8 @@ const {
   handleChapaWebhook,
   handleStripeWebhook,
   getPaymentStatus,
+  verifyChapaPayment,
+  verifyStripePayment,
   updatePaymentStatus,
   processRefund,
   getPaymentHistory,
@@ -45,6 +47,10 @@ router.use(protect);
 
 // Initiate payment (Chapa or Stripe)
 router.post('/initiate', initiatePayment);
+
+// Verify Chapa payment by txRef (after return redirect)
+router.post('/chapa/verify', verifyChapaPayment);
+router.post('/stripe/verify', verifyStripePayment);
 
 // Payment history
 router.get('/', getPaymentHistory);
