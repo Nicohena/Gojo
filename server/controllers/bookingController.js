@@ -9,9 +9,11 @@
 
 const BookingRequest = require('../models/BookingRequest');
 const House = require('../models/House');
-const User = require('../models/User');
-const logger = require('../utils/logger');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
+const {
+  sendBookingCreatedEmails,
+  sendBookingStatusEmail
+} = require('../utils/emailNotifications');
 
 /**
  * @desc    Create a booking request
@@ -104,6 +106,17 @@ const createBooking = asyncHandler(async (req, res) => {
       dates: { startDate, endDate }
     });
   }
+
+  sendBookingCreatedEmails({
+    tenantName: req.user.name,
+    tenantEmail: req.user.email,
+    ownerName: house.ownerId?.name,
+    ownerEmail: house.ownerId?.email,
+    houseTitle: house.title,
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    totalAmount: booking.totalAmount
+  }).catch(() => {});
 
   res.status(201).json({
     success: true,
@@ -273,6 +286,16 @@ const updateBooking = asyncHandler(async (req, res) => {
       message
     });
   }
+
+  sendBookingStatusEmail({
+    tenantName: booking.tenantId.name,
+    tenantEmail: booking.tenantId.email,
+    houseTitle: booking.houseId.title,
+    status,
+    message,
+    startDate: booking.startDate,
+    endDate: booking.endDate
+  }).catch(() => {});
 
   res.status(200).json({
     success: true,
