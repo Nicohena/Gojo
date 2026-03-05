@@ -10,6 +10,7 @@
 
 const User = require('../models/User');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
+const { sendWelcomeEmail } = require('../utils/emailNotifications');
 
 /**
  * @desc    Register a new user
@@ -46,6 +47,13 @@ const register = asyncHandler(async (req, res) => {
 
   // Generate JWT token
   const token = user.generateAuthToken();
+
+  // Send welcome email in background (never block signup on email errors)
+  sendWelcomeEmail({
+    email: user.email,
+    name: user.name,
+    role: user.role
+  }).catch(() => {});
 
   res.status(201).json({
     success: true,
