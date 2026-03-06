@@ -263,6 +263,7 @@ const LandingPage = () => {
                     match: house.matchScore,
                     isFair: house.price < 5000,
                     image: house.images?.[0]?.url || house.images?.[0],
+                    views: house.viewCount || 0,
                   }}
                 />
               ))

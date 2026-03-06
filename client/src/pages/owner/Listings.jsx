@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { DashboardLayout } from "../../components/layout/DashboardLayout";
 import { Loader2, PlusCircle } from "lucide-react";
 import { houseService } from "../../api/houseService";
 import OwnerListingCard from "../../components/pieces/OwnerListingCard";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import socket, { connectSocket } from "../../utils/socket";
 
 const FilterChip = ({ label, active = false, onClick }) => (
   <button
@@ -28,26 +30,53 @@ const OwnerListings = () => {
   const [updatingId, setUpdatingId] = useState(null);
   const navigate = useNavigate();
 
+  const fetchListings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await houseService.getMyListings();
+      setListings(response.data.data.houses || []);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to load listings", err);
+      setError(
+        err.response?.data?.message ||
+          "Failed to load your listings. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const fetchListings = async () => {
-      setLoading(true);
-      try {
-        const response = await houseService.getMyListings();
-        setListings(response.data.data.houses || []);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to load listings", err);
-        setError(
-          err.response?.data?.message ||
-            "Failed to load your listings. Please try again.",
-        );
-      } finally {
-        setLoading(false);
-      }
+    fetchListings();
+  }, [fetchListings]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    connectSocket(token);
+
+    const handleListingVerification = (payload) => {
+      const statusText = payload?.approved ? "approved" : "rejected";
+      toast.success(`Your listing "${payload?.title || "listing"}" was ${statusText}.`);
+      fetchListings();
+    };
+    const handleListingModeration = (payload) => {
+      const action = String(payload?.action || "updated").replaceAll("_", " ");
+      const extra = payload?.reason ? ` (${payload.reason})` : "";
+      toast.success(`Admin ${action} your listing "${payload?.title || "listing"}"${extra}.`);
+      fetchListings();
     };
 
-    fetchListings();
-  }, []);
+    socket.on("listingVerification", handleListingVerification);
+    socket.on("listingModeration", handleListingModeration);
+
+    return () => {
+      socket.off("listingVerification", handleListingVerification);
+      socket.off("listingModeration", handleListingModeration);
+    };
+  }, [fetchListings]);
 
   const handleToggleAvailability = async (house) => {
     try {
@@ -86,6 +115,26 @@ const OwnerListings = () => {
         err.response?.data?.message ||
           "Failed to delete listing. Please try again.",
       );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleReportIssue = async (house) => {
+    const message = window
+      .prompt("Describe the issue and what you fixed so admin can re-review this listing:")
+      ?.trim();
+
+    if (!message) return;
+
+    try {
+      setUpdatingId(house._id);
+      await houseService.reportRejection(house._id, message);
+      toast.success("Report submitted to admin.");
+      fetchListings();
+    } catch (err) {
+      console.error("Failed to submit report", err);
+      toast.error(err.response?.data?.message || "Failed to submit report.");
     } finally {
       setUpdatingId(null);
     }
@@ -293,6 +342,7 @@ const OwnerListings = () => {
                   house={house}
                   onToggleAvailability={handleToggleAvailability}
                   onDelete={handleDelete}
+                  onReportIssue={handleReportIssue}
                 />
               </div>
             ))}

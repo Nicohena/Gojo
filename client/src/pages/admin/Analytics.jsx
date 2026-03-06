@@ -4,6 +4,7 @@ import Navbar from "../../components/layout/Navbar";
 import { Link } from "react-router-dom";
 import {
   TrendingUp,
+  TrendingDown,
   Users,
   Home,
   CalendarCheck,
@@ -12,6 +13,7 @@ import {
   BarChart3,
   Loader2,
   ArrowLeft,
+  Download,
 } from "lucide-react";
 
 const StatCard = ({ icon: Icon, label, value, color, subtext }) => (
@@ -103,6 +105,37 @@ const AdminAnalytics = () => {
     unspecified: "bg-slate-400",
   };
 
+  const trends = analytics?.analytics?.trends || {};
+  const trendChanges = trends?.changes || {};
+  const revenueStats = analytics?.analytics?.revenue || {};
+  const listingStats = analytics?.analytics?.listings || {};
+  const topPropertyTypes = Object.entries(listingStats.byPropertyType || {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+
+  const exportDailyRevenue = () => {
+    const rows = [
+      ["Date", "Revenue", "Transactions"],
+      ...(revenueStats.dailyBreakdown || []).map((d) => [
+        d._id,
+        d.revenue || 0,
+        d.count || 0,
+      ]),
+    ];
+    const csv = rows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `analytics-daily-revenue-${period}-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -137,6 +170,13 @@ const AdminAnalytics = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={exportDailyRevenue}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-1.5"
+            >
+              <Download size={13} />
+              Export Revenue CSV
+            </button>
             {["7d", "30d", "90d", "1y"].map((p) => (
               <button
                 key={p}
@@ -157,6 +197,35 @@ const AdminAnalytics = () => {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Trend Snapshot */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: "Bookings", value: trendChanges.bookings ?? 0 },
+            { label: "Users", value: trendChanges.users ?? 0 },
+            { label: "Listings", value: trendChanges.listings ?? 0 },
+            { label: "Revenue", value: trendChanges.revenue ?? 0 },
+          ].map((item) => {
+            const positive = item.value >= 0;
+            return (
+              <div key={item.label} className="bg-white rounded-xl p-4 border border-slate-100">
+                <p className="text-xs uppercase tracking-wide font-semibold text-slate-500">
+                  {item.label} Trend
+                </p>
+                <div
+                  className={`mt-2 inline-flex items-center gap-1 text-sm font-bold ${
+                    positive ? "text-emerald-600" : "text-red-600"
+                  }`}
+                >
+                  {positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {item.value > 0 ? "+" : ""}
+                  {item.value}%
+                </div>
+                <p className="text-xs text-slate-400 mt-1">vs previous period</p>
+              </div>
+            );
+          })}
         </div>
 
         {/* Overview Stats */}
@@ -217,6 +286,69 @@ const AdminAnalytics = () => {
             data={stats?.housesByType}
             colorMap={typeColors}
           />
+        </div>
+
+        {/* Revenue + Listing Quality */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-bold text-slate-900 mb-4">Revenue Quality</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Net Revenue</span>
+                <span className="font-bold text-slate-900">
+                  ETB {(revenueStats.netRevenue || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Average Transaction</span>
+                <span className="font-bold text-slate-900">
+                  ETB {Math.round(revenueStats.averageTransaction || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Total Refunds</span>
+                <span className="font-bold text-slate-900">
+                  ETB {(revenueStats.totalRefunds || 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-bold text-slate-900 mb-4">Listing Intelligence</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">New Listings</span>
+                <span className="font-bold text-slate-900">{listingStats.newListings || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Verified Listings</span>
+                <span className="font-bold text-slate-900">{listingStats.verifiedListings || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Average Market Price</span>
+                <span className="font-bold text-slate-900">
+                  ETB {Math.round(listingStats.averagePrice || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="pt-1">
+                <p className="text-xs uppercase tracking-wide font-semibold text-slate-500 mb-2">
+                  Top Property Types
+                </p>
+                {topPropertyTypes.length > 0 ? (
+                  <div className="space-y-1">
+                    {topPropertyTypes.map(([type, count]) => (
+                      <p key={type} className="text-slate-700">
+                        <span className="capitalize">{type}</span>: <span className="font-semibold">{count}</span>
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400">No property type distribution yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Recent Activity */}

@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { getImageUrl } from "../../utils/imageUtils";
 
-const OwnerListingCard = ({ house, onToggleAvailability, onDelete }) => {
+const OwnerListingCard = ({ house, onToggleAvailability, onDelete, onReportIssue }) => {
   const navigate = useNavigate();
 
   const imagePath =
@@ -26,6 +26,20 @@ const OwnerListingCard = ({ house, onToggleAvailability, onDelete }) => {
 
   const isAvailable = house.available;
   const isVerified = house.verified?.status || house.verified;
+  const verificationDecision = house.verified?.decision || (isVerified ? "approved" : "pending");
+  const rejectionReason = house.verified?.rejectionReason;
+
+  const verificationBadge = {
+    approved: "bg-emerald-500 text-white",
+    rejected: "bg-red-500 text-white",
+    pending: "bg-amber-500 text-white",
+  };
+
+  const verificationLabel = {
+    approved: "Approved",
+    rejected: "Rejected",
+    pending: "Pending Review",
+  };
 
   return (
     <div className="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-shadow">
@@ -41,6 +55,13 @@ const OwnerListingCard = ({ house, onToggleAvailability, onDelete }) => {
 
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {isVerified && <VerifiedBadge />}
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+              verificationBadge[verificationDecision] || verificationBadge.pending
+            }`}
+          >
+            {verificationLabel[verificationDecision] || verificationLabel.pending}
+          </span>
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
               isAvailable
@@ -102,6 +123,16 @@ const OwnerListingCard = ({ house, onToggleAvailability, onDelete }) => {
           </span>
         </div>
 
+        {verificationDecision === "rejected" && (
+          <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <span className="font-semibold">Admin feedback: </span>
+            {rejectionReason || "Your listing was rejected. Please update details and resubmit."}
+            {house.verified?.ownerReport?.status === "submitted" && (
+              <p className="mt-1 text-red-800 font-semibold">Report submitted. Waiting for admin review.</p>
+            )}
+          </div>
+        )}
+
         <div className="pt-3 flex items-center justify-between gap-2 border-t border-slate-100">
           <button
             type="button"
@@ -143,6 +174,17 @@ const OwnerListingCard = ({ house, onToggleAvailability, onDelete }) => {
             <span>Delete</span>
           </button>
         </div>
+
+        {verificationDecision === "rejected" &&
+          house.verified?.ownerReport?.status !== "submitted" && (
+            <button
+              type="button"
+              onClick={() => onReportIssue(house)}
+              className="w-full mt-2 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
+            >
+              Report Issue To Admin
+            </button>
+          )}
       </div>
     </div>
   );

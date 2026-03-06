@@ -6,6 +6,9 @@ import { getImageUrl } from "../../utils/imageUtils";
 
 export const HouseCard = ({ house, isSaved = false, onToggleSave }) => {
   const navigate = useNavigate();
+  const isVerified =
+    typeof house.verified === "boolean" ? house.verified : !!house.verified?.status;
+  const views = Number(house.views || house.viewCount || 0);
 
   return (
     <div
@@ -23,7 +26,7 @@ export const HouseCard = ({ house, isSaved = false, onToggleSave }) => {
         />
 
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {house.verified && <VerifiedBadge />}
+          {isVerified && <VerifiedBadge />}
           {house.match && <SmartMatchBadge percentage={house.match} />}
         </div>
 
@@ -65,7 +68,7 @@ export const HouseCard = ({ house, isSaved = false, onToggleSave }) => {
         </div>
         <p className="text-sm text-slate-500">{house.location}</p>
         <p className="text-sm text-slate-400 font-medium">
-          {house.beds} beds • {house.sqft} sqft
+          {house.beds} beds • {house.sqft} sqft • {views} views
         </p>
 
         <div className="flex justify-between items-center pt-2">
