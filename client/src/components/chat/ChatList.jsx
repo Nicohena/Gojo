@@ -67,6 +67,13 @@ const ChatList = ({
       // Check for initial context (e.g. starting a new chat from Details page)
       if (initialChatContext?.owner && currentUser) {
         const ownerId = initialChatContext.owner._id;
+        const currentUserId = currentUser.id || currentUser._id;
+
+        if (ownerId && currentUserId && ownerId === currentUserId) {
+          setConversations(conversationsData);
+          return;
+        }
+
         const existingConv = conversationsData.find(
           (c) => c.participant?._id === ownerId,
         );
@@ -75,7 +82,6 @@ const ChatList = ({
           onSelectConversation(existingConv);
         } else {
           // Create a temporary conversation object
-          const currentUserId = currentUser.id || currentUser._id;
           const ids = [currentUserId, ownerId].sort();
           const tempRoomId = `${ids[0]}_${ids[1]}`;
 

@@ -11,6 +11,26 @@ const User = require('../models/User');
 const Recommendation = require('../models/Recommendation');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const House = require('../models/House');
+const { cloudinary } = require('../config/cloudinary');
+
+const isCloudinaryUrl = (url) =>
+  typeof url === 'string' && /^https?:\/\/res\.cloudinary\.com\//i.test(url);
+
+const extractCloudinaryPublicId = (url) => {
+  if (!isCloudinaryUrl(url)) return null;
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/);
+  return match ? match[1] : null;
+};
+
+const safeDestroyCloudinaryAsset = async (url) => {
+  const publicId = extractCloudinaryPublicId(url);
+  if (!publicId) return;
+  try {
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+  } catch (err) {
+    // Never fail user flow because cleanup failed.
+  }
+};
 
 /**
  * @desc    Get user by ID
@@ -50,7 +70,18 @@ const uploadAvatar = asyncHandler(async (req, res) => {
   }
 
   const avatarPath = req.file.path;
-  
+
+  if (!isCloudinaryUrl(avatarPath)) {
+    throw new ApiError('Avatar must be uploaded to Cloudinary', 400);
+  }
+
+  const existingUser = await User.findById(req.user._id).select('avatar');
+  if (!existingUser) {
+    throw new ApiError('User not found', 404);
+  }
+
+  await safeDestroyCloudinaryAsset(existingUser.avatar);
+
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { avatar: avatarPath },
@@ -77,6 +108,13 @@ const uploadAvatar = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const removeAvatar = asyncHandler(async (req, res) => {
+  const existingUser = await User.findById(req.user._id).select('avatar');
+  if (!existingUser) {
+    throw new ApiError('User not found', 404);
+  }
+
+  await safeDestroyCloudinaryAsset(existingUser.avatar);
+
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { avatar: null },
@@ -122,6 +160,10 @@ const updateUser = asyncHandler(async (req, res) => {
       updates[key] = req.body[key];
     }
   });
+
+  if (updates.avatar && !isCloudinaryUrl(updates.avatar)) {
+    throw new ApiError('Avatar must be a Cloudinary URL', 400);
+  }
 
   // Update user
   const user = await User.findByIdAndUpdate(

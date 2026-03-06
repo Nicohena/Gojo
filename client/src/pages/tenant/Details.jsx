@@ -133,6 +133,13 @@ const DetailsPage = () => {
       return;
     }
 
+    const currentUserId = user.id || user._id;
+    const ownerId = data?.house?.ownerId?._id;
+    if (currentUserId && ownerId && currentUserId === ownerId) {
+      toast.error("You cannot chat with yourself.");
+      return;
+    }
+
     navigate("/messages", {
       state: {
         owner: data.house.ownerId,
