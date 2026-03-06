@@ -104,6 +104,7 @@ const SavedHomesPage = () => {
                   match: house.matchScore,
                   isFair: house.price < 3000,
                   image: house.images?.[0]?.url,
+                  views: house.viewCount || 0,
                 }}
                 isSaved
                 onToggleSave={handleToggleSave}
@@ -117,4 +118,3 @@ const SavedHomesPage = () => {
 };
 
 export default SavedHomesPage;
-

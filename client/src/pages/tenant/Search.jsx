@@ -294,6 +294,7 @@ const SearchPage = () => {
                   match: house.matchScore,
                   isFair: house.price < 3000, // Placeholder logic for now
                   image: house.images?.[0]?.url,
+                  views: house.viewCount || 0,
                 }}
                 isSaved={savedHomeIds.includes(house._id)}
                 onToggleSave={handleToggleSave}
