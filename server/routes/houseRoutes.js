@@ -15,6 +15,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, optionalAuth } = require('../middlewares/authMiddleware');
 const { authorize, isOwner } = require('../middlewares/roleMiddleware');
+const { upload } = require('../controllers/uploadController');
 const {
   createHouse,
   getHouses,
@@ -41,7 +42,7 @@ router.delete('/:id', protect, deleteHouse);
 router.post('/:id/ratings', protect, addRating);
 
 // Image management
-router.post('/:id/images', protect, uploadImages);
+router.post('/:id/images', protect, upload.array('images', 10), uploadImages);
 router.delete('/:id/images/:imgId', protect, removeImage);
 
 module.exports = router;

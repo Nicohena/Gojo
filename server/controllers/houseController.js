@@ -15,6 +15,19 @@ const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { calculateSmartMatch } = require('../utils/smartMatch');
 const { getPriceFairness } = require('../utils/priceFairness');
 
+const isCloudinaryUrl = (url) =>
+  typeof url === 'string' && /^https?:\/\/res\.cloudinary\.com\//i.test(url);
+
+const ensureCloudinaryImages = (images = []) => {
+  if (!Array.isArray(images)) return;
+  images.forEach((img) => {
+    const url = typeof img === 'string' ? img : img?.url;
+    if (url && !isCloudinaryUrl(url)) {
+      throw new ApiError('House images must be uploaded to Cloudinary', 400);
+    }
+  });
+};
+
 /**
  * @desc    Create a new house listing
  * @route   POST /api/houses
@@ -30,6 +43,8 @@ const createHouse = asyncHandler(async (req, res) => {
     ...req.body,
     ownerId: req.user._id
   };
+
+  ensureCloudinaryImages(houseData.images);
 
   // Create house
   const house = await House.create(houseData);
@@ -253,6 +268,10 @@ const updateHouse = asyncHandler(async (req, res) => {
     }
   });
 
+  if (updates.images) {
+    ensureCloudinaryImages(updates.images);
+  }
+
   // Handle location update separately (nested object)
   if (req.body.location) {
     updates.location = { ...house.location.toObject(), ...req.body.location };
@@ -362,12 +381,6 @@ const getMyListings = asyncHandler(async (req, res) => {
  * @access  Private (owner or admin)
  */
 const uploadImages = asyncHandler(async (req, res) => {
-  const { images } = req.body; // Expects array of { url, caption, isPrimary }
-  
-  if (!images || !Array.isArray(images) || images.length === 0) {
-    throw new ApiError('Please provide at least one image', 400);
-  }
-
   const house = await House.findById(req.params.id);
   if (!house) {
     throw new ApiError('House not found', 404);
@@ -378,8 +391,47 @@ const uploadImages = asyncHandler(async (req, res) => {
     throw new ApiError('Not authorized to update this listing', 403);
   }
 
+  let imagesToAdd = [];
+
+  // Preferred path: files uploaded through multer-storage-cloudinary.
+  if (req.files && req.files.length > 0) {
+    imagesToAdd = req.files.map((file, index) => ({
+      url: file.path,
+      caption: '',
+      isPrimary: house.images.length === 0 && index === 0
+    }));
+  } else {
+    // Compatibility path: URL payload from client.
+    let { images } = req.body;
+
+    if (typeof images === 'string') {
+      try {
+        images = JSON.parse(images);
+      } catch (err) {
+        images = [{ url: images }];
+      }
+    }
+
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      throw new ApiError('Please provide at least one image', 400);
+    }
+
+    imagesToAdd = images.map((img, index) => {
+      const normalized = typeof img === 'string' ? { url: img } : img;
+      if (!normalized?.url || !isCloudinaryUrl(normalized.url)) {
+        throw new ApiError('Only Cloudinary image URLs are allowed for house images', 400);
+      }
+
+      return {
+        url: normalized.url,
+        caption: normalized.caption || '',
+        isPrimary: house.images.length === 0 && index === 0
+      };
+    });
+  }
+
   // Add images
-  house.images.push(...images);
+  house.images.push(...imagesToAdd);
   await house.save();
 
   res.status(200).json({
