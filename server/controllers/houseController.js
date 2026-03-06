@@ -279,9 +279,16 @@ const updateHouse = asyncHandler(async (req, res) => {
 
   // Update listing (verified status revoked on significant changes)
   if (updates.price || updates.location || updates.rooms) {
+    updates['verified.decision'] = 'pending';
     updates['verified.status'] = false;
+    updates['verified.reviewedAt'] = null;
+    updates['verified.rejectionReason'] = null;
     updates['verified.verifiedAt'] = null;
     updates['verified.verifiedBy'] = null;
+    updates['verified.ownerReport.message'] = null;
+    updates['verified.ownerReport.reportedAt'] = null;
+    updates['verified.ownerReport.reviewedAt'] = null;
+    updates['verified.ownerReport.status'] = 'none';
   }
 
   house = await House.findByIdAndUpdate(
@@ -468,6 +475,48 @@ const removeImage = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Submit an owner report for a rejected listing
+ * @route   POST /api/houses/:id/report-rejection
+ * @access  Private (owner)
+ */
+const reportRejectedListingIssue = asyncHandler(async (req, res) => {
+  const { message } = req.body;
+  const trimmedMessage = typeof message === 'string' ? message.trim() : '';
+
+  if (!trimmedMessage) {
+    throw new ApiError('Please provide a report message', 400);
+  }
+
+  const house = await House.findById(req.params.id);
+  if (!house) {
+    throw new ApiError('House not found', 404);
+  }
+
+  if (house.ownerId.toString() !== req.user._id.toString()) {
+    throw new ApiError('Not authorized to report this listing', 403);
+  }
+
+  if (house.verified?.decision !== 'rejected') {
+    throw new ApiError('You can only report issues for rejected listings', 400);
+  }
+
+  house.verified.ownerReport = {
+    message: trimmedMessage,
+    reportedAt: new Date(),
+    reviewedAt: null,
+    status: 'submitted'
+  };
+
+  await house.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Rejection report submitted successfully',
+    data: { house }
+  });
+});
+
 module.exports = {
   createHouse,
   getHouses,
@@ -477,5 +526,6 @@ module.exports = {
   addRating,
   getMyListings,
   uploadImages,
-  removeImage
+  removeImage,
+  reportRejectedListingIssue
 };

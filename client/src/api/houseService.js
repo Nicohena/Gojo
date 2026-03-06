@@ -7,6 +7,7 @@ export const houseService = {
   createHouse: (data) => apiClient.post('/houses', data),
   updateHouse: (id, data) => apiClient.patch(`/houses/${id}`, data),
   deleteHouse: (id) => apiClient.delete(`/houses/${id}`),
+  reportRejection: (id, message) => apiClient.post(`/houses/${id}/report-rejection`, { message }),
   uploadImages: (formData) => apiClient.post('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),

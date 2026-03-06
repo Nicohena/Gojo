@@ -56,6 +56,21 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  banned: {
+    isBanned: {
+      type: Boolean,
+      default: false
+    },
+    reason: {
+      type: String,
+      maxlength: [500, 'Ban reason cannot exceed 500 characters']
+    },
+    bannedAt: Date,
+    bannedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  },
   rating: {
     average: {
       type: Number,
@@ -242,6 +257,7 @@ userSchema.methods.getPublicProfile = function() {
     language: this.language,
     avatar: this.avatar,
     bio: this.bio,
+    banned: this.banned,
     createdAt: this.createdAt
   };
 };

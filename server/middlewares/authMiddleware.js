@@ -49,6 +49,13 @@ const protect = async (req, res, next) => {
       });
     }
 
+    if (user.banned?.isBanned) {
+      return res.status(403).json({
+        success: false,
+        message: `Account suspended${user.banned?.reason ? `: ${user.banned.reason}` : '.'}`
+      });
+    }
+
     // Attach user to request
     req.user = user;
     next();
@@ -94,7 +101,7 @@ const optionalAuth = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id).select('-password');
 
-      if (user) {
+      if (user && !user.banned?.isBanned) {
         req.user = user;
       }
     }

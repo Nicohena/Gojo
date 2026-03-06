@@ -149,14 +149,37 @@ const houseSchema = new mongoose.Schema({
   }],
   // Admin verification status - VERIFIED LISTING BADGE
   verified: {
+    decision: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending'
+    },
     status: {
       type: Boolean,
       default: false
+    },
+    reviewedAt: Date,
+    rejectionReason: {
+      type: String,
+      maxlength: [500, 'Rejection reason cannot exceed 500 characters']
     },
     verifiedAt: Date,
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
+    },
+    ownerReport: {
+      message: {
+        type: String,
+        maxlength: [1000, 'Owner report cannot exceed 1000 characters']
+      },
+      reportedAt: Date,
+      reviewedAt: Date,
+      status: {
+        type: String,
+        enum: ['none', 'submitted', 'reviewed'],
+        default: 'none'
+      }
     }
   },
   // Availability status
@@ -209,6 +232,7 @@ houseSchema.index({ 'location.city': 1, 'location.state': 1 });
 houseSchema.index({ 'location.coordinates': '2dsphere' });
 houseSchema.index({ available: 1 });
 houseSchema.index({ 'verified.status': 1 });
+houseSchema.index({ 'verified.decision': 1 });
 houseSchema.index({ amenities: 1 });
 houseSchema.index({ averageRating: -1 });
 

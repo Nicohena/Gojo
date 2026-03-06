@@ -16,22 +16,139 @@ const AdminLog = require('../models/AdminLog');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { getAnalytics } = require('../utils/analytics');
 
+const escapeRegExp = (value = '') =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * @desc    Get pending (unverified) listings
  * @route   GET /api/admin/listings/pending
  * @access  Private (admin only)
  */
 const getPendingListings = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20 } = req.query;
+  const {
+    page = 1,
+    limit = 20,
+    status = 'pending',
+    reportedOnly = 'false',
+    search = '',
+    city = '',
+    state = '',
+    propertyType = '',
+    minPrice,
+    maxPrice,
+    available
+  } = req.query;
   const skip = (Number(page) - 1) * Number(limit);
 
+  const statusFilters = {
+    pending: {
+      'verified.status': false,
+      $or: [
+        { 'verified.decision': 'pending' },
+        { 'verified.decision': { $exists: false } } // Backward compatibility
+      ]
+    },
+    rejected: {
+      'verified.status': false,
+      'verified.decision': 'rejected'
+    },
+    approved: {
+      'verified.status': true,
+      'verified.decision': 'approved'
+    }
+  };
+
+  const filter = status === 'all'
+    ? {}
+    : (statusFilters[status] || statusFilters.pending);
+
+  const ownerSearchIds = [];
+  if (status === 'rejected' && reportedOnly === 'true') {
+    filter['verified.ownerReport.status'] = 'submitted';
+  }
+
+  const trimmedSearch = String(search || '').trim();
+  if (trimmedSearch) {
+    const safeSearch = escapeRegExp(trimmedSearch);
+    const owners = await User.find({
+      $or: [
+        { name: new RegExp(safeSearch, 'i') },
+        { email: new RegExp(safeSearch, 'i') }
+      ]
+    }).select('_id').limit(50);
+
+    owners.forEach((owner) => ownerSearchIds.push(owner._id));
+
+    filter.$and = [
+      ...(filter.$and || []),
+      {
+        $or: [
+          { title: new RegExp(safeSearch, 'i') },
+          { 'location.city': new RegExp(safeSearch, 'i') },
+          { 'location.state': new RegExp(safeSearch, 'i') },
+          { 'location.address': new RegExp(safeSearch, 'i') },
+          ...(ownerSearchIds.length ? [{ ownerId: { $in: ownerSearchIds } }] : [])
+        ]
+      }
+    ];
+  }
+
+  const trimmedCity = String(city || '').trim();
+  if (trimmedCity) {
+    const safeCity = escapeRegExp(trimmedCity);
+    filter.$and = [
+      ...(filter.$and || []),
+      { 'location.city': new RegExp(safeCity, 'i') }
+    ];
+  }
+
+  const trimmedState = String(state || '').trim();
+  if (trimmedState) {
+    const safeState = escapeRegExp(trimmedState);
+    filter.$and = [
+      ...(filter.$and || []),
+      { 'location.state': new RegExp(safeState, 'i') }
+    ];
+  }
+
+  if (propertyType) {
+    filter.propertyType = propertyType;
+  }
+
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    const parsedMin = minPrice !== undefined && minPrice !== '' ? Number(minPrice) : undefined;
+    const parsedMax = maxPrice !== undefined && maxPrice !== '' ? Number(maxPrice) : undefined;
+
+    if (parsedMin !== undefined && Number.isNaN(parsedMin)) {
+      throw new ApiError('minPrice must be a valid number', 400);
+    }
+    if (parsedMax !== undefined && Number.isNaN(parsedMax)) {
+      throw new ApiError('maxPrice must be a valid number', 400);
+    }
+
+    filter.price = {};
+    if (parsedMin !== undefined) {
+      filter.price.$gte = parsedMin;
+    }
+    if (parsedMax !== undefined) {
+      filter.price.$lte = parsedMax;
+    }
+    if (Object.keys(filter.price).length === 0) {
+      delete filter.price;
+    }
+  }
+
+  if (available !== undefined && available !== '') {
+    filter.available = String(available) === 'true';
+  }
+
   const [listings, total] = await Promise.all([
-    House.find({ 'verified.status': false })
-      .populate('ownerId', 'name email phone verified')
+    House.find(filter)
+      .populate('ownerId', 'name email phone verified role avatar rating createdAt lastLogin banned')
       .sort('-createdAt')
       .skip(skip)
       .limit(Number(limit)),
-    House.countDocuments({ 'verified.status': false })
+    House.countDocuments(filter)
   ]);
 
   res.status(200).json({
@@ -57,6 +174,10 @@ const verifyListing = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { approved, reason } = req.body;
 
+  if (typeof approved !== 'boolean') {
+    throw new ApiError('approved must be a boolean value', 400);
+  }
+
   const house = await House.findById(id).populate('ownerId', 'name email');
 
   if (!house) {
@@ -66,15 +187,33 @@ const verifyListing = asyncHandler(async (req, res) => {
   // Update verification status
   if (approved) {
     house.verified = {
+      decision: 'approved',
       status: true,
+      reviewedAt: new Date(),
+      rejectionReason: null,
       verifiedAt: new Date(),
-      verifiedBy: req.user._id
+      verifiedBy: req.user._id,
+      ownerReport: {
+        message: house.verified?.ownerReport?.message || null,
+        reportedAt: house.verified?.ownerReport?.reportedAt || null,
+        reviewedAt: house.verified?.ownerReport?.message ? new Date() : null,
+        status: house.verified?.ownerReport?.message ? 'reviewed' : 'none'
+      }
     };
   } else {
     house.verified = {
+      decision: 'rejected',
       status: false,
+      reviewedAt: new Date(),
+      rejectionReason: reason || 'Rejected by admin',
       verifiedAt: null,
-      verifiedBy: null
+      verifiedBy: null,
+      ownerReport: {
+        message: house.verified?.ownerReport?.message || null,
+        reportedAt: house.verified?.ownerReport?.reportedAt || null,
+        reviewedAt: house.verified?.ownerReport?.message ? new Date() : null,
+        status: house.verified?.ownerReport?.message ? 'reviewed' : 'none'
+      }
     };
   }
 
@@ -117,6 +256,177 @@ const verifyListing = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Moderate listing operational state (admin action)
+ * @route   PATCH /api/admin/listings/:id/moderate
+ * @access  Private (admin only)
+ */
+const moderateListing = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { action, reason } = req.body;
+  const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+
+  const allowedActions = [
+    'approve',
+    'reject',
+    'pause',
+    'activate',
+    'send_to_review',
+    'delete'
+  ];
+
+  if (!allowedActions.includes(action)) {
+    throw new ApiError(`Invalid action. Allowed actions: ${allowedActions.join(', ')}`, 400);
+  }
+
+  const house = await House.findById(id).populate('ownerId', 'name email');
+  if (!house) {
+    throw new ApiError('Listing not found', 404);
+  }
+
+  let responseMessage = 'Listing updated successfully';
+  let actionForLog = 'HOUSE_UPDATED';
+  let details = { actionType: action };
+
+  if (action === 'approve') {
+    if (house.verified?.decision === 'approved' && house.verified?.status === true) {
+      throw new ApiError('Listing is already approved', 400);
+    }
+    house.verified = {
+      decision: 'approved',
+      status: true,
+      reviewedAt: new Date(),
+      rejectionReason: null,
+      verifiedAt: new Date(),
+      verifiedBy: req.user._id,
+      ownerReport: {
+        message: house.verified?.ownerReport?.message || null,
+        reportedAt: house.verified?.ownerReport?.reportedAt || null,
+        reviewedAt: house.verified?.ownerReport?.message ? new Date() : null,
+        status: house.verified?.ownerReport?.message ? 'reviewed' : 'none'
+      }
+    };
+    responseMessage = 'Listing approved successfully';
+    actionForLog = 'HOUSE_VERIFIED';
+    details = { reason: trimmedReason || 'Approved', actionType: action };
+  } else if (action === 'reject') {
+    if (house.verified?.decision === 'rejected' && house.verified?.status === false) {
+      throw new ApiError('Listing is already rejected', 400);
+    }
+    if (!trimmedReason) {
+      throw new ApiError('Rejection reason is required', 400);
+    }
+    house.verified = {
+      decision: 'rejected',
+      status: false,
+      reviewedAt: new Date(),
+      rejectionReason: trimmedReason,
+      verifiedAt: null,
+      verifiedBy: null,
+      ownerReport: {
+        message: house.verified?.ownerReport?.message || null,
+        reportedAt: house.verified?.ownerReport?.reportedAt || null,
+        reviewedAt: house.verified?.ownerReport?.message ? new Date() : null,
+        status: house.verified?.ownerReport?.message ? 'reviewed' : 'none'
+      }
+    };
+    responseMessage = 'Listing rejected successfully';
+    actionForLog = 'HOUSE_REJECTED';
+    details = { reason: trimmedReason, actionType: action };
+  } else if (action === 'pause') {
+    if (!house.available) {
+      throw new ApiError('Listing is already paused', 400);
+    }
+    house.available = false;
+    responseMessage = 'Listing paused successfully';
+    details = { reason: trimmedReason || 'Paused by admin', actionType: action };
+  } else if (action === 'activate') {
+    if (house.available) {
+      throw new ApiError('Listing is already active', 400);
+    }
+    house.available = true;
+    responseMessage = 'Listing activated successfully';
+    details = { reason: trimmedReason || 'Activated by admin', actionType: action };
+  } else if (action === 'send_to_review') {
+    if (house.verified?.decision === 'pending') {
+      throw new ApiError('Listing is already in pending review', 400);
+    }
+    house.verified = {
+      decision: 'pending',
+      status: false,
+      reviewedAt: null,
+      rejectionReason: null,
+      verifiedAt: null,
+      verifiedBy: null,
+      ownerReport: {
+        message: house.verified?.ownerReport?.message || null,
+        reportedAt: house.verified?.ownerReport?.reportedAt || null,
+        reviewedAt: new Date(),
+        status: house.verified?.ownerReport?.message ? 'reviewed' : 'none'
+      }
+    };
+    responseMessage = 'Listing moved to pending review successfully';
+    details = { reason: trimmedReason || 'Sent back to review queue', actionType: action };
+  } else if (action === 'delete') {
+    if (!trimmedReason) {
+      throw new ApiError('Delete reason is required', 400);
+    }
+    const hasActiveBookings = await BookingRequest.exists({
+      houseId: house._id,
+      status: { $in: ['pending', 'approved'] }
+    });
+    if (hasActiveBookings) {
+      throw new ApiError('Cannot delete listing with active or pending bookings', 400);
+    }
+
+    await House.findByIdAndDelete(id);
+    responseMessage = 'Listing deleted successfully';
+    actionForLog = 'HOUSE_DELETED';
+    details = { reason: trimmedReason, actionType: action };
+  }
+
+  if (action !== 'delete') {
+    await house.save();
+  }
+
+  await AdminLog.logAction({
+    action: actionForLog,
+    targetId: house._id,
+    targetType: 'House',
+    performedBy: req.user._id,
+    details,
+    metadata: {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    },
+    severity: ['delete', 'reject'].includes(action) ? 'high' : 'medium'
+  });
+
+  const io = req.app.get('io');
+  if (io && house.ownerId?._id) {
+    io.to(`user_${house.ownerId._id}`).emit('listingModeration', {
+      houseId: house._id,
+      title: house.title,
+      action,
+      reason: trimmedReason
+    });
+    if (action === 'approve' || action === 'reject') {
+      io.to(`user_${house.ownerId._id}`).emit('listingVerification', {
+        houseId: house._id,
+        title: house.title,
+        approved: action === 'approve',
+        reason: trimmedReason
+      });
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: responseMessage,
+    data: { house: action === 'delete' ? null : house }
+  });
+});
+
+/**
  * @desc    Get all users
  * @route   GET /api/admin/users
  * @access  Private (admin only)
@@ -136,9 +446,11 @@ const getUsers = asyncHandler(async (req, res) => {
   }
 
   if (search) {
+    const safeSearch = escapeRegExp(search);
     filter.$or = [
-      { name: new RegExp(search, 'i') },
-      { email: new RegExp(search, 'i') }
+      { name: new RegExp(safeSearch, 'i') },
+      { email: new RegExp(safeSearch, 'i') },
+      { phone: new RegExp(safeSearch, 'i') }
     ];
   }
 
@@ -172,7 +484,7 @@ const getUsers = asyncHandler(async (req, res) => {
  */
 const updateUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { role, verified, suspended } = req.body;
+  const { role, verified, banned, banReason } = req.body;
 
   const user = await User.findById(id);
 
@@ -183,27 +495,47 @@ const updateUser = asyncHandler(async (req, res) => {
   // Store previous state for audit log
   const previousState = {
     role: user.role,
-    verified: user.verified
+    verified: user.verified,
+    banned: user.banned?.isBanned || false
   };
 
   // Update fields
+  if (role && req.user._id.toString() === user._id.toString() && role !== 'admin') {
+    throw new ApiError('Admins cannot remove their own admin role', 400);
+  }
   if (role) user.role = role;
   if (verified !== undefined) user.verified = verified;
-  // Add suspended field if needed
+  if (typeof banned === 'boolean') {
+    if (req.user._id.toString() === user._id.toString() && banned) {
+      throw new ApiError('Admins cannot ban themselves', 400);
+    }
+
+    user.banned = {
+      isBanned: banned,
+      reason: banned ? (banReason || 'Suspended by admin') : '',
+      bannedAt: banned ? new Date() : null,
+      bannedBy: banned ? req.user._id : null
+    };
+  }
 
   await user.save();
 
   // Log admin action
   await AdminLog.logAction({
-    action: role ? 'USER_ROLE_CHANGED' : 'USER_UPDATED',
+    action: typeof banned === 'boolean'
+      ? (banned ? 'USER_SUSPENDED' : 'USER_UPDATED')
+      : (role ? 'USER_ROLE_CHANGED' : 'USER_UPDATED'),
     targetId: user._id,
     targetType: 'User',
     performedBy: req.user._id,
     details: {
       previousState,
-      newState: { role: user.role, verified: user.verified }
+      newState: { role: user.role, verified: user.verified, banned: user.banned?.isBanned || false, banReason: user.banned?.reason || '' },
+      reason: typeof banned === 'boolean'
+        ? (banned ? (banReason || 'Suspended by admin') : 'Account reinstated')
+        : undefined
     },
-    severity: role ? 'high' : 'medium'
+    severity: (role || typeof banned === 'boolean') ? 'high' : 'medium'
   });
 
   res.status(200).json({
@@ -251,12 +583,19 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
     totalHouses,
     totalBookings,
     pendingVerifications,
-    recentPayments
+    recentPayments,
+    topOwners
   ] = await Promise.all([
     User.countDocuments(),
     House.countDocuments(),
     BookingRequest.countDocuments(),
-    House.countDocuments({ 'verified.status': false }),
+    House.countDocuments({
+      'verified.status': false,
+      $or: [
+        { 'verified.decision': 'pending' },
+        { 'verified.decision': { $exists: false } }
+      ]
+    }),
     Payment.aggregate([
       {
         $match: {
@@ -269,6 +608,65 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
           _id: null,
           totalRevenue: { $sum: '$amount' },
           count: { $sum: 1 }
+        }
+      }
+    ]),
+    House.aggregate([
+      {
+        $group: {
+          _id: '$ownerId',
+          listings: { $sum: 1 },
+          approvedListings: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ['$verified.decision', 'approved'] },
+                    { $eq: ['$verified.status', true] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          totalViews: { $sum: '$viewCount' }
+        }
+      },
+      { $sort: { listings: -1, totalViews: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'owner'
+        }
+      },
+      { $unwind: '$owner' },
+      {
+        $project: {
+          ownerId: { $toString: '$_id' },
+          _id: 0,
+          name: '$owner.name',
+          email: '$owner.email',
+          verified: '$owner.verified',
+          banned: '$owner.banned',
+          listings: 1,
+          approvedListings: 1,
+          totalViews: 1,
+          conversionRate: {
+            $cond: [
+              { $gt: ['$listings', 0] },
+              {
+                $round: [
+                  { $multiply: [{ $divide: ['$approvedListings', '$listings'] }, 100] },
+                  0
+                ]
+              },
+              0
+            ]
+          }
         }
       }
     ])
@@ -285,6 +683,7 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
         revenue: recentPayments[0]?.totalRevenue || 0,
         transactions: recentPayments[0]?.count || 0
       },
+      topOwners,
       analytics,
       period
     }
@@ -297,7 +696,7 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
  * @access  Private (admin only)
  */
 const getAuditLogs = asyncHandler(async (req, res) => {
-  const { action, targetType, severity, page = 1, limit = 50 } = req.query;
+  const { action, targetType, severity, startDate, endDate, page = 1, limit = 50 } = req.query;
   const skip = (Number(page) - 1) * Number(limit);
 
   const filter = {};
@@ -305,6 +704,26 @@ const getAuditLogs = asyncHandler(async (req, res) => {
   if (action) filter.action = action;
   if (targetType) filter.targetType = targetType;
   if (severity) filter.severity = severity;
+  if (startDate || endDate) {
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    if (start && Number.isNaN(start.getTime())) {
+      throw new ApiError('startDate must be a valid date', 400);
+    }
+    if (end && Number.isNaN(end.getTime())) {
+      throw new ApiError('endDate must be a valid date', 400);
+    }
+
+    filter.createdAt = {};
+    if (start) {
+      filter.createdAt.$gte = start;
+    }
+    if (end) {
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt.$lte = end;
+    }
+  }
 
   const [logs, total] = await Promise.all([
     AdminLog.find(filter)
@@ -385,21 +804,90 @@ const getSystemStats = asyncHandler(async (req, res) => {
 const getUserById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select('-password');
   if (!user) throw new ApiError('User not found', 404);
-  res.status(200).json({ success: true, data: { user } });
+
+  const [listingsCount, bookingsAsTenant, bookingsAsOwner, successfulPayments] = await Promise.all([
+    House.countDocuments({ ownerId: user._id }),
+    BookingRequest.countDocuments({ tenantId: user._id }),
+    BookingRequest.countDocuments({ ownerId: user._id }),
+    Payment.aggregate([
+      {
+        $match: {
+          ownerId: user._id,
+          status: 'succeeded'
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      }
+    ])
+  ]);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      user,
+      activity: {
+        listingsCount,
+        bookingsAsTenant,
+        bookingsAsOwner,
+        successfulTransactions: successfulPayments[0]?.count || 0,
+        revenueGenerated: successfulPayments[0]?.totalRevenue || 0
+      }
+    }
+  });
 });
 
 /**
  * @desc    Delete user (admin)
  */
 const deleteUser = asyncHandler(async (req, res) => {
-  const user = await User.findByIdAndDelete(req.params.id);
+  const user = await User.findById(req.params.id);
   if (!user) throw new ApiError('User not found', 404);
+  if (user.role === 'admin') {
+    throw new ApiError('Admin accounts cannot be deleted', 400);
+  }
+
+  const [hasListings, hasBookings] = await Promise.all([
+    House.exists({ ownerId: user._id }),
+    BookingRequest.exists({
+      $or: [{ tenantId: user._id }, { ownerId: user._id }],
+      status: { $in: ['pending', 'approved'] }
+    })
+  ]);
+
+  if (hasListings || hasBookings) {
+    throw new ApiError('Cannot delete user with active listings or bookings. Suspend account instead.', 400);
+  }
+
+  await User.findByIdAndDelete(req.params.id);
+
+  await AdminLog.logAction({
+    action: 'USER_DELETED',
+    targetId: user._id,
+    targetType: 'User',
+    performedBy: req.user._id,
+    details: {
+      previousState: { role: user.role, email: user.email, verified: user.verified },
+      reason: 'Admin deleted account'
+    },
+    metadata: {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    },
+    severity: 'high'
+  });
+
   res.status(200).json({ success: true, message: 'User deleted successfully' });
 });
 
 module.exports = {
   getPendingListings,
   verifyListing,
+  moderateListing,
   getUsers,
   updateUser,
   getAdminAnalytics,

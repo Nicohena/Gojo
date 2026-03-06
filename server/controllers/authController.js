@@ -85,6 +85,13 @@ const login = asyncHandler(async (req, res) => {
     throw new ApiError('Invalid email or password', 401);
   }
 
+  if (user.banned?.isBanned) {
+    throw new ApiError(
+      `Your account has been suspended${user.banned?.reason ? `: ${user.banned.reason}` : ''}`,
+      403
+    );
+  }
+
   // Compare password
   const isPasswordMatch = await user.comparePassword(password);
 

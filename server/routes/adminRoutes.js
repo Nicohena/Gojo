@@ -20,6 +20,7 @@ const { isAdmin } = require('../middlewares/roleMiddleware');
 const {
   getPendingListings,
   verifyListing,
+  moderateListing,
   getUsers,
   updateUser,
   getAdminAnalytics,
@@ -36,6 +37,7 @@ router.use(isAdmin);
 // Listing management
 router.get('/listings/pending', getPendingListings);
 router.patch('/listings/:id/verify', verifyListing);
+router.patch('/listings/:id/moderate', moderateListing);
 
 // User management
 router.get('/users', getUsers);

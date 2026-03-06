@@ -1,20 +1,34 @@
 import apiClient from './client';
 
 const adminService = {
-  getPendingListings: async () => {
-    const response = await apiClient.get('/admin/listings/pending');
+  getPendingListings: async (params = {}) => {
+    const response = await apiClient.get('/admin/listings/pending', { params });
     return response.data;
   },
 
-  verifyListing: async (id, decision) => {
+  verifyListing: async (id, decision, reason = '') => {
     const approved =
       typeof decision === 'string' ? decision === 'approve' : Boolean(decision);
-    const response = await apiClient.patch(`/admin/listings/${id}/verify`, { approved });
+    const payload = { approved };
+    if (!approved && typeof reason === 'string' && reason.trim()) {
+      payload.reason = reason.trim();
+    }
+
+    const response = await apiClient.patch(`/admin/listings/${id}/verify`, payload);
     return response.data;
   },
 
-  getUsers: async () => {
-    const response = await apiClient.get('/admin/users');
+  moderateListing: async (id, action, reason = '') => {
+    const payload = { action };
+    if (typeof reason === 'string' && reason.trim()) {
+      payload.reason = reason.trim();
+    }
+    const response = await apiClient.patch(`/admin/listings/${id}/moderate`, payload);
+    return response.data;
+  },
+
+  getUsers: async (params = {}) => {
+    const response = await apiClient.get('/admin/users', { params });
     return response.data;
   },
 

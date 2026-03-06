@@ -25,7 +25,8 @@ const {
   addRating,
   getMyListings,
   uploadImages,
-  removeImage
+  removeImage,
+  reportRejectedListingIssue
 } = require('../controllers/houseController');
 
 // Protected routes
@@ -40,6 +41,7 @@ router.get('/:id', optionalAuth, getHouseById);
 router.patch('/:id', protect, updateHouse);
 router.delete('/:id', protect, deleteHouse);
 router.post('/:id/ratings', protect, addRating);
+router.post('/:id/report-rejection', protect, isOwner, reportRejectedListingIssue);
 
 // Image management
 router.post('/:id/images', protect, upload.array('images', 10), uploadImages);
