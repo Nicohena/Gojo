@@ -584,7 +584,8 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
     totalBookings,
     pendingVerifications,
     recentPayments,
-    topOwners
+    topOwners,
+    paymentStatusBreakdown
   ] = await Promise.all([
     User.countDocuments(),
     House.countDocuments(),
@@ -607,6 +608,19 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
         $group: {
           _id: null,
           totalRevenue: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      }
+    ]),
+    Payment.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: '$status',
           count: { $sum: 1 }
         }
       }
@@ -681,7 +695,10 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
         totalBookings,
         pendingVerifications,
         revenue: recentPayments[0]?.totalRevenue || 0,
-        transactions: recentPayments[0]?.count || 0
+        transactions: recentPayments[0]?.count || 0,
+        paymentStatusBreakdown: Object.fromEntries(
+          paymentStatusBreakdown.map((item) => [item._id || 'unknown', item.count])
+        )
       },
       topOwners,
       analytics,
@@ -758,7 +775,9 @@ const getSystemStats = asyncHandler(async (req, res) => {
     usersByRole,
     bookingsByStatus,
     housesByType,
-    recentActivity
+    recentActivity,
+    paymentsByStatus,
+    paymentsByMethod
   ] = await Promise.all([
     // Users by role
     User.aggregate([
@@ -778,7 +797,13 @@ const getSystemStats = asyncHandler(async (req, res) => {
     })
       .sort('-createdAt')
       .limit(10)
-      .populate('performedBy', 'name')
+      .populate('performedBy', 'name'),
+    Payment.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]),
+    Payment.aggregate([
+      { $group: { _id: '$method', count: { $sum: 1 } } }
+    ])
   ]);
 
   res.status(200).json({
@@ -792,6 +817,12 @@ const getSystemStats = asyncHandler(async (req, res) => {
       ),
       housesByType: Object.fromEntries(
         housesByType.map(h => [h._id || 'unspecified', h.count])
+      ),
+      paymentsByStatus: Object.fromEntries(
+        paymentsByStatus.map(p => [p._id || 'unknown', p.count])
+      ),
+      paymentsByMethod: Object.fromEntries(
+        paymentsByMethod.map(p => [p._id || 'unknown', p.count])
       ),
       recentActivity
     }

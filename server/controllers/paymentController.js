@@ -47,6 +47,11 @@ const axios = require('axios');
 const CHAPA_BASE_URL = process.env.CHAPA_BASE_URL || 'https://api.chapa.co';
 const CHAPA_SECRET_KEY = process.env.CHAPA_SECRET_KEY;
 
+const isAdminRole = (role) => role === 'admin';
+const isAlreadyProcessedPayment = (status) => status === PAYMENT_STATUS.SUCCEEDED;
+const getBookingPaymentStatusAfterRefund = (refundAmount, paymentAmount) =>
+  Number(refundAmount) >= Number(paymentAmount) ? 'refunded' : 'paid';
+
 const sendPaymentSuccessNotifications = async (payment) => {
   const [tenant, owner, house] = await Promise.all([
     User.findById(payment.userId).select('name email'),
@@ -574,13 +579,22 @@ const handleChapaWebhook = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: 'Payment record not found' });
   }
 
+  // Idempotency guard: never re-process already-succeeded payments.
+  if (isAlreadyProcessedPayment(payment.status)) {
+    return res.status(200).json({
+      success: true,
+      message: 'Payment already processed',
+      data: { paymentId: payment._id, status: payment.status }
+    });
+  }
+
   // Verification helper to avoid duplicate logic
   const verifyAndProcess = async () => {
     const verification = await verifyPaymentWithChapa(tx_ref);
 
     if (!verification.success || !verification.verified) {
       console.error(`[Chapa Webhook] Verification failed for ${tx_ref}:`, verification.error);
-      
+
       payment.status = PAYMENT_STATUS.FAILED;
       payment.chapa.chapaResponse = verification.data || { error: verification.error };
       await payment.save();
@@ -882,6 +896,14 @@ const updatePaymentStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, transactionId } = req.body;
 
+  if (!isAdminRole(req.user.role)) {
+    throw new ApiError('Admin access required to update payment status', 403);
+  }
+
+  if (!status) {
+    throw new ApiError('Please provide a status', 400);
+  }
+
   const payment = await Payment.findById(id);
 
   if (!payment) {
@@ -1158,6 +1180,10 @@ const processRefund = asyncHandler(async (req, res) => {
 
   const refundAmount = amount || payment.amount;
 
+  if (Number(refundAmount) <= 0) {
+    throw new ApiError('Refund amount must be greater than 0', 400);
+  }
+
   if (refundAmount > payment.amount) {
     throw new ApiError('Refund amount cannot exceed payment amount', 400);
   }
@@ -1185,8 +1211,9 @@ const processRefund = asyncHandler(async (req, res) => {
   // Update payment record
   await payment.processRefund(refundAmount, reason, refundId);
 
-  // Update booking
-  await BookingRequest.findByIdAndUpdate(payment.bookingId, { paymentStatus: 'refunded' });
+  // Update booking payment status. Partial refunds still count as paid bookings.
+  const bookingPaymentStatus = getBookingPaymentStatusAfterRefund(refundAmount, payment.amount);
+  await BookingRequest.findByIdAndUpdate(payment.bookingId, { paymentStatus: bookingPaymentStatus });
 
   // Log refund
   await logPaymentEvent({
@@ -1323,5 +1350,8 @@ module.exports = {
   updatePaymentStatus,
   processRefund,
   getPaymentHistory,
-  getPaymentById
+  getPaymentById,
+  isAdminRole,
+  isAlreadyProcessedPayment,
+  getBookingPaymentStatusAfterRefund
 };

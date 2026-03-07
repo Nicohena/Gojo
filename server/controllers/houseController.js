@@ -10,7 +10,7 @@
  */
 
 const House = require('../models/House');
-const User = require('../models/User');
+const BookingRequest = require('../models/BookingRequest');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { calculateSmartMatch } = require('../utils/smartMatch');
 const { getPriceFairness } = require('../utils/priceFairness');
@@ -321,7 +321,20 @@ const deleteHouse = asyncHandler(async (req, res) => {
     throw new ApiError('Not authorized to delete this listing', 403);
   }
 
-  // TODO: Check for active bookings before deletion
+  // Prevent deletion when there are active/upcoming bookings
+  const now = new Date();
+  const activeBooking = await BookingRequest.findOne({
+    houseId: house._id,
+    status: { $in: ['pending', 'approved'] },
+    endDate: { $gte: now }
+  }).select('_id status startDate endDate');
+
+  if (activeBooking) {
+    throw new ApiError(
+      'Cannot delete listing with active or upcoming bookings. Resolve bookings first.',
+      400
+    );
+  }
 
   await House.findByIdAndDelete(req.params.id);
 
@@ -349,7 +362,18 @@ const addRating = asyncHandler(async (req, res) => {
     throw new ApiError('House not found', 404);
   }
 
-  // TODO: Verify user has completed a booking at this property
+  // Only tenants with past confirmed stays can rate
+  const now = new Date();
+  const eligibleBooking = await BookingRequest.findOne({
+    houseId: house._id,
+    tenantId: req.user._id,
+    status: { $in: ['approved', 'completed'] },
+    endDate: { $lte: now }
+  }).select('_id');
+
+  if (!eligibleBooking && req.user.role !== 'admin') {
+    throw new ApiError('Only tenants with completed stays can rate this listing', 403);
+  }
 
   // Add or update rating
   await house.addRating(req.user._id, score, comment);

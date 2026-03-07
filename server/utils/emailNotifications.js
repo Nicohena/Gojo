@@ -140,6 +140,31 @@ const sendWelcomeEmail = async ({ email, name, role }) => {
   return sendEmail({ to: email, subject, text, html });
 };
 
+const sendPasswordResetEmail = async ({ email, name, resetToken }) => {
+  const safeName = name || 'there';
+  const resetUrl = `${APP_URL}/reset-password/${resetToken}`;
+  const subject = 'Reset your Smart Rental System password';
+  const text = `Hi ${safeName}, reset your password here: ${resetUrl}. This link expires in 30 minutes.`;
+
+  return sendEmail({
+    to: email,
+    subject,
+    text,
+    html: buildTemplate({
+      preheader: 'Your password reset link is ready.',
+      title: 'Reset Your Password',
+      intro: `Hi ${safeName}, we received a request to reset your password. This link expires in 30 minutes.`,
+      sections: [
+        { label: 'Requested at', value: formatDate(new Date()) },
+        { label: 'Expires in', value: '30 minutes' }
+      ],
+      ctaLabel: 'Reset Password',
+      ctaUrl: resetUrl,
+      tone: 'warning'
+    })
+  });
+};
+
 const sendBookingCreatedEmails = async ({
   tenantName,
   tenantEmail,
@@ -350,6 +375,7 @@ const sendRefundProcessedEmail = async ({
 
 module.exports = {
   sendWelcomeEmail,
+  sendPasswordResetEmail,
   sendBookingCreatedEmails,
   sendBookingStatusEmail,
   sendPaymentSuccessEmails,

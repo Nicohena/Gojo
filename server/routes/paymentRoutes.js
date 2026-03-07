@@ -62,7 +62,7 @@ router.get('/:id', getPaymentById);
 router.get('/:id/status', getPaymentStatus);
 
 // Update payment status (admin/system)
-router.patch('/:id/status', updatePaymentStatus);
+router.patch('/:id/status', isAdmin, updatePaymentStatus);
 
 // Process refund (admin only)
 router.post('/:id/refund', isAdmin, processRefund);
