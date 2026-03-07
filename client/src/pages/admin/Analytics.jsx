@@ -64,9 +64,9 @@ const AdminAnalytics = () => {
     }
   };
 
-  const roleColors = { tenant: "bg-blue-400", owner: "bg-emerald-400", admin: "bg-purple-400" };
-  const statusColors = { pending: "bg-yellow-400", approved: "bg-emerald-400", rejected: "bg-red-400", cancelled: "bg-slate-400", completed: "bg-blue-400" };
-  const typeColors = { apartment: "bg-blue-400", house: "bg-emerald-400", condo: "bg-purple-400", townhouse: "bg-orange-400", studio: "bg-pink-400", room: "bg-yellow-400", unspecified: "bg-slate-400" };
+  const roleColors = { tenant: "bg-[#d4af37]", owner: "bg-emerald-400", admin: "bg-purple-400" };
+  const statusColors = { pending: "bg-yellow-400", approved: "bg-emerald-400", rejected: "bg-red-400", cancelled: "bg-slate-400", completed: "bg-[#d4af37]" };
+  const typeColors = { apartment: "bg-[#d4af37]", house: "bg-emerald-400", condo: "bg-purple-400", townhouse: "bg-orange-400", studio: "bg-pink-400", room: "bg-yellow-400", unspecified: "bg-slate-400" };
 
   const trends = analytics?.analytics?.trends || {};
   const trendChanges = trends?.changes || {};

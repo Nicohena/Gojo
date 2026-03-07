@@ -6,6 +6,7 @@ import clsx from "clsx";
 /**
  * Confirm Dialog Component
  * Accessible confirmation dialog to replace window.confirm()
+ * Restyled for luxury dark/gold theme.
  */
 
 const ConfirmDialog = ({
@@ -24,27 +25,27 @@ const ConfirmDialog = ({
   const variantConfig = {
     warning: {
       icon: AlertTriangle,
-      iconColor: "text-yellow-600",
-      iconBg: "bg-yellow-100",
-      buttonColor: "bg-yellow-600 hover:bg-yellow-700",
+      iconColor: "text-amber-500",
+      iconBg: "bg-amber-500/10 border-amber-500/20",
+      buttonColor: "bg-amber-600 hover:bg-amber-700 text-[#0a0a0a]",
     },
     danger: {
       icon: AlertTriangle,
-      iconColor: "text-red-600",
-      iconBg: "bg-red-100",
-      buttonColor: "bg-red-600 hover:bg-red-700",
+      iconColor: "text-red-500",
+      iconBg: "bg-red-500/10 border-red-500/20",
+      buttonColor: "bg-red-600 hover:bg-red-700 text-white",
     },
     info: {
       icon: Info,
-      iconColor: "text-blue-600",
-      iconBg: "bg-blue-100",
-      buttonColor: "bg-blue-600 hover:bg-blue-700",
+      iconColor: "text-[#d4af37]",
+      iconBg: "bg-[#d4af37]/10 border-[#d4af37]/20",
+      buttonColor: "bg-[#d4af37] hover:bg-[#b8941f] text-[#0a0a0a]",
     },
     success: {
       icon: CheckCircle,
-      iconColor: "text-green-600",
-      iconBg: "bg-green-100",
-      buttonColor: "bg-green-600 hover:bg-green-700",
+      iconColor: "text-emerald-500",
+      iconBg: "bg-emerald-500/10 border-emerald-500/20",
+      buttonColor: "bg-emerald-600 hover:bg-emerald-700 text-white",
     },
   };
 
@@ -73,11 +74,11 @@ const ConfirmDialog = ({
       closeOnOverlayClick={!loading}
       showCloseButton={false}
     >
-      <div className="text-center">
+      <div className="text-center py-4">
         {/* Icon */}
         <div
           className={clsx(
-            "mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4",
+            "mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 border",
             config.iconBg,
           )}
         >
@@ -88,17 +89,17 @@ const ConfirmDialog = ({
         </div>
 
         {/* Title */}
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+        <h3 className="text-2xl text-[#f8f6f3] mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>{title}</h3>
 
         {/* Message */}
-        {message && <p className="text-gray-600 mb-6">{message}</p>}
+        {message && <p className="text-[#9a9a9a] mb-8 text-sm leading-relaxed">{message}</p>}
 
         {/* Actions */}
         <div className="flex flex-col-reverse sm:flex-row gap-3 justify-center">
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 border border-[#d4af37]/20 text-[#d4af37] text-xs font-bold uppercase tracking-widest hover:border-[#d4af37] transition-all disabled:opacity-50"
           >
             {cancelText}
           </button>
@@ -106,12 +107,12 @@ const ConfirmDialog = ({
             onClick={handleConfirm}
             disabled={loading}
             className={clsx(
-              "px-6 py-2 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+              "px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2",
               config.buttonColor,
             )}
           >
             {loading && (
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent" />
             )}
             {loading ? "Processing..." : confirmText}
           </button>
@@ -121,9 +122,6 @@ const ConfirmDialog = ({
   );
 };
 
-/**
- * Hook to use confirm dialog
- */
 export const useConfirmDialog = () => {
   const [dialogState, setDialogState] = useState({
     isOpen: false,

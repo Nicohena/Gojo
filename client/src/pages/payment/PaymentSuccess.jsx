@@ -59,7 +59,7 @@ const PaymentSuccess = () => {
         {/* Logo */}
         <div className="mb-8 cursor-pointer" onClick={() => navigate("/")}>
           <span className="text-[#d4af37] tracking-[0.4em] text-xl" style={{ fontFamily: "'Playfair Display', serif" }}>
-            AURA
+            SMART RENT
           </span>
         </div>
 

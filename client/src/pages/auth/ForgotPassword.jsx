@@ -47,7 +47,7 @@ const ForgotPassword = () => {
             className="text-[#d4af37] tracking-[0.4em] text-2xl"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            AURA
+            SMART RENT
           </span>
         </Link>
 

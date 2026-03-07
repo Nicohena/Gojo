@@ -42,18 +42,18 @@ export default function LandingPage() {
   const features = [
     {
       icon: Shield,
-      title: 'Vetted Excellence',
-      description: 'Every residence is physically inspected and mathematically scored for acoustic and lighting perfection.',
+      title: 'Verified Properties',
+      description: 'Every residence is physically inspected and verified for quality and security standards.',
     },
     {
       icon: Zap,
-      title: 'Invisible Technology',
-      description: 'State-of-the-art predictive climate and security systems seamlessly integrated into the architecture.',
+      title: 'Modern Amenities',
+      description: 'Equipped with the latest in smart home technology, climate control, and security systems.',
     },
     {
       icon: Key,
-      title: 'Concierge Privacy',
-      description: 'Absolute discretion and a dedicated lifestyle manager available 24/7.',
+      title: 'Premium Support',
+      description: 'Dedicated support and property management services available for your peace of mind.',
     },
   ];
 
@@ -66,7 +66,7 @@ export default function LandingPage() {
     price: `$${house.price} / mo`,
     beds: `${house.rooms?.bedrooms || 0} Beds`,
     sqft: `${house.size || 0} sq.ft.`,
-    tag: house.matchScore ? `${house.matchScore}% Match` : 'Smart Home',
+    tag: house.matchScore ? `${house.matchScore}% Match` : 'Verified',
   })) : [
     {
       id: '1',
@@ -76,7 +76,7 @@ export default function LandingPage() {
       price: '$14,500 / mo',
       beds: '4 Beds',
       sqft: '6,200 sq.ft.',
-      tag: 'Intelligent Climate Enabled',
+      tag: 'Smart Home Enabled',
     },
     {
       id: '2',
@@ -132,7 +132,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-[#d4af37]/10">
         <div className="max-w-[1600px] mx-auto px-8 py-6 flex items-center justify-between">
           <div className="text-[#d4af37] tracking-[0.3em] text-xl cursor-pointer" onClick={() => navigate("/")} style={{ fontFamily: "'Playfair Display', serif" }}>
-            AURA
+            SMART RENT
           </div>
           <div className="hidden md:flex items-center gap-12">
             <button onClick={() => navigate("/search")} className="text-[#f8f6f3] tracking-[0.1em] text-sm hover:text-[#d4af37] transition-colors">
@@ -199,7 +199,7 @@ export default function LandingPage() {
                 Standards.
               </h2>
               <p className="text-[#9a9a9a] text-lg tracking-wide max-w-lg">
-                Each property in our collection meets rigorous criteria designed to exceed the expectations of the world's most discerning residents.
+                Each property in our collection meets rigorous quality standards to ensure a comfortable and secure stay for our residents.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 gap-8">
@@ -238,7 +238,7 @@ export default function LandingPage() {
               className="text-5xl md:text-6xl text-[#f8f6f3]"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              A Glimpse of the Portfolio
+              Featured Properties
             </h2>
             <button 
               onClick={() => navigate("/search")} 
@@ -251,12 +251,9 @@ export default function LandingPage() {
         </div>
         
         {loading ? (
-           <div className="flex flex-col items-center py-20 gap-4">
-             <Loader2 className="animate-spin text-[#d4af37]" size={40} />
-             <p className="text-[#9a9a9a] font-medium tracking-wide">
-               Curating portfolio...
-             </p>
-           </div>
+              <p className="text-[#9a9a9a] font-medium tracking-wide">
+                Loading properties...
+              </p>
         ) : (
           <div className="pl-8 md:pl-16 lg:pl-24">
             <Slider {...sliderSettings}>
@@ -317,10 +314,10 @@ export default function LandingPage() {
             className="text-5xl md:text-7xl text-[#f8f6f3] mb-8 leading-[1.1]"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            Commission Your Property.
+            List Your Property.
           </h2>
           <p className="text-xl text-[#9a9a9a] mb-12 max-w-2xl mx-auto leading-relaxed tracking-wide">
-            Partner with Aura to place your architectural masterpiece in front of an exclusive, fully-vetted global clientele. Zero friction, total discretion.
+            Partner with us to showcase your property to a global audience. Simple listing process, maximum reach.
           </p>
           <button onClick={() => navigate("/owner/dashboard")} className="px-12 py-4 bg-[#d4af37] text-[#0a0a0a] tracking-[0.1em] hover:bg-[#b8941f] transition-all font-bold">
             Apply for Partnership
@@ -336,10 +333,10 @@ export default function LandingPage() {
             onClick={() => navigate("/")}
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            AURA
+            SMART RENT
           </div>
           <div className="text-[#9a9a9a] text-sm">
-            © 2026 Aura Residences. A SmartRent Company.
+            © 2026 Smart Rental System.
           </div>
         </div>
       </footer>
