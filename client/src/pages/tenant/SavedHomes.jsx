@@ -13,28 +13,19 @@ const SavedHomesPage = () => {
 
   useEffect(() => {
     const fetchSavedHomes = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      if (!user) { setLoading(false); return; }
       try {
         setLoading(true);
         const response = await userService.getSavedHomes(user.id);
-        const list =
-          response.data?.houses || response.data?.data?.houses || [];
+        const list = response.data?.houses || response.data?.data?.houses || [];
         setHouses(list);
         setError(null);
       } catch (err) {
-        console.error("Failed to load saved homes", err);
-        setError(
-          err.response?.data?.message ||
-            "Failed to load your saved homes. Please try again.",
-        );
+        setError(err.response?.data?.message || "Failed to load your saved homes. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchSavedHomes();
   }, [user]);
 
@@ -44,11 +35,7 @@ const SavedHomesPage = () => {
       await userService.removeSavedHome(user.id, houseId);
       setHouses((prev) => prev.filter((h) => h._id !== houseId));
     } catch (err) {
-      console.error("Failed to remove saved home", err);
-      alert(
-        err.response?.data?.message ||
-          "Something went wrong while removing this home.",
-      );
+      alert(err.response?.data?.message || "Something went wrong while removing this home.");
     }
   };
 
@@ -57,11 +44,11 @@ const SavedHomesPage = () => {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              <Heart className="text-primary" />
-              <span>Saved Homes</span>
+            <h1 className="text-4xl text-[#f8f6f3] flex items-center gap-3" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <Heart className="text-[#d4af37]" size={32} strokeWidth={1.5} />
+              Saved Homes
             </h1>
-            <p className="text-slate-500 font-medium mt-1">
+            <p className="text-[#9a9a9a] tracking-wide text-sm mt-2">
               Quickly access homes you've favorited while exploring.
             </p>
           </div>
@@ -69,23 +56,15 @@ const SavedHomesPage = () => {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="animate-spin text-primary" size={40} />
-            <p className="text-slate-500 font-medium">
-              Loading your saved homes...
-            </p>
+            <Loader2 className="animate-spin text-[#d4af37]" size={40} />
+            <p className="text-[#9a9a9a] tracking-wide">Loading your saved homes...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-50 text-red-600 p-6 rounded-3xl text-center font-bold">
-            {error}
-          </div>
+          <div className="border border-red-500/30 bg-red-500/10 text-red-400 p-6 text-center">{error}</div>
         ) : houses.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-slate-500 text-lg font-bold mb-2">
-              You have no saved homes yet.
-            </p>
-            <p className="text-slate-400 text-sm">
-              Tap the heart icon while exploring to add homes here.
-            </p>
+            <p className="text-[#9a9a9a] text-lg mb-2">You have no saved homes yet.</p>
+            <p className="text-[#9a9a9a]/60 text-sm">Tap the heart icon while exploring to add homes here.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
