@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Camera, X } from "lucide-react";
+import { Camera, X, User, Mail, Phone, FileText } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import userService from "../../api/userService";
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../utils/imageUtils";
+
+const inputCls = "w-full bg-[#0a0a0a] border border-[#d4af37]/10 text-[#f8f6f3] px-4 py-3 text-sm focus:outline-none focus:border-[#d4af37]/40 placeholder-[#9a9a9a]/20 transition-all";
+const labelCls = "text-[10px] uppercase font-bold text-[#d4af37]/50 tracking-widest mb-2 block";
 
 const GeneralProfile = () => {
   const { user, setUser } = useAuth();
@@ -23,14 +26,7 @@ const GeneralProfile = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    console.log("[GeneralProfile] Component mounted");
-    return () => console.log("[GeneralProfile] Component unmounted");
-  }, []);
-
-  useEffect(() => {
-    console.log("[GeneralProfile] user changed:", user);
     if (user && !isInitialized) {
-      console.log("[GeneralProfile] Initializing form with data:", user);
       setFormData({
         firstName: user.name?.split(" ")[0] || "",
         lastName: user.name?.split(" ").slice(1).join(" ") || "",
@@ -47,36 +43,19 @@ const GeneralProfile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleAvatarClick = () => { fileInputRef.current?.click(); };
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (max 800KB as per design)
-      if (file.size > 800 * 1024) {
-        toast.error("Image size must be less than 800KB");
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please upload an image file (JPG, GIF, or PNG)");
-        return;
-      }
-
+      if (file.size > 800 * 1024) { toast.error("Image size must be less than 800KB"); return; }
+      if (!file.type.startsWith("image/")) { toast.error("Please upload an image file"); return; }
       setAvatarFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result);
-      };
+      reader.onloadend = () => { setAvatarPreview(reader.result); };
       reader.readAsDataURL(file);
     }
   };
@@ -87,258 +66,132 @@ const GeneralProfile = () => {
       await userService.removeAvatar();
       setAvatarPreview(null);
       setAvatarFile(null);
-      toast.success("Avatar removed successfully");
+      toast.success("Avatar removed");
       setUser({ ...user, avatar: null });
-    } catch (error) {
-      console.error("Remove avatar error:", error);
-      if (error.response?.status === 404) {
-        toast.error("Avatar removal not available on this server");
-      } else {
-        toast.error(error.response?.data?.message || "Failed to remove avatar");
-      }
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { toast.error("Failed to remove avatar"); } finally { setLoading(false); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validation
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      toast.error("First name and last name are required");
-      return;
-    }
-
-    if (formData.phone && !/^\+?[\d\s-()]+$/.test(formData.phone)) {
-      toast.error("Please enter a valid phone number");
-      return;
-    }
+    if (!formData.firstName.trim() || !formData.lastName.trim()) { toast.error("Name is required"); return; }
 
     try {
       setLoading(true);
-
-      // Try to upload avatar if changed (optional - may not be implemented on backend)
       if (avatarFile) {
-        try {
-          const avatarFormData = new FormData();
-          avatarFormData.append("avatar", avatarFile);
-          await userService.uploadAvatar(avatarFormData);
-          toast.success("Avatar uploaded successfully");
-        } catch (avatarError) {
-          // If avatar upload fails, continue with profile update
-          console.warn("Avatar upload not available:", avatarError);
-          if (avatarError.response?.status !== 404) {
-            toast.error(
-              "Avatar upload failed, but continuing with profile update",
-            );
-          }
-        }
+        const avatarFormData = new FormData();
+        avatarFormData.append("avatar", avatarFile);
+        await userService.uploadAvatar(avatarFormData);
       }
-
-      // Update profile
       const updateData = {
         name: `${formData.firstName} ${formData.lastName}`.trim(),
         phone: formData.phone,
         bio: formData.bio,
       };
-      console.log("[GeneralProfile] Submitting update:", updateData);
-      // Update profile - use user.id (from getPublicProfile) or fallback to _id
       const userId = user?.id || user?._id;
-
-      if (!userId) {
-        console.error("User ID not found in context:", user);
-        toast.error("User ID missing. Please try logging in again.");
-        return;
-      }
-
+      if (!userId) { toast.error("User ID missing."); return; }
       const response = await userService.updateUser(userId, updateData);
-      console.log("[GeneralProfile] Update response in component:", response);
-
-      // Handle different response structures
-      // response.data.user (standard wrapper) or response.user or response itself
-      const updatedUser =
-        response.data?.user ||
-        response.user ||
-        (response.success ? response.data || response : null);
-
+      const updatedUser = response.data?.user || response.user || (response.success ? response.data || response : null);
       if (updatedUser) {
-        console.log("[GeneralProfile] Updating AuthContext with:", updatedUser);
-        // Merge with existing user to ensure we don't lose fields not returned by update
         setUser((prev) => ({ ...prev, ...updatedUser }));
-        toast.success("Profile updated successfully");
-      } else {
-        console.error(
-          "[GeneralProfile] Failed to extract user from response:",
-          response,
-        );
-        toast.error(
-          "Profile updated, but failed to sync locally. Please refresh.",
-        );
+        toast.success("Profile updated");
       }
-
       setAvatarFile(null);
-    } catch (error) {
-      console.error("Profile update error:", error);
-      toast.error(error.response?.data?.message || "Failed to update profile");
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { toast.error("Failed to update profile"); } finally { setLoading(false); }
   };
 
   const getInitials = () => {
-    if (formData.firstName && formData.lastName) {
-      return `${formData.firstName[0]}${formData.lastName[0]}`.toUpperCase();
-    }
+    if (formData.firstName && formData.lastName) return `${formData.firstName[0]}${formData.lastName[0]}`.toUpperCase();
     return user?.name?.[0]?.toUpperCase() || "U";
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Profile Information
-        </h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Update your personal details and public profile.
-        </p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="mb-10">
+        <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Personal Identity</h2>
+        <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">Refine your digital presence and contact intelligence.</p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-10">
         {/* Avatar Section */}
-        <div className="mb-8 flex items-center gap-6">
-          <div className="avatar-upload-area" onClick={handleAvatarClick}>
-            {avatarPreview ? (
-              <img src={avatarPreview} alt="Avatar" />
-            ) : (
-              <div className="avatar-placeholder">{getInitials()}</div>
-            )}
-            <div className="avatar-upload-overlay">
-              <Camera className="w-8 h-8 text-white" />
+        <div className="flex flex-col md:flex-row items-center gap-8 p-8 bg-[#111] border border-[#d4af37]/10 rounded-xl">
+          <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+            <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-[#d4af37]/30 group-hover:border-[#d4af37] transition-all duration-500 shadow-2xl">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center text-4xl text-[#d4af37] font-bold italic" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  {getInitials()}
+                </div>
+              )}
+            </div>
+            <div className="absolute inset-0 bg-[#0a0a0a]/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+              <Camera className="w-8 h-8 text-[#d4af37]" />
             </div>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif"
-            onChange={handleAvatarChange}
-            className="hidden"
-          />
+          
+          <div className="flex-1 text-center md:text-left">
+            <h4 className="text-[#f8f6f3] font-bold mb-1">Dossier Visual</h4>
+            <p className="text-xs text-[#9a9a9a] mb-4 uppercase tracking-widest">JPG, GIF OR PNG. MAX SIZE 800KB</p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              <button type="button" onClick={handleAvatarClick} className="px-6 py-2 bg-[#d4af37] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-widest hover:bg-[#b8941f] transition-all">Upload New</button>
+              {avatarPreview && (
+                <button type="button" onClick={handleRemoveAvatar} disabled={loading} className="px-6 py-2 border border-red-500/30 text-red-400 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/10 transition-all">Remove</button>
+              )}
+            </div>
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif" onChange={handleAvatarChange} className="hidden" />
+        </div>
+
+        {/* Basic Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <button
-              type="button"
-              onClick={handleAvatarClick}
-              className="text-blue-600 font-semibold text-sm hover:text-blue-700 transition-colors"
-            >
-              Change Avatar
-            </button>
-            {avatarPreview && (
-              <>
-                <span className="mx-2 text-gray-400">|</span>
-                <button
-                  type="button"
-                  onClick={handleRemoveAvatar}
-                  disabled={loading}
-                  className="text-red-600 font-semibold text-sm hover:text-red-700 transition-colors"
-                >
-                  Remove
-                </button>
-              </>
-            )}
-            <p className="text-xs text-gray-500 mt-2">
-              JPG, GIF or PNG. Max size 800K
-            </p>
+            <label htmlFor="firstName" className={labelCls}>Legal Given Name</label>
+            <div className="relative">
+              <User size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
+              <input type="text" id="firstName" name="firstName" value={formData.firstName} onChange={handleInputChange} className={`${inputCls} pl-11`} required />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="lastName" className={labelCls}>Family Name</label>
+            <div className="relative">
+              <User size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
+              <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleInputChange} className={`${inputCls} pl-11`} required />
+            </div>
           </div>
         </div>
 
-        {/* Name Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="settings-form-group">
-            <label htmlFor="firstName" className="settings-form-label">
-              First Name
-            </label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleInputChange}
-              className="settings-form-input"
-              required
-            />
+        {/* Contact Intelligence */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <label htmlFor="email" className={labelCls}>Secure Channel (Email)</label>
+            <div className="relative">
+              <Mail size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
+              <input type="email" id="email" name="email" value={formData.email} className={`${inputCls} pl-11 opacity-50 cursor-not-allowed`} disabled />
+            </div>
           </div>
-
-          <div className="settings-form-group">
-            <label htmlFor="lastName" className="settings-form-label">
-              Last Name
-            </label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleInputChange}
-              className="settings-form-input"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Email and Phone */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="settings-form-group">
-            <label htmlFor="email" className="settings-form-label">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              className="settings-form-input"
-              disabled
-            />
-          </div>
-
-          <div className="settings-form-group">
-            <label htmlFor="phone" className="settings-form-label">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="settings-form-input"
-              placeholder="+1 (555) 012-3456"
-            />
+          <div>
+            <label htmlFor="phone" className={labelCls}>Telecommunication Line</label>
+            <div className="relative">
+              <Phone size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
+              <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className={`${inputCls} pl-11`} placeholder="+251 --- --- ---" />
+            </div>
           </div>
         </div>
 
         {/* Bio */}
-        <div className="settings-form-group mb-8">
-          <label htmlFor="bio" className="settings-form-label">
-            Bio
-          </label>
-          <textarea
-            id="bio"
-            name="bio"
-            value={formData.bio}
-            onChange={handleInputChange}
-            className="settings-form-textarea"
-            placeholder="Digital nomad and software engineer looking for cozy spaces with good WiFi."
-            maxLength={500}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            {formData.bio.length}/500 characters
-          </p>
+        <div>
+          <label htmlFor="bio" className={labelCls}>Entity Narrative (Bio)</label>
+          <div className="relative">
+            <FileText size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
+            <textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} className={`${inputCls} pl-11 h-32 resize-none`} placeholder="Describe your background and requirements..." maxLength={500} />
+          </div>
+          <p className="text-[10px] text-[#9a9a9a] mt-2 text-right tracking-widest uppercase font-bold">{formData.bio.length} / 500 CHARACTERS</p>
         </div>
 
         {/* Save Button */}
-        <div className="flex justify-end">
-          <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? "Saving..." : "Save Changes"}
+        <div className="flex justify-end pt-4">
+          <button type="submit" disabled={loading} className="px-10 py-3 bg-[#d4af37] text-[#0a0a0a] text-xs font-bold uppercase tracking-widest hover:bg-[#b8941f] shadow-2xl transition-all disabled:opacity-50">
+            {loading ? "Encrypting Changes..." : "Commit Intelligence"}
           </button>
         </div>
       </form>

@@ -3,7 +3,12 @@ import LoadingSpinner from "../ui/LoadingSpinner";
 import PaymentModal from "../payment/PaymentModal";
 import toast from "react-hot-toast";
 import bookingService from "../../api/bookingService";
+import { Calendar, User, Home, CreditCard, ChevronRight, X, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 
+/**
+ * BookingList Component
+ * Overhauled for luxury dark theme.
+ */
 const BookingList = ({ role }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +26,7 @@ const BookingList = ({ role }) => {
       const data = await bookingService.getBookings();
       setBookings(data.data.bookings || []);
     } catch (err) {
-      setError("Failed to fetch bookings");
+      setError("Failed to load bookings");
       console.error(err);
     } finally {
       setLoading(false);
@@ -32,7 +37,7 @@ const BookingList = ({ role }) => {
     try {
       await bookingService.updateBooking(id, { status });
       toast.success(`Booking ${status} successfully`);
-      fetchBookings(); // Refresh list
+      fetchBookings();
     } catch (err) {
       toast.error(`Failed to ${status} booking`);
     }
@@ -57,169 +62,160 @@ const BookingList = ({ role }) => {
 
   if (loading)
     return (
-      <div className="flex justify-center p-12">
-        <LoadingSpinner />
+      <div className="flex flex-col items-center justify-center p-24 opacity-50">
+        <div className="w-10 h-10 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin mb-4" />
+        <span className="text-[10px] uppercase font-black tracking-[0.3em] text-[#9a9a9a]">Loading Bookings...</span>
       </div>
     );
-  if (error) return <div className="text-red-500 text-center p-8">{error}</div>;
+    
+  if (error) return (
+    <div className="p-12 text-center bg-red-500/5 border border-red-500/10 rounded-2xl">
+      <AlertCircle className="mx-auto text-red-500 mb-4" size={32} />
+      <p className="text-red-500 font-bold uppercase tracking-widest text-sm">{error}</p>
+    </div>
+  );
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white rounded-lg overflow-hidden shadow-md">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              House
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              {role === "tenant" ? "Owner" : "Tenant"}
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Dates
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Total Price
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {bookings.map((booking) => (
-            <tr key={booking._id}>
-              {/*
-                Consider an existing payment reference as in-progress until marked paid.
-                This prevents repeated payment attempts for the same booking.
-              */}
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">
-                  {booking.houseId?.title || "Unknown"}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">
-                  {role === "tenant"
-                    ? booking.ownerId?.name || "Owner"
-                    : booking.tenantId?.name || "Tenant"}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500 border border-slate-100 px-2 py-1 rounded-lg">
-                  {new Date(booking.startDate).toLocaleDateString()} -{" "}
-                  {new Date(booking.endDate).toLocaleDateString()}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full uppercase tracking-tighter
-                  ${
-                    booking.status === "approved"
-                      ? "bg-green-100 text-green-800"
-                      : booking.status === "pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : booking.status === "cancelled"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {booking.status}
-                </span>
-                {booking.paymentStatus === "paid" && (
-                  <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-black rounded-sm uppercase">
-                    Paid
-                  </span>
-                )}
-                {booking.paymentStatus !== "paid" && booking.paymentId && (
-                  <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-sm uppercase">
-                    Processing
-                  </span>
-                )}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-black font-mono">
-                ETB {booking.totalAmount?.toLocaleString()}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                {role === "owner" && booking.status === "pending" && (
-                  <>
-                    <button
-                      onClick={() =>
-                        handleUpdateStatus(booking._id, "approved")
-                      }
-                      className="text-green-600 hover:text-green-900 font-bold"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleUpdateStatus(booking._id, "rejected")
-                      }
-                      className="text-red-600 hover:text-red-900 font-bold"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-                {role === "tenant" &&
-                  booking.status === "approved" &&
-                  booking.paymentStatus !== "paid" &&
-                  !booking.paymentId && (
-                    <button
-                      onClick={() => handlePayment(booking)}
-                      className="px-4 py-1.5 bg-primary text-white text-xs font-black rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95"
-                    >
-                      PAY NOW
-                    </button>
-                  )}
-                {role === "tenant" &&
-                  booking.status === "approved" &&
-                  booking.paymentStatus !== "paid" &&
-                  booking.paymentId && (
-                    <button
-                      disabled
-                      className="px-4 py-1.5 bg-amber-100 text-amber-800 text-xs font-black rounded-lg cursor-not-allowed"
-                    >
-                      PAYMENT PROCESSING
-                    </button>
-                  )}
-                {role === "tenant" &&
-                  booking.status === "approved" &&
-                  booking.paymentStatus === "paid" && (
-                    <button
-                      disabled
-                      className="px-4 py-1.5 bg-emerald-100 text-emerald-800 text-xs font-black rounded-lg cursor-not-allowed"
-                    >
-                      PAID
-                    </button>
-                  )}
-                {booking.status !== "cancelled" &&
-                  booking.status !== "rejected" &&
-                  booking.paymentStatus !== "paid" && (
-                    <button
-                      onClick={() => handleCancel(booking._id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  )}
-              </td>
-            </tr>
-          ))}
-          {bookings.length === 0 && (
+    <div className="overflow-hidden rounded-2xl border border-[#d4af37]/10 bg-[#111] shadow-2xl">
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <thead className="bg-[#0a0a0a] border-b border-[#d4af37]/10">
             <tr>
-              <td
-                colSpan="6"
-                className="px-6 py-8 text-center text-gray-500 italic"
-              >
-                No bookings found. Try exploring some homes!
-              </td>
+              <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/60 uppercase tracking-[0.2em]">Property</th>
+              <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/60 uppercase tracking-[0.2em]">{role === 'tenant' ? 'Owner' : 'Tenant'}</th>
+              <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/60 uppercase tracking-[0.2em]">Stay Dates</th>
+              <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/60 uppercase tracking-[0.2em]">Status</th>
+              <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/60 uppercase tracking-[0.2em]">Total Price</th>
+              <th className="px-8 py-5 text-right text-[10px] font-black text-[#d4af37]/60 uppercase tracking-[0.2em]">Actions</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-[#d4af37]/5">
+            {bookings.map((booking) => (
+              <tr key={booking._id} className="hover:bg-[#d4af37]/3 transition-colors group">
+                <td className="px-8 py-6 whitespace-nowrap">
+                   <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-[#d4af37]/5 border border-[#d4af37]/10 rounded-xl flex items-center justify-center shrink-0">
+                         <Home size={18} className="text-[#d4af37]/60" />
+                      </div>
+                      <div className="text-sm font-bold text-[#f8f6f3] group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: "'Playfair Display', serif" }}>
+                        {booking.houseId?.title || "Unknown Property"}
+                      </div>
+                   </div>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center">
+                       <User size={14} className="text-[#9a9a9a]" />
+                    </div>
+                    <div className="text-[11px] font-bold text-[#9a9a9a] uppercase tracking-widest">
+                      {role === "tenant"
+                        ? booking.ownerId?.name || "Owner"
+                        : booking.tenantId?.name || "Tenant"}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap">
+                  <div className="text-[10px] font-black text-[#9a9a9a]/60 uppercase tracking-tighter flex items-center gap-2">
+                    <Calendar size={12} className="text-[#d4af37]/40" />
+                    <span>{new Date(booking.startDate).toLocaleDateString()}</span>
+                    <ChevronRight size={10} className="text-[#d4af37]/20" />
+                    <span>{new Date(booking.endDate).toLocaleDateString()}</span>
+                  </div>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap">
+                  <div className="flex flex-col gap-2">
+                    <span
+                      className={`px-3 py-1 inline-flex text-[9px] font-black rounded-lg uppercase tracking-[0.15em] border ${
+                        booking.status === "approved"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : booking.status === "pending"
+                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                            : booking.status === "cancelled" || booking.status === "rejected"
+                              ? "bg-red-500/10 text-red-500 border-red-500/20"
+                              : "bg-white/5 text-[#9a9a9a] border-white/10"
+                      }`}
+                    >
+                      {booking.status}
+                    </span>
+                    
+                    {booking.paymentStatus === "paid" && (
+                      <span className="flex items-center gap-1.5 px-2 py-0.5 bg-[#d4af37] text-[#0a0a0a] text-[8px] font-black rounded-sm uppercase tracking-widest shadow-lg shadow-[#d4af37]/20">
+                        <CheckCircle2 size={10} /> Paid
+                      </span>
+                    )}
+                    {booking.paymentStatus !== "paid" && booking.paymentId && (
+                      <span className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500 text-[#0a0a0a] text-[8px] font-black rounded-sm uppercase tracking-widest">
+                        <Clock size={10} /> Processing
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap">
+                   <div className="flex flex-col">
+                      <span className="text-sm font-bold text-[#f8f6f3]">ETB {booking.totalAmount?.toLocaleString()}</span>
+                      <span className="text-[8px] text-[#9a9a9a]/40 font-black uppercase tracking-widest">Aggregate Transfer</span>
+                   </div>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap text-right">
+                  <div className="flex items-center justify-end gap-3">
+                    {role === "owner" && booking.status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => handleUpdateStatus(booking._id, "approved")}
+                          className="px-4 py-2 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/10"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleUpdateStatus(booking._id, "rejected")}
+                          className="px-4 py-2 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-500/10 transition-all"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {role === "tenant" &&
+                      booking.status === "approved" &&
+                      booking.paymentStatus !== "paid" &&
+                      !booking.paymentId && (
+                        <button
+                          onClick={() => handlePayment(booking)}
+                          className="px-6 py-2.5 bg-[#d4af37] text-[#0a0a0a] text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-xl shadow-[#d4af37]/20 hover:bg-[#b8941f] transition-all flex items-center gap-2 group/pay"
+                        >
+                          <CreditCard size={14} className="group-hover/pay:scale-110 transition-transform" />
+                          Pay Now
+                        </button>
+                      )}
+                    
+                    {booking.status !== "cancelled" &&
+                      booking.status !== "rejected" &&
+                      booking.paymentStatus !== "paid" && (
+                        <button
+                          onClick={() => handleCancel(booking._id)}
+                          className="p-2 text-[#9a9a9a]/40 hover:text-red-500 transition-colors"
+                          title="Cancel Booking"
+                        >
+                          <X size={18} />
+                        </button>
+                      )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {bookings.length === 0 && (
+              <tr>
+                <td colSpan="6" className="px-8 py-24 text-center">
+                   <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+                      <Home size={32} className="text-[#9a9a9a]/20" />
+                   </div>
+                   <h3 className="text-xl text-[#f8f6f3] mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>No Active Bookings</h3>
+                   <p className="text-[10px] text-[#9a9a9a] uppercase font-bold tracking-[0.3em]">Explore properties around you to book your next stay.</p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {showPaymentModal && selectedBooking && (
         <PaymentModal
