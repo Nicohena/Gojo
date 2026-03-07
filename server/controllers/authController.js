@@ -10,8 +10,36 @@
 
 const User = require('../models/User');
 const crypto = require('crypto');
+const axios = require('axios');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { sendWelcomeEmail, sendPasswordResetEmail } = require('../utils/emailNotifications');
+
+const parseAllowedGoogleClientIds = (value = '') =>
+  String(value)
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+const normalizeGoogleAuthMode = (mode) => (mode === 'signup' ? 'signup' : 'login');
+
+const resolveGoogleRole = (role) => {
+  const allowedRoles = ['tenant', 'owner'];
+  return allowedRoles.includes(role) ? role : 'tenant';
+};
+
+const assertGoogleTokenInfo = (tokenInfo, allowedClientIds = []) => {
+  if (!tokenInfo || typeof tokenInfo !== 'object') {
+    throw new ApiError('Invalid Google token payload', 401);
+  }
+
+  if (!allowedClientIds.includes(tokenInfo.aud)) {
+    throw new ApiError('Google token audience is invalid', 401);
+  }
+
+  if (!tokenInfo.email || String(tokenInfo.email_verified) !== 'true') {
+    throw new ApiError('Google account email is not verified', 401);
+  }
+};
 
 /**
  * @desc    Register a new user
@@ -36,6 +64,9 @@ const register = asyncHandler(async (req, res) => {
   const allowedRoles = ['tenant', 'owner'];
   const userRole = allowedRoles.includes(role) ? role : 'tenant';
 
+  // Generate initial-based avatar
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=256`;
+
   // Create user (password is hashed in model pre-save hook)
   const user = await User.create({
     name,
@@ -43,6 +74,7 @@ const register = asyncHandler(async (req, res) => {
     password,
     role: userRole,
     phone,
+    avatar: defaultAvatar,
     language: language || 'en'
   });
 
@@ -110,6 +142,112 @@ const login = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Login successful',
+    data: {
+      user: user.getPublicProfile(),
+      token
+    }
+  });
+});
+
+/**
+ * @desc    Authenticate with Google ID token (signup/login)
+ * @route   POST /api/auth/google
+ * @access  Public
+ */
+const googleAuth = asyncHandler(async (req, res) => {
+  const { idToken, mode = 'login', role } = req.body;
+
+  if (!idToken) {
+    throw new ApiError('Google idToken is required', 400);
+  }
+
+  const googleClientIds = parseAllowedGoogleClientIds(process.env.GOOGLE_CLIENT_ID);
+
+  if (googleClientIds.length === 0) {
+    throw new ApiError('Google authentication is not configured on the server', 500);
+  }
+
+  let tokenInfo;
+  try {
+    const response = await axios.get('https://oauth2.googleapis.com/tokeninfo', {
+      params: { id_token: idToken },
+      timeout: 10000
+    });
+    tokenInfo = response.data;
+  } catch (error) {
+    throw new ApiError('Invalid Google token', 401);
+  }
+
+  assertGoogleTokenInfo(tokenInfo, googleClientIds);
+
+  const email = tokenInfo.email.toLowerCase();
+  const normalizedMode = normalizeGoogleAuthMode(mode);
+  const desiredRole = resolveGoogleRole(role);
+
+  let user = await User.findOne({ email }).select('+password');
+
+  if (!user) {
+    if (normalizedMode === 'login') {
+      throw new ApiError('No account found for this Google email. Please sign up first.', 404);
+    }
+
+    const name = tokenInfo.name || email.split('@')[0];
+    
+    // Check if Google picture is a default silhouette or missing
+    const isDefaultPic = !tokenInfo.picture || 
+                         tokenInfo.picture.includes('default-user') || 
+                         tokenInfo.picture.endsWith('/photo.jpg');
+                         
+    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=256`;
+    const avatarUrl = isDefaultPic ? defaultAvatar : tokenInfo.picture;
+
+    user = await User.create({
+      name,
+      email,
+      password: crypto.randomBytes(24).toString('hex'),
+      role: desiredRole,
+      verified: true,
+      avatar: avatarUrl,
+      googleId: tokenInfo.sub,
+      language: 'en'
+    });
+
+    sendWelcomeEmail({
+      email: user.email,
+      name: user.name,
+      role: user.role
+    }).catch(() => {});
+  } else {
+    if (user.banned?.isBanned) {
+      throw new ApiError(
+        `Your account has been suspended${user.banned?.reason ? `: ${user.banned.reason}` : ''}`,
+        403
+      );
+    }
+
+    if (user.googleId && user.googleId !== tokenInfo.sub) {
+      throw new ApiError('This email is linked to a different Google account', 401);
+    }
+
+    if (!user.googleId) user.googleId = tokenInfo.sub;
+    if (!user.avatar) {
+      const name = tokenInfo.name || user.name || email.split('@')[0];
+      const isDefaultPic = !tokenInfo.picture || 
+                           tokenInfo.picture.includes('default-user') || 
+                           tokenInfo.picture.endsWith('/photo.jpg');
+      const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=256`;
+      user.avatar = isDefaultPic ? defaultAvatar : tokenInfo.picture;
+    }
+    if (!user.verified) user.verified = true;
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+  }
+
+  const token = user.generateAuthToken();
+
+  res.status(200).json({
+    success: true,
+    message: normalizedMode === 'signup' ? 'Google signup successful' : 'Google login successful',
     data: {
       user: user.getPublicProfile(),
       token
@@ -307,6 +445,11 @@ const refreshToken = asyncHandler(async (req, res) => {
 module.exports = {
   register,
   login,
+  googleAuth,
+  parseAllowedGoogleClientIds,
+  normalizeGoogleAuthMode,
+  resolveGoogleRole,
+  assertGoogleTokenInfo,
   getMe,
   updatePassword,
   forgotPassword,

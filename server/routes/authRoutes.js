@@ -16,6 +16,7 @@ const { protect } = require('../middlewares/authMiddleware');
 const {
   register,
   login,
+  googleAuth,
   getMe,
   updatePassword,
   forgotPassword,
@@ -27,6 +28,7 @@ const {
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+router.post('/google', googleAuth);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
 
