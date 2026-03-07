@@ -1,20 +1,8 @@
-import React, { useState, useEffect } from "react"; // Hook import
-import "./AddListing.css"; // Ensure this imports the updated CSS
+import React, { useState, useEffect } from "react";
+import "./AddListing.css";
 import { DashboardLayout } from "../../components/layout/DashboardLayout";
 import { houseService } from "../../api/houseService";
 import { useNavigate } from "react-router-dom";
-// Assuming you have an Icon component or similar library.
-// If not, I'll use simple spans or standard emojis/svgs as placeholders for icons
-// Since the HTML used "iconify-icon", we might need to install a library or use a CDN script.
-// For now, I will assume we can replace them with lucide-react icons if available, or just leave the custom elements if the script is in index.html.
-// But wait, React doesn't like custom elements without some handling. I'll use Lucide React icons for better integration if available,
-// or just standard SVGs. Let's check package.json first for icon libraries.
-// Checking package.json... I don't want to use another tool call just for that.
-// I'll stick to safe standard implementation. The user's HTML snippet included a script for iconify.
-// I'll assume that script is globally available or I should use lucide-react if I see it in imports elsewhere.
-// But wait, the user provided a script tag in the HTML: <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
-// I should add that to index.html as well for the custom element <iconify-icon> to work.
-
 import {
   ArrowLeft,
   Check,
@@ -44,8 +32,6 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { getImageUrl } from "../../utils/imageUtils";
 
-
-// Fix for default marker icon issues in React/Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -53,14 +39,11 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-// Component to handle map clicks and location updates
 const LocationMarker = ({ position, setPosition, setFormData }) => {
-  const map = useMapEvents({
+  useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
       setPosition([lat, lng]);
-
-      // Reverse Geocoding via backend proxy (avoids CORS)
       const API_URL =
         import.meta.env.VITE_API_URL || "http://localhost:5000/api";
       fetch(`${API_URL}/geocode/reverse?lat=${lat}&lon=${lng}`)
@@ -80,17 +63,13 @@ const LocationMarker = ({ position, setPosition, setFormData }) => {
         .catch((err) => console.error("Reverse geocoding failed", err));
     },
   });
-
   return position === null ? null : <Marker position={position}></Marker>;
 };
 
-// Component to update map center when external state changes
 const MapUpdater = ({ center }) => {
   const map = useMap();
   useEffect(() => {
-    if (center) {
-      map.flyTo(center, 13);
-    }
+    if (center) map.flyTo(center, 13);
   }, [center, map]);
   return null;
 };
@@ -115,8 +94,7 @@ const AddListing = () => {
     images: [],
   });
 
-  // Map state
-  const [mapCenter, setMapCenter] = useState([9.005401, 38.763611]); // Default: Addis Ababa
+  const [mapCenter, setMapCenter] = useState([9.005401, 38.763611]);
   const [markerPosition, setMarkerPosition] = useState([9.005401, 38.763611]);
 
   const amenitiesList = [
@@ -136,8 +114,6 @@ const AddListing = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Debounce logic for city update could be added here,
-  // but for simplicity using onBlur or explicit check
   const handleCityBlur = () => {
     if (formData.city) {
       const API_URL =
@@ -159,69 +135,38 @@ const AddListing = () => {
   const handleAmenityToggle = (amenity) => {
     setFormData((prev) => {
       const isSelected = prev.amenities.includes(amenity);
-      if (isSelected) {
-        return {
-          ...prev,
-          amenities: prev.amenities.filter((a) => a !== amenity),
-        };
-      } else {
-        return { ...prev, amenities: [...prev.amenities, amenity] };
-      }
+      return {
+        ...prev,
+        amenities: isSelected
+          ? prev.amenities.filter((a) => a !== amenity)
+          : [...prev.amenities, amenity],
+      };
     });
   };
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-
     const uploadData = new FormData();
-    files.forEach((file) => {
-      uploadData.append("images", file);
-    });
-
+    files.forEach((file) => uploadData.append("images", file));
     try {
       setLoading(true);
-      console.log("Starting image upload for", files.length, "files");
       const response = await houseService.uploadImages(uploadData);
-      console.log("Upload response:", response.data);
-
       const uploadedPaths = response.data.data || [];
-
       setFormData((prev) => ({
         ...prev,
         images: [...prev.images, ...uploadedPaths],
       }));
     } catch (error) {
       console.error("Image upload failed:", error);
-      alert(
-        "Image upload failed: " +
-          (error.response?.data?.message || error.message || "Unknown error"),
-      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubmit = async () => {
-    // Client-side validation to prevent 422 errors
-    const missing = [];
-    if (!formData.title.trim()) missing.push("Property Title");
-    if (!formData.description.trim()) missing.push("Description");
-    if (!formData.price) missing.push("Monthly Rent");
-    if (!formData.address.trim())
-      missing.push("Street Address (click the map to set it)");
-    if (!formData.city.trim()) missing.push("City");
-    if (!formData.state.trim()) missing.push("State / Province");
-    if (missing.length > 0) {
-      alert(
-        `Please fill in the following required fields:\n• ${missing.join("\n• ")}`,
-      );
-      return;
-    }
-
     setLoading(true);
     try {
-      // Map frontend amenities to backend enums
       const amenityMapping = {
         "Wi-Fi": "wifi",
         "Air Conditioning": "ac",
@@ -253,10 +198,10 @@ const AddListing = () => {
           city: formData.city,
           state: formData.state,
           zip: formData.zip || "00000",
-          country: "Ethiopia", // Updated default
+          country: "Ethiopia",
           coordinates: {
             type: "Point",
-            coordinates: [markerPosition[1], markerPosition[0]], // Longitude, Latitude
+            coordinates: [markerPosition[1], markerPosition[0]],
           },
         },
         images: formData.images.map((url, index) => ({
@@ -264,76 +209,84 @@ const AddListing = () => {
           isPrimary: index === 0,
         })),
         available: true,
-        rules: {
-          maxOccupants: Number(formData.maxOccupants),
-        },
+        rules: { maxOccupants: Number(formData.maxOccupants) },
       };
 
       await houseService.createHouse(payload);
-      alert("Listing created successfully!");
       navigate("/owner/listings");
     } catch (error) {
       console.error("Failed to create listing:", error);
-      alert("Failed to create listing. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  if (loading && !formData.title) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center py-40">
+           <div className="w-12 h-12 border-4 border-[#d4af37] border-t-transparent rounded-full animate-spin mb-6" />
+           <span className="text-[#9a9a9a] uppercase tracking-widest text-xs font-bold font-serif">Initializing Secure Dossier...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto pb-12">
+      <div className="max-w-4xl mx-auto">
         {/* Top Bar */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between mb-10 px-4 mt-8">
+          <div className="flex items-center gap-6">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-3 bg-[#111] border border-[#d4af37]/20 rounded-full hover:border-[#d4af37] transition-all"
             >
-              <ArrowLeft size={20} className="text-slate-600" />
+              <ArrowLeft size={18} className="text-[#d4af37]" />
             </button>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Add New Property
-            </h1>
+            <div>
+              <h1 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Add New Estate
+              </h1>
+              <p className="text-[10px] text-[#9a9a9a] uppercase tracking-widest font-bold mt-1">Establishing Property Intelligence</p>
+            </div>
           </div>
-          <div className="text-sm text-slate-500">Draft saved 2m ago</div>
+          <div className="hidden md:block text-[10px] text-[#d4af37]/50 font-bold uppercase tracking-widest bg-[#111] px-4 py-2 border border-[#d4af37]/10 rounded-full">Secure Entry Mode</div>
         </div>
 
         {/* Scrollable Form Area */}
-        <div className="scroll-area">
+        <div className="scroll-area mb-24">
           <div className="form-container">
             {/* General Info */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Basic Information</div>
-                <div className="section-desc">
-                  Key details about your property.
-                </div>
+                <div className="section-title">Core Intelligence</div>
+                <div className="section-desc">Primary Identity and Financials</div>
               </div>
               <div className="form-grid">
                 <div className="form-group full-width">
-                  <label className="label">Property Title</label>
+                  <label className="label">Estate Title</label>
                   <input
                     type="text"
                     name="title"
                     className="input-field"
-                    placeholder="e.g. Modern Loft in Downtown"
+                    placeholder="e.g. The Imperial Heights Loft"
                     value={formData.title}
                     onChange={handleInputChange}
                   />
                 </div>
                 <div className="form-group full-width">
-                  <label className="label">Description</label>
+                  <label className="label">Dossier Narrative</label>
                   <textarea
                     name="description"
                     className="input-field"
-                    placeholder="Describe the unique features of your property..."
+                    placeholder="Provide a sophisticated narrative of the property's unique characteristics..."
                     value={formData.description}
                     onChange={handleInputChange}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="label">Property Type</label>
+                  <label className="label">Estate Type</label>
                   <div style={{ position: "relative" }}>
                     <select
                       name="propertyType"
@@ -352,22 +305,22 @@ const AddListing = () => {
                     <ChevronDown
                       style={{
                         position: "absolute",
-                        right: "12px",
-                        top: "12px",
+                        right: "16px",
+                        top: "16px",
                         pointerEvents: "none",
-                        color: "var(--muted-foreground)",
+                        color: "#d4af37",
                       }}
                       size={16}
                     />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="label">Monthly Rent ($)</label>
+                  <label className="label">Premium Rent (ETB)</label>
                   <input
                     type="number"
                     name="price"
                     className="input-field"
-                    placeholder="2400"
+                    placeholder="0.00"
                     value={formData.price}
                     onChange={handleInputChange}
                   />
@@ -378,23 +331,19 @@ const AddListing = () => {
             {/* Property Specs */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Property Details</div>
-                <div className="section-desc">
-                  Specify the size and capacity.
-                </div>
+                <div className="section-title">Spatial Specifications</div>
+                <div className="section-desc">Architecture and Capacity</div>
               </div>
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="label">Bedrooms</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="number"
-                      name="bedrooms"
-                      className="input-field"
-                      value={formData.bedrooms}
-                      onChange={handleInputChange}
-                    />
-                  </div>
+                  <label className="label">Suites (Bedrooms)</label>
+                  <input
+                    type="number"
+                    name="bedrooms"
+                    className="input-field"
+                    value={formData.bedrooms}
+                    onChange={handleInputChange}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="label">Bathrooms</label>
@@ -407,7 +356,7 @@ const AddListing = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="label">Square Footage</label>
+                  <label className="label">Square Area</label>
                   <input
                     type="number"
                     name="size"
@@ -432,25 +381,23 @@ const AddListing = () => {
             {/* Location */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Location</div>
-                <div className="section-desc">
-                  Where is the property located?
-                </div>
+                <div className="section-title">Geographic Coordinates</div>
+                <div className="section-desc">Global Positioning</div>
               </div>
               <div className="form-grid">
                 <div className="form-group full-width">
-                  <label className="label">Street Address</label>
+                  <label className="label">Point of Interest (Address)</label>
                   <input
                     type="text"
                     name="address"
                     className="input-field"
-                    placeholder="123 Main St"
+                    placeholder="Enter precise street coordinates"
                     value={formData.address}
                     onChange={handleInputChange}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="label">City</label>
+                  <label className="label">City Hub</label>
                   <input
                     type="text"
                     name="city"
@@ -458,16 +405,10 @@ const AddListing = () => {
                     value={formData.city}
                     onChange={handleInputChange}
                     onBlur={handleCityBlur}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleCityBlur();
-                      }
-                    }}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="label">State / Province</label>
+                  <label className="label">District / State</label>
                   <input
                     type="text"
                     name="state"
@@ -477,16 +418,15 @@ const AddListing = () => {
                   />
                 </div>
                 <div className="form-group full-width">
-                  <label className="label">Pin Location on Map</label>
-                  <div className="map-placeholder" style={{ zIndex: 0 }}>
-                    {/* Leaflet Map */}
+                  <label className="label">Digital Map Interface</label>
+                  <div className="map-placeholder">
                     <MapContainer
                       center={mapCenter}
                       zoom={13}
-                      style={{ height: "100%", width: "100%" }}
+                      style={{ height: "100%", width: "100%", zIndex: 0 }}
                     >
                       <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                       />
                       <Marker position={markerPosition} />
@@ -505,22 +445,20 @@ const AddListing = () => {
             {/* Amenities */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Amenities</div>
-                <div className="section-desc">Select all that apply.</div>
+                <div className="section-title">Luxury Provisions</div>
+                <div className="section-desc">Enhanced Living Experience</div>
               </div>
               <div className="amenities-grid">
                 {amenitiesList.map((amenity) => (
                   <div
                     key={amenity}
-                    className={`checkbox-group ${
-                      formData.amenities.includes(amenity) ? "checked" : ""
-                    }`}
+                    className={`checkbox-group ${formData.amenities.includes(amenity) ? "checked" : ""}`}
                     onClick={() => handleAmenityToggle(amenity)}
                   >
                     <div className="checkbox-custom">
                       <Check size={14} />
                     </div>
-                    <span style={{ fontSize: "14px" }}>{amenity}</span>
+                    <span style={{ fontSize: "12px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", color: formData.amenities.includes(amenity) ? "#d4af37" : "#9a9a9a" }}>{amenity}</span>
                   </div>
                 ))}
               </div>
@@ -529,27 +467,27 @@ const AddListing = () => {
             {/* Photos */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Photos</div>
-                <div className="section-desc">Upload at least 5 photos.</div>
+                <div className="section-title">Visual Dossier</div>
+                <div className="section-desc">Curation of Property Imagery</div>
               </div>
 
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "16px",
-                  marginBottom: "16px",
+                  gap: "20px",
+                  marginBottom: "24px",
                 }}
               >
-                {/* PREVIEW IMAGES */}
                 {formData.images.map((img, index) => (
                   <div
                     key={index}
                     style={{
-                      aspectRatio: "4/3",
+                      aspectRatio: "1/1",
                       position: "relative",
-                      borderRadius: "8px",
+                      borderRadius: "12px",
                       overflow: "hidden",
+                      border: "1px solid rgba(212, 175, 55, 0.2)"
                     }}
                   >
                     <img
@@ -563,17 +501,18 @@ const AddListing = () => {
                     <div
                       style={{
                         position: "absolute",
-                        top: "4px",
-                        right: "4px",
-                        background: "rgba(0, 0, 0, 0.5)",
-                        width: "24px",
-                        height: "24px",
-                        borderRadius: "4px",
+                        top: "8px",
+                        right: "8px",
+                        background: "rgba(0, 0, 0, 0.8)",
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "8px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "white",
+                        color: "#ef4444",
                         cursor: "pointer",
+                        border: "1px solid rgba(255,255,255,0.1)"
                       }}
                       onClick={() => {
                         setFormData((prev) => ({
@@ -582,23 +521,25 @@ const AddListing = () => {
                         }));
                       }}
                     >
-                      <X size={14} />
+                      <X size={16} />
                     </div>
                     {index === 0 && (
                       <div
                         style={{
                           position: "absolute",
-                          bottom: "4px",
-                          left: "4px",
-                          background: "var(--primary)",
-                          color: "white",
-                          padding: "2px 6px",
+                          bottom: "8px",
+                          left: "8px",
+                          background: "#d4af37",
+                          color: "#0a0a0a",
+                          padding: "2px 8px",
                           borderRadius: "4px",
-                          fontSize: "10px",
-                          fontWeight: "600",
+                          fontSize: "8px",
+                          fontWeight: "900",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.1em"
                         }}
                       >
-                        Cover
+                        Primary
                       </div>
                     )}
                   </div>
@@ -622,17 +563,20 @@ const AddListing = () => {
                 </div>
                 <div
                   style={{
-                    fontWeight: "500",
-                    fontSize: "15px",
-                    marginBottom: "4px",
+                    fontWeight: "700",
+                    fontSize: "14px",
+                    marginBottom: "8px",
+                    color: "#f8f6f3",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em"
                   }}
                 >
-                  Click to upload or drag and drop
+                  Encrypt New Imagery
                 </div>
                 <div
-                  style={{ fontSize: "13px", color: "var(--muted-foreground)" }}
+                  style={{ fontSize: "10px", color: "#9a9a9a", textTransform: "uppercase", letterSpacing: "0.05em" }}
                 >
-                  SVG, PNG, JPG or GIF (max. 800x400px)
+                  Secure upload (Max 800KB per entity)
                 </div>
               </div>
             </div>
@@ -641,7 +585,7 @@ const AddListing = () => {
 
         {/* Actions Footer */}
         <div className="actions-footer">
-          <button className="btn btn-secondary">Save as Draft</button>
+          <button className="btn btn-secondary" onClick={() => navigate(-1)}>Abort Dossier</button>
           <button
             className="btn btn-primary"
             onClick={handleSubmit}
@@ -652,7 +596,7 @@ const AddListing = () => {
             ) : (
               <>
                 <Check size={16} />
-                Publish Listing
+                Commit Listing
               </>
             )}
           </button>

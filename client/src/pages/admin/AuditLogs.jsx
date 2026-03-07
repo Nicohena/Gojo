@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 const severityConfig = {
-  low:      { color: "border border-blue-500/20 bg-blue-500/10 text-blue-400", icon: Info },
+  low:      { color: "border border-cyan-500/20 bg-cyan-500/10 text-cyan-400", icon: Info },
   medium:   { color: "border border-amber-500/20 bg-amber-500/10 text-amber-400", icon: AlertTriangle },
   high:     { color: "border border-red-500/20 bg-red-500/10 text-red-400", icon: Shield },
   critical: { color: "border border-red-700/30 bg-red-600/10 text-red-300", icon: Shield },
@@ -108,7 +108,7 @@ const AuditLogs = () => {
         {/* Severity Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
-            { label: "Low", value: severityCounts.low || 0, cls: "text-blue-400" },
+            { label: "Low", value: severityCounts.low || 0, cls: "text-cyan-400" },
             { label: "Medium", value: severityCounts.medium || 0, cls: "text-amber-400" },
             { label: "High", value: severityCounts.high || 0, cls: "text-red-400" },
             { label: "Critical", value: severityCounts.critical || 0, cls: "text-red-300" },
