@@ -98,7 +98,8 @@ setupSocketHandlers(io);
 
 // Security headers
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
 }));
 
 // CORS configuration - allow multiple development ports
