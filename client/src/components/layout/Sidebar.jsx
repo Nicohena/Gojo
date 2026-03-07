@@ -18,23 +18,25 @@ import chatService from "../../api/chatService";
 const NavItem = ({ icon: Icon, label, active = false, count, onClick }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
+    className={`w-full flex items-center justify-between px-4 py-3 transition-all duration-200 group border-l-2 ${
       active
-        ? "bg-primary text-white shadow-md"
-        : "text-slate-500 hover:bg-slate-100"
+        ? "border-[#d4af37] text-[#d4af37] bg-[#d4af37]/5"
+        : "border-transparent text-[#9a9a9a] hover:text-[#f8f6f3] hover:border-[#d4af37]/40"
     }`}
   >
     <div className="flex items-center gap-3">
       <Icon
-        size={20}
-        className={active ? "text-white" : "group-hover:text-primary"}
+        size={18}
+        className={active ? "text-[#d4af37]" : "group-hover:text-[#d4af37] transition-colors"}
       />
-      <span className="font-semibold text-sm">{label}</span>
+      <span className="text-sm tracking-[0.05em]">{label}</span>
     </div>
     {count > 0 && (
       <span
-        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-          active ? "bg-white/20 text-white" : "bg-red-500 text-white"
+        className={`text-[10px] font-bold px-1.5 py-0.5 ${
+          active
+            ? "bg-[#d4af37]/20 text-[#d4af37]"
+            : "bg-red-500/80 text-white"
         }`}
       >
         {count}
@@ -65,36 +67,36 @@ export const Sidebar = () => {
       }
     };
     fetchUnread();
-    // Refresh every 30 seconds
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
   }, [user]);
 
   return (
-    <aside className="w-64 border-r border-slate-200 h-screen flex flex-col bg-white sticky top-0">
-      <div className="p-6">
+    <aside className="w-64 border-r border-[#d4af37]/10 h-screen flex flex-col bg-[#0a0a0a] sticky top-0">
+      {/* Logo */}
+      <div className="p-6 border-b border-[#d4af37]/10">
         <div
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-primary cursor-pointer"
+          className="cursor-pointer"
         >
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <div className="w-4 h-4 bg-white rounded-sm" />
-          </div>
-          <span className="text-xl font-black italic tracking-tighter uppercase">
-            SmartRent
+          <span
+            className="text-[#d4af37] tracking-[0.3em] text-xl"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            AURA
           </span>
         </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-8 overflow-y-auto">
+      <nav className="flex-1 py-6 overflow-y-auto">
         {user?.role === "owner" ? (
           /* Owner Menu */
           <>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-4">
+            <div className="mb-6">
+              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
                 Overview
               </p>
-              <div className="space-y-1">
+              <div>
                 <NavItem
                   icon={BookOpen}
                   label="Dashboard"
@@ -111,10 +113,10 @@ export const Sidebar = () => {
             </div>
 
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-4">
+              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
                 Management
               </p>
-              <div className="space-y-1">
+              <div>
                 <NavItem
                   icon={BookOpen}
                   label="Bookings"
@@ -146,11 +148,11 @@ export const Sidebar = () => {
         ) : (
           /* Tenant Menu (Default) */
           <>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-4">
+            <div className="mb-6">
+              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
                 Menu
               </p>
-              <div className="space-y-1">
+              <div>
                 <NavItem
                   icon={Search}
                   label="Explore"
@@ -180,10 +182,10 @@ export const Sidebar = () => {
             </div>
 
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-4">
+              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
                 Preferences
               </p>
-              <div className="space-y-1">
+              <div>
                 <NavItem
                   icon={Bell}
                   label="Notifications"
@@ -210,33 +212,32 @@ export const Sidebar = () => {
         )}
       </nav>
 
-      <div className="p-4 border-t border-slate-100">
-        <div className="bg-slate-50 p-4 rounded-2xl flex items-center gap-3">
+      {/* User Footer */}
+      <div className="p-4 border-t border-[#d4af37]/10">
+        <div className="flex items-center gap-3 px-2 py-2">
           <div
             onClick={() => navigate("/profile")}
-            className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden cursor-pointer"
+            className="w-9 h-9 rounded-full border border-[#d4af37]/30 overflow-hidden cursor-pointer flex items-center justify-center bg-[#1a1a1a] shrink-0"
           >
             {user?.avatar ? (
-              <img src={getImageUrl(user.avatar)} alt="User" />
+              <img src={getImageUrl(user.avatar)} alt="User" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-400">
-                <UserIcon size={20} />
-              </div>
+              <UserIcon size={16} className="text-[#d4af37]" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">
+            <p className="text-sm text-[#f8f6f3] truncate">
               {user?.name || "User Name"}
             </p>
-            <p className="text-[10px] text-slate-500 font-medium uppercase">
-              {user?.role || "Tenant"} Account
+            <p className="text-[10px] text-[#d4af37]/60 uppercase tracking-widest">
+              {user?.role || "Tenant"}
             </p>
           </div>
           <button
             onClick={handleLogout}
-            className="text-slate-400 hover:text-red-500 transition-colors"
+            className="text-[#9a9a9a] hover:text-red-400 transition-colors"
           >
-            <LogOut size={16} />
+            <LogOut size={15} />
           </button>
         </div>
       </div>
