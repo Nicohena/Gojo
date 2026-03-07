@@ -1,9 +1,11 @@
 import React, { Component } from "react";
 import logger from "../utils/logger";
+import { AlertCircle, Home, RotateCcw } from "lucide-react";
 
 /**
  * Error Boundary Component
  * Catches JavaScript errors anywhere in the child component tree and displays a fallback UI
+ * Restyled for luxury dark/gold theme.
  */
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -16,16 +18,13 @@ class ErrorBoundary extends Component {
   }
 
   static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI
     return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error details
     logger.error("Error caught by boundary", error, {
       componentStack: errorInfo.componentStack,
     });
-
     this.setState({
       error,
       errorInfo,
@@ -42,82 +41,60 @@ class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
-      // Custom fallback UI
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Default fallback UI
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-            <div className="text-center">
-              {/* Error Icon */}
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                <svg
-                  className="h-8 w-8 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-
-              {/* Error Message */}
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Oops! Something went wrong
-              </h2>
-              <p className="text-gray-600 mb-6">
-                We're sorry for the inconvenience. An unexpected error occurred.
-              </p>
-
-              {/* Error Details (Development Only) */}
-              {import.meta.env.MODE === "development" && this.state.error && (
-                <div className="mb-6 p-4 bg-gray-100 rounded-lg text-left">
-                  <p className="text-sm font-mono text-red-600 mb-2">
-                    {this.state.error.toString()}
-                  </p>
-                  {this.state.errorInfo && (
-                    <details className="text-xs font-mono text-gray-600 mt-2">
-                      <summary className="cursor-pointer text-gray-700 font-semibold">
-                        Stack Trace
-                      </summary>
-                      <pre className="mt-2 overflow-auto max-h-40 whitespace-pre-wrap">
-                        {this.state.errorInfo.componentStack}
-                      </pre>
-                    </details>
-                  )}
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={this.handleReset}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Try Again
-                </button>
-                <button
-                  onClick={() => (window.location.href = "/")}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                >
-                  Go Home
-                </button>
-              </div>
-
-              {/* Support Message */}
-              <p className="text-sm text-gray-500 mt-6">
-                If this problem persists, please contact support.
-              </p>
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6" style={{ backgroundImage: "radial-gradient(circle at center, #111 0%, #0a0a0a 100%)" }}>
+          <div className="max-w-xl w-full bg-[#111] border border-[#d4af37]/10 rounded-2xl shadow-2xl p-10 text-center animate-in fade-in zoom-in duration-700">
+            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-500/10 border border-red-500/20 mb-8">
+              <AlertCircle className="h-10 w-10 text-red-500" />
             </div>
+
+            <h2 className="text-3xl text-[#f8f6f3] mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+              System Interruption
+            </h2>
+            <p className="text-[#9a9a9a] mb-8 leading-relaxed max-w-sm mx-auto">
+              Our secure protocols encountered an unexpected anomaly. The target component could not be resolved.
+            </p>
+
+            {import.meta.env.MODE === "development" && this.state.error && (
+              <div className="mb-10 p-5 bg-[#0a0a0a] border border-red-500/20 rounded-xl text-left overflow-hidden">
+                <p className="text-xs font-mono text-red-400 mb-3 break-all">
+                  {this.state.error.toString()}
+                </p>
+                {this.state.errorInfo && (
+                  <details className="text-[10px] font-mono text-[#9a9a9a] mt-3 border-t border-white/5 pt-3">
+                    <summary className="cursor-pointer text-[#d4af37] font-bold uppercase tracking-widest mb-2">
+                      Trace Diagnostics
+                    </summary>
+                    <pre className="mt-2 overflow-auto max-h-40 whitespace-pre-wrap opacity-60">
+                      {this.state.errorInfo.componentStack}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={this.handleReset}
+                className="px-8 py-3 bg-[#d4af37] text-[#0a0a0a] text-xs font-bold uppercase tracking-widest hover:bg-[#b8941f] transition-all flex items-center justify-center gap-2"
+              >
+                <RotateCcw size={14} /> Re-establish Session
+              </button>
+              <button
+                onClick={() => (window.location.href = "/")}
+                className="px-8 py-3 bg-transparent border border-[#d4af37]/20 text-[#d4af37] text-xs font-bold uppercase tracking-widest hover:bg-[#d4af37]/5 transition-all flex items-center justify-center gap-2"
+              >
+                <Home size={14} /> Return to Hub
+              </button>
+            </div>
+
+            <p className="text-[10px] text-[#9a9a9a]/40 mt-10 uppercase tracking-[0.2em] font-bold">
+              Secure Estate Management Systems • v3.0
+            </p>
           </div>
         </div>
       );
