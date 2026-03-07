@@ -2,29 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getRedirectPath } from "../utils/auth";
-import {
-  Search,
-  ShieldCheck,
-  Zap,
-  Scale,
-  ArrowRight,
-  Home,
-  Loader2,
-} from "lucide-react";
-import { HouseCard } from "../components/pieces/HouseCard";
+import { Thermometer, Lightbulb, Shield, Zap, Key, ArrowRight, Loader2 } from 'lucide-react';
+import Slider from 'react-slick';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
 import { houseService } from "../api/houseService";
 
-const FeatureCard = ({ icon: Icon, title, description }) => (
-  <div className="p-8 rounded-3xl bg-white border border-slate-100 hover:shadow-xl transition-shadow group">
-    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
-      <Icon size={24} />
-    </div>
-    <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
-    <p className="text-slate-500 leading-relaxed text-sm">{description}</p>
-  </div>
-);
-
-const LandingPage = () => {
+export default function LandingPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [featuredHouses, setFeaturedHouses] = useState([]);
@@ -55,275 +39,310 @@ const LandingPage = () => {
     fetchFeatured();
   }, []);
 
+  const features = [
+    {
+      icon: Shield,
+      title: 'Vetted Excellence',
+      description: 'Every residence is physically inspected and mathematically scored for acoustic and lighting perfection.',
+    },
+    {
+      icon: Zap,
+      title: 'Invisible Technology',
+      description: 'State-of-the-art predictive climate and security systems seamlessly integrated into the architecture.',
+    },
+    {
+      icon: Key,
+      title: 'Concierge Privacy',
+      description: 'Absolute discretion and a dedicated lifestyle manager available 24/7.',
+    },
+  ];
+
+  // Map real data if available, otherwise fallback to the beautiful placeholders
+  const properties = featuredHouses.length > 0 ? featuredHouses.map(house => ({
+    id: house._id,
+    image: house.images?.[0]?.url || house.images?.[0] || 'https://images.unsplash.com/photo-1728019192740-6370819df1c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBnbGFzcyUyMHZpbGxhJTIwZm9yZXN0JTIwYXJjaGl0ZWN0dXJlJTIwbHV4dXJ5fGVufDF8fHx8MTc3Mjg3NDIwOXww&ixlib=rb-4.1.0&q=80&w=1080',
+    title: house.title,
+    location: `${house.location?.city || ''}, ${house.location?.state || ''}`,
+    price: `$${house.price} / mo`,
+    beds: `${house.rooms?.bedrooms || 0} Beds`,
+    sqft: `${house.size || 0} sq.ft.`,
+    tag: house.matchScore ? `${house.matchScore}% Match` : 'Smart Home',
+  })) : [
+    {
+      id: '1',
+      image: 'https://images.unsplash.com/photo-1728019192740-6370819df1c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBnbGFzcyUyMHZpbGxhJTIwZm9yZXN0JTIwYXJjaGl0ZWN0dXJlJTIwbHV4dXJ5fGVufDF8fHx8MTc3Mjg3NDIwOXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+      title: 'The Glass House',
+      location: 'Aspen, CO',
+      price: '$14,500 / mo',
+      beds: '4 Beds',
+      sqft: '6,200 sq.ft.',
+      tag: 'Intelligent Climate Enabled',
+    },
+    {
+      id: '2',
+      image: 'https://images.unsplash.com/photo-1768413292179-d958b344f1d4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwY29uY3JldGUlMjBsb2Z0JTIwaW50ZXJpb3IlMjBsdXh1cnl8ZW58MXx8fHwxNzcyODc0MjEwfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+      title: 'Concrete Sanctuary',
+      location: 'Los Angeles, CA',
+      price: '$18,000 / mo',
+      beds: '5 Beds',
+      sqft: '7,800 sq.ft.',
+      tag: 'Biometric Security',
+    },
+    {
+      id: '3',
+      image: 'https://images.unsplash.com/photo-1610394001485-a3eceff6a4d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBwZW50aG91c2UlMjBvY2VhbiUyMHZpZXclMjBhcmNoaXRlY3R1cmV8ZW58MXx8fHwxNzcyODc0MjExfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+      title: 'Ocean Vista',
+      location: 'Malibu, CA',
+      price: '$22,500 / mo',
+      beds: '6 Beds',
+      sqft: '9,400 sq.ft.',
+      tag: 'Smart Glass Technology',
+    },
+  ];
+
+  const sliderSettings = {
+    dots: false,
+    infinite: properties.length > 2,
+    speed: 800,
+    slidesToShow: Math.min(properties.length, 2.2),
+    slidesToScroll: 1,
+    arrows: false,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    pauseOnHover: true,
+    responsive: [
+      {
+        breakpoint: 1280,
+        settings: {
+          slidesToShow: Math.min(properties.length, 1.5),
+        },
+      },
+      {
+        breakpoint: 768,
+        settings: {
+          slidesToShow: 1,
+        },
+      },
+    ],
+  };
+
   return (
-    <div className="bg-white min-h-screen">
-      {/* Navbar Overlay */}
-      <nav className="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
-        <div
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-primary cursor-pointer"
-        >
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <div className="w-6 h-6 bg-white rounded-sm" />
+    <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-[#d4af37]/10">
+        <div className="max-w-[1600px] mx-auto px-8 py-6 flex items-center justify-between">
+          <div className="text-[#d4af37] tracking-[0.3em] text-xl cursor-pointer" onClick={() => navigate("/")} style={{ fontFamily: "'Playfair Display', serif" }}>
+            AURA
           </div>
-          <span className="text-xl font-black italic tracking-tighter uppercase">
-            SmartRent
-          </span>
-        </div>
-        <div className="hidden md:flex items-center gap-10">
-          <button
-            onClick={() => navigate("/search")}
-            className="text-sm font-bold text-slate-600 hover:text-primary transition-colors"
-          >
-            Explore
-          </button>
-          <a
-            href="#features"
-            className="text-sm font-bold text-slate-600 hover:text-primary transition-colors"
-          >
-            How it Works
-          </a>
-          <button
-            onClick={() => navigate("/owner/dashboard")}
-            className="text-sm font-bold text-slate-600 hover:text-primary transition-colors"
-          >
-            Landlords
-          </button>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/login")}
-            className="text-sm font-bold text-slate-900 px-6 py-2.5 hover:bg-slate-50 rounded-xl transition-all"
-          >
-            Log in
-          </button>
-          <button
-            onClick={() => navigate("/register")}
-            className="text-sm font-bold text-white bg-primary px-6 py-2.5 rounded-xl hover:bg-primary-dark transition-all shadow-lg shadow-primary/25"
-          >
-            Sign up
-          </button>
+          <div className="hidden md:flex items-center gap-12">
+            <button onClick={() => navigate("/search")} className="text-[#f8f6f3] tracking-[0.1em] text-sm hover:text-[#d4af37] transition-colors">
+              Explore Homes
+            </button>
+            <a href="#experience" className="text-[#f8f6f3] tracking-[0.1em] text-sm hover:text-[#d4af37] transition-colors">
+              How it works
+            </a>
+            <button onClick={() => navigate("/owner/dashboard")} className="text-[#f8f6f3] tracking-[0.1em] text-sm hover:text-[#d4af37] transition-colors">
+             Landlords
+            </button>
+          </div>
+          <div className="flex items-center gap-6">
+            <button onClick={() => navigate("/login")} className="text-[#9a9a9a] text-sm hover:text-[#f8f6f3] transition-colors">
+              Sign In
+            </button>
+            <button onClick={() => navigate("/register")} className="px-6 py-2.5 border border-[#d4af37] text-[#d4af37] tracking-[0.05em] text-sm hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all">
+            Get Started
+            </button>
+          </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-8 pt-20 pb-32 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        <div className="space-y-10">
-          <div className="inline-flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full border border-primary/10">
-            <ShieldCheck size={16} className="text-primary" />
-            <span className="text-xs font-bold text-primary tracking-wide uppercase">
-              The #1 Trusted Smart Rental Platform
-            </span>
-          </div>
-          <h1 className="text-6xl md:text-7xl font-black text-slate-900 leading-[1.1] tracking-tight">
-            Find a home that <br />
-            <span className="text-primary italic">matches</span> your <br />
-            lifestyle.
+      <section className="relative h-screen w-full overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1762270988759-fc744dd443b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1bHRyYSUyMG1vZGVybiUyMHBlbnRob3VzZSUyMHR3aWxpZ2h0JTIwY2l0eSUyMHNreWxpbmUlMjBsdXh1cnl8ZW58MXx8fHwxNzcyODc0MjA5fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+            alt="Modern penthouse at twilight"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/60 via-[#0a0a0a]/40 to-[#0a0a0a]/80" />
+        </div>
+        <div className="relative z-10 h-full flex flex-col items-center justify-center px-8">
+          <h1 
+            className="text-6xl md:text-7xl lg:text-8xl text-center text-[#f8f6f3] mb-6 tracking-tight leading-[1.1]"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            Elevated Living.
+            <br />
+            Architecturally Perfect.
           </h1>
-          <p className="text-slate-500 text-lg max-w-md leading-relaxed">
-            Discover verified smart homes with transparent pricing and
-            AI-powered match scores. Renting has never been this intelligent.
+          <p className="text-lg md:text-xl text-[#9a9a9a] text-center max-w-2xl mb-12 tracking-wide">
+            Discover a curated collection of world-class smart residences, reserved for the discerning few.
           </p>
-          <div className="flex items-center gap-4 pt-4">
-            <button
-              onClick={() => navigate("/search")}
-              className="px-8 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary-dark transition-all flex items-center gap-2 shadow-xl shadow-primary/30"
-            >
-              Browse Properties
-              <ArrowRight size={18} />
-            </button>
-            <button
-              onClick={() => navigate("/owner/dashboard")}
-              className="px-8 py-4 bg-white text-slate-900 font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 transition-all"
-            >
-              List Your Home
-            </button>
-          </div>
+          <button onClick={() => navigate("/search")} className="px-10 py-4 border-2 border-[#d4af37] text-[#d4af37] tracking-[0.1em] text-sm hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all">
+            Explore the Collection
+          </button>
         </div>
-
-        <div className="relative">
-          <div className="aspect-[4/5] rounded-[40px] overflow-hidden shadow-2xl skew-y-1">
-            <img
-              src="https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&q=80&w=1200"
-              className="w-full h-full object-cover"
-              alt="Living Room"
-            />
-          </div>
-          {/* Floating Indicators */}
-          <div className="absolute top-1/4 -right-12 bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 flex items-center gap-4 animate-bounce-slow">
-            <div className="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center text-success">
-              <ShieldCheck size={24} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                Verified Host
-              </p>
-              <p className="text-sm font-black text-slate-900">Sarah Jenkins</p>
-            </div>
-          </div>
-          <div className="absolute bottom-1/4 -left-12 bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 flex items-center gap-4 animate-pulse-slow">
-            <div className="w-12 h-12 bg-warning/10 rounded-2xl flex items-center justify-center text-warning">
-              <Zap size={24} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                98% Match
-              </p>
-              <p className="text-sm font-black text-slate-900">
-                Based on your preferences
-              </p>
-            </div>
-          </div>
-        </div>
+      
       </section>
 
-      {/* Trust Section */}
-      <section id="features" className="bg-slate-50 py-32">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="text-center max-w-2xl mx-auto mb-20">
-            <h2 className="text-4xl font-black text-slate-900 mb-6">
-              Renting made simple & smart
-            </h2>
-            <p className="text-slate-500 italic">
-              We use technology to remove friction from the rental process,
-              ensuring safety and satisfaction for everyone.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard
-              icon={ShieldCheck}
-              title="Verified Listings Only"
-              description="Every home on SmartRent is physically verified by our team. Say goodbye to scams and misleading photos forever."
-            />
-            <FeatureCard
-              icon={Zap}
-              title="AI Match Score"
-              description="Our smart algorithm analyzes your preferences to show you homes that match your lifestyle, commute, and budget."
-            />
-            <FeatureCard
-              icon={Scale}
-              title="Fair Price Guarantee"
-              description="We analyze local market data to ensure you never overpay. If a listing is overpriced, we'll flag it for you instantly."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Trending Section */}
-      <section className="py-32">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="flex items-center justify-between mb-16">
+      {/* Features Section */}
+      <section id="experience" className="bg-[#0a0a0a] py-32 px-8">
+        <div className="max-w-[1600px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
             <div>
-              <h2 className="text-4xl font-black text-slate-900 mb-4">
-                Trending smart homes
+              <h2 
+                className="text-5xl md:text-6xl text-[#f8f6f3] mb-6 leading-[1.1]"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
+                Uncompromising
+                <br />
+                Standards.
               </h2>
-              <p className="text-slate-500 italic">
-                Explore highly-rated properties newly added this week.
+              <p className="text-[#9a9a9a] text-lg tracking-wide max-w-lg">
+                Each property in our collection meets rigorous criteria designed to exceed the expectations of the world's most discerning residents.
               </p>
             </div>
-            <button
-              onClick={() => navigate("/search")}
-              className="text-sm font-bold text-primary flex items-center gap-2 hover:underline"
-            >
-              View all listings
-              <ArrowRight size={16} />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {loading ? (
-              <div className="col-span-full flex flex-col items-center py-20 gap-4">
-                <Loader2 className="animate-spin text-primary" size={40} />
-                <p className="text-slate-500 font-medium">
-                  Loading properties...
-                </p>
-              </div>
-            ) : featuredHouses.length === 0 ? (
-              <div className="col-span-full text-center py-20">
-                <p className="text-slate-500 font-bold">
-                  No trending homes yet.
-                </p>
-              </div>
-            ) : (
-              featuredHouses.map((house) => (
-                <HouseCard
-                  key={house._id}
-                  house={{
-                    id: house._id,
-                    title: house.title,
-                    location: `${house.location?.city || ""}, ${
-                      house.location?.state || ""
-                    }`,
-                    price: house.price,
-                    rating: house.averageRating || 0,
-                    beds: house.rooms?.bedrooms || 0,
-                    sqft: house.size || 0,
-                    verified: house.verified?.status,
-                    match: house.matchScore,
-                    isFair: house.price < 5000,
-                    image: house.images?.[0]?.url || house.images?.[0],
-                    views: house.viewCount || 0,
-                  }}
-                />
-              ))
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 gap-8">
+              {features.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <div 
+                    key={index}
+                    className="border-l-2 border-[#d4af37]/30 pl-6 py-4 hover:border-[#d4af37] transition-colors"
+                  >
+                    <div className="mb-4">
+                      <Icon className="w-8 h-8 text-[#d4af37]" strokeWidth={1.5} />
+                    </div>
+                    <h3 
+                      className="text-2xl text-[#f8f6f3] mb-3"
+                      style={{ fontFamily: "'Playfair Display', serif" }}
+                    >
+                      {feature.title}
+                    </h3>
+                    <p className="text-[#9a9a9a] leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Owner CTA Section */}
-      <section className="max-w-7xl mx-auto px-8 mb-32">
-        <div className="relative rounded-[50px] overflow-hidden bg-slate-900 py-24 px-12 text-center">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1560184897-ae75f418493e?auto=format&fit=crop&q=80&w=1200')] bg-cover bg-center" />
-          <div className="relative z-10 max-w-3xl mx-auto">
-            <h2 className="text-5xl font-black text-white mb-8">
-              Are you a property owner?
-            </h2>
-            <p className="text-slate-300 text-lg mb-12">
-              Join thousands of landlords who trust SmartRent to manage their
-              properties. Get verified tenants, automated payments, and
-              real-time market insights.
-            </p>
-            <button
-              onClick={() => navigate("/owner/dashboard")}
-              className="px-10 py-5 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-100 transition-all shadow-2xl"
+      {/* Property Carousel */}
+      <section className="bg-[#0a0a0a] py-32 overflow-hidden">
+        <div className="max-w-[1600px] mx-auto px-8 mb-16">
+          <div className="flex items-end justify-between">
+            <h2 
+              className="text-5xl md:text-6xl text-[#f8f6f3]"
+              style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              List Your Property for Free
+              A Glimpse of the Portfolio
+            </h2>
+            <button 
+              onClick={() => navigate("/search")} 
+              className="hidden md:flex items-center gap-3 text-[#d4af37] text-sm tracking-[0.05em] hover:gap-5 transition-all group"
+            >
+              View All Residences
+              <ArrowRight className="w-12 h-4 group-hover:translate-x-2 transition-transform" strokeWidth={1} />
             </button>
           </div>
+        </div>
+        
+        {loading ? (
+           <div className="flex flex-col items-center py-20 gap-4">
+             <Loader2 className="animate-spin text-[#d4af37]" size={40} />
+             <p className="text-[#9a9a9a] font-medium tracking-wide">
+               Curating portfolio...
+             </p>
+           </div>
+        ) : (
+          <div className="pl-8 md:pl-16 lg:pl-24">
+            <Slider {...sliderSettings}>
+              {properties.map((property, index) => (
+                <div key={index} className="px-3">
+                  <div className="group cursor-pointer">
+                    <div className="relative h-[600px] overflow-hidden mb-6">
+                      <img
+                        src={property.image}
+                        alt={property.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/60 to-transparent" />
+                      <div className="absolute top-6 left-6">
+                        <div className="px-4 py-2 border border-[#d4af37] bg-[#0a0a0a]/80 backdrop-blur-sm">
+                          <span className="text-[#d4af37] text-xs tracking-[0.1em]">
+                            {property.tag}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 
+                        className="text-3xl text-[#f8f6f3] mb-2"
+                        style={{ fontFamily: "'Playfair Display', serif" }}
+                      >
+                        {property.title} • {property.location}
+                      </h3>
+                      <div className="flex items-center gap-4 text-[#9a9a9a] text-sm">
+                        <span>{property.price}</span>
+                        <span>|</span>
+                        <span>{property.beds}</span>
+                        <span>|</span>
+                        <span>{property.sqft}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </Slider>
+          </div>
+        )}
+      </section>
+
+      {/* Owners CTA */}
+      <section 
+        id="owners"
+        className="relative py-40 px-8 overflow-hidden"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1616651283320-ee68a1113d94?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYXJrJTIwYnJ1c2hlZCUyMG1ldGFsJTIwdGV4dHVyZSUyMGx1eHVyeXxlbnwxfHx8fDE3NzI4NzQyMTF8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-[#0a0a0a]/85" />
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <h2 
+            className="text-5xl md:text-7xl text-[#f8f6f3] mb-8 leading-[1.1]"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            Commission Your Property.
+          </h2>
+          <p className="text-xl text-[#9a9a9a] mb-12 max-w-2xl mx-auto leading-relaxed tracking-wide">
+            Partner with Aura to place your architectural masterpiece in front of an exclusive, fully-vetted global clientele. Zero friction, total discretion.
+          </p>
+          <button onClick={() => navigate("/owner/dashboard")} className="px-12 py-4 bg-[#d4af37] text-[#0a0a0a] tracking-[0.1em] hover:bg-[#b8941f] transition-all font-bold">
+            Apply for Partnership
+          </button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-100 pt-16 pb-12">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-            <div
-              onClick={() => navigate("/")}
-              className="flex items-center gap-2 text-primary cursor-pointer"
-            >
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <div className="w-6 h-6 bg-white rounded-sm" />
-              </div>
-              <span className="text-xl font-black italic tracking-tighter uppercase">
-                SmartRent
-              </span>
-            </div>
-            <p className="text-slate-500 text-sm max-w-xs leading-relaxed text-center md:text-right">
-              The smartest way to rent. Verified homes, fair prices, and happy
-              tenants.
-            </p>
+      <footer className="bg-[#0a0a0a] border-t border-[#d4af37]/10 py-12 px-8">
+        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div 
+            className="text-[#d4af37] tracking-[0.3em] text-lg cursor-pointer"
+            onClick={() => navigate("/")}
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            AURA
           </div>
-          <div className="pt-8 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-400 font-medium">
-              © 2026 SmartRent Inc. All rights reserved.
-            </p>
+          <div className="text-[#9a9a9a] text-sm">
+            © 2026 Aura Residences. A SmartRent Company.
           </div>
         </div>
       </footer>
     </div>
   );
-};
-
-export default LandingPage;
+}

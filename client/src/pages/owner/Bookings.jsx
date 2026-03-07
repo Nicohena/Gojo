@@ -7,15 +7,18 @@ const OwnerBookings = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1
+            className="text-4xl text-[#f8f6f3]"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
             Bookings
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
+          <p className="text-[#9a9a9a] tracking-wide text-sm mt-2">
             Manage your booking requests and history.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+        <div className="border border-[#d4af37]/10 bg-[#111] p-6">
           <BookingList role="owner" />
         </div>
       </div>
