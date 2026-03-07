@@ -5,12 +5,13 @@
  * - Registration
  * - Login
  * - Get current user
- * - Password reset (placeholder)
+ * - Password reset
  */
 
 const User = require('../models/User');
+const crypto = require('crypto');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
-const { sendWelcomeEmail } = require('../utils/emailNotifications');
+const { sendWelcomeEmail, sendPasswordResetEmail } = require('../utils/emailNotifications');
 
 /**
  * @desc    Register a new user
@@ -180,9 +181,6 @@ const updatePassword = asyncHandler(async (req, res) => {
  * @desc    Forgot password - Generate reset token
  * @route   POST /api/auth/forgot-password
  * @access  Public
- * 
- * NOTE: Email sending functionality should be implemented here
- * This is a placeholder for the password reset flow
  */
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -201,16 +199,60 @@ const forgotPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  // TODO: Generate reset token and send email
-  // const resetToken = crypto.randomBytes(32).toString('hex');
-  // user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-  // user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
-  // await user.save({ validateBeforeSave: false });
-  // await sendEmail({ to: user.email, subject: 'Password Reset', html: `...${resetToken}...` });
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+  await user.save({ validateBeforeSave: false });
+
+  await sendPasswordResetEmail({
+    email: user.email,
+    name: user.name,
+    resetToken
+  });
 
   res.status(200).json({
     success: true,
     message: 'If an account exists with this email, you will receive a password reset link'
+  });
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  if (!token) {
+    throw new ApiError('Reset token is required', 400);
+  }
+
+  if (!password || password.length < 6) {
+    throw new ApiError('Password must be at least 6 characters', 400);
+  }
+
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  const user = await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpire: { $gt: Date.now() }
+  }).select('+password');
+
+  if (!user) {
+    throw new ApiError('Invalid or expired reset token', 400);
+  }
+
+  user.password = password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  const authToken = user.generateAuthToken();
+
+  res.status(200).json({
+    success: true,
+    message: 'Password reset successful',
+    data: {
+      token: authToken,
+      user: user.getPublicProfile()
+    }
   });
 });
 
@@ -268,6 +310,7 @@ module.exports = {
   getMe,
   updatePassword,
   forgotPassword,
+  resetPassword,
   logout,
   refreshToken
 };

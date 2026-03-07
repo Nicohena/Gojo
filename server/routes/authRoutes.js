@@ -19,6 +19,7 @@ const {
   getMe,
   updatePassword,
   forgotPassword,
+  resetPassword,
   logout,
   refreshToken
 } = require('../controllers/authController');
@@ -27,6 +28,7 @@ const {
 router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
 
 // Protected routes
 router.get('/me', protect, getMe);
