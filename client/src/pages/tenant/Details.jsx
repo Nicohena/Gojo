@@ -9,11 +9,13 @@ import {
   Wifi,
   ChevronLeft,
   Loader2,
+  Info,
 } from "lucide-react";
 import { getImageUrl } from "../../utils/imageUtils";
 import {
   SmartMatchBadge,
   FairPriceBadge,
+  VerifiedBadge,
 } from "../../components/pieces/Badges";
 import { useNavigate, useParams } from "react-router-dom";
 import { houseService } from "../../api/houseService";
@@ -36,8 +38,10 @@ import {
 } from "../../components/details";
 import BookingWidget from "../../components/booking/BookingWidget";
 
-// DetailsPage — main component
-// ─────────────────────────────────────────────────────────────
+/**
+ * DetailsPage Component
+ * Fully overhauled for the cinematic "Aura" luxury dark theme.
+ */
 const DetailsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -68,7 +72,7 @@ const DetailsPage = () => {
         setError(null);
       } catch (err) {
         console.error("Failed to fetch house details", err);
-        setError("Property not found or server error.");
+        setError("Property details could not be found.");
       } finally {
         setLoading(false);
       }
@@ -83,7 +87,6 @@ const DetailsPage = () => {
       if (!id) return;
       try {
         const response = await recommendationService.getSimilarHouses(id);
-        // Correctly access response.data.similar from backend
         setSimilarHouses(response.data?.similar || response.data?.houses || []);
       } catch (err) {
         setSimilarHouses([]);
@@ -92,7 +95,6 @@ const DetailsPage = () => {
     fetchSimilar();
   }, [id]);
 
-  // ── Fix #2: Optimized dependency — only re-run when house ID changes ──
   useEffect(() => {
     const checkSaved = async () => {
       if (!user || !data?.house?._id) {
@@ -113,30 +115,23 @@ const DetailsPage = () => {
     checkSaved();
   }, [user, data?.house?._id]);
 
-  // ── Fix #6: Detect if user is the owner ──
   const isOwner = user?.id === data?.house?.ownerId?._id;
 
-  // ── Fix #9: Memoize similar houses slice ──
   const displayedSimilarHouses = useMemo(
     () => (Array.isArray(similarHouses) ? similarHouses.slice(0, 3) : []),
     [similarHouses],
   );
 
-  // ── Fixes #1, #3, #4: Cleaned handleBookingRequest ──
-  const handleBookingRequest = async () => {
-    // Logic moved to BookingWidget.jsx
-  };
-
   const handleStartChat = () => {
     if (!user) {
-      alert("Please login to chat with the host");
+      toast.error("Please login to message the host.");
       return;
     }
 
     const currentUserId = user.id || user._id;
     const ownerId = data?.house?.ownerId?._id;
     if (currentUserId && ownerId && currentUserId === ownerId) {
-      toast.error("You cannot chat with yourself.");
+      toast.error("You cannot message yourself.");
       return;
     }
 
@@ -151,7 +146,7 @@ const DetailsPage = () => {
 
   const handleToggleSave = async () => {
     if (!user) {
-      alert("Please login to save homes");
+      toast.error("Please login to save this property.");
       return;
     }
 
@@ -162,18 +157,14 @@ const DetailsPage = () => {
       if (isSaved) {
         await userService.removeSavedHome(user.id, data.house._id);
         setIsSaved(false);
-        toast.success("Removed from saved homes");
+        toast.success("Property removed from saved homes.");
       } else {
         await userService.addSavedHome(user.id, data.house._id);
         setIsSaved(true);
-        toast.success("Added to saved homes");
+        toast.success("Property added to saved homes.");
       }
     } catch (err) {
-      console.error("Failed to update saved home", err);
-      alert(
-        err.response?.data?.message ||
-          "Something went wrong while updating your saved homes.",
-      );
+      toast.error("Could not update saved homes.");
     } finally {
       setSaving(false);
     }
@@ -181,11 +172,11 @@ const DetailsPage = () => {
 
   const handleSubmitRating = async () => {
     if (!user) {
-      alert("Please login to leave a review");
+      toast.error("Please login to submit a review.");
       return;
     }
     if (ratingScore === 0) {
-      alert("Please select a star rating");
+      toast.error("Please select a star rating.");
       return;
     }
     setRatingLoading(true);
@@ -214,32 +205,33 @@ const DetailsPage = () => {
       }));
       setRatingScore(0);
       setRatingComment("");
-      alert("Review submitted successfully!");
+      toast.success("Review submitted successfully.");
     } catch (err) {
-      console.error("Failed to submit rating", err);
-      alert(err.response?.data?.message || "Failed to submit review");
+      toast.error("Failed to submit review.");
     } finally {
       setRatingLoading(false);
     }
   };
 
-  // ── Loading / Error states ──
   if (loading)
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white">
-        <Loader2 className="animate-spin text-primary" size={48} />
-        <p className="text-slate-500 font-bold">Loading property details...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-[#0a0a0a]">
+        <div className="w-16 h-16 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin" />
+        <p className="text-[#d4af37] font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Loading Details...</p>
       </div>
     );
 
   if (error || !data)
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white p-8">
-        <div className="bg-red-50 text-red-600 p-8 rounded-[40px] text-center max-w-md">
-          <h2 className="text-2xl font-black mb-4">Oops!</h2>
-          <p className="font-medium mb-6">{error}</p>
-          <button onClick={() => navigate("/search")} className="btn-primary">
-            Back to Search
+      <div className="min-h-screen flex flex-col items-center justify-center gap-8 bg-[#0a0a0a] p-8">
+        <div className="bg-red-500/5 border border-red-500/20 p-12 rounded-[3rem] text-center max-w-lg shadow-2xl">
+          <h2 className="text-3xl font-black text-red-500 mb-4 tracking-tighter" style={{ fontFamily: "'Playfair Display', serif" }}>Property Not Found</h2>
+          <p className="text-[#9a9a9a] font-medium mb-8 uppercase tracking-widest text-xs leading-loose">{error}</p>
+          <button 
+            onClick={() => navigate("/search")} 
+            className="px-10 py-4 bg-red-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-red-600 transition-all shadow-xl shadow-red-500/20"
+          >
+            Go Back to Search
           </button>
         </div>
       </div>
@@ -247,204 +239,176 @@ const DetailsPage = () => {
 
   const { house, priceFairness, matchScore } = data;
 
-  // ── Fix #3 helper: Build full address string with optional chaining ──
   const fullAddress = [
     house.location?.address,
     house.location?.city,
     house.location?.state,
-    house.location?.zip,
     house.location?.country,
   ]
     .filter(Boolean)
     .join(", ");
 
   return (
-    <div className="bg-white min-h-screen pb-20">
-      {/* ── Navigation Bar ── */}
-      <nav className="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between border-b border-slate-50">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
-        >
-          <ChevronLeft size={20} />
-          <span>Back</span>
-        </button>
-        <div className="flex items-center gap-4">
+    <div className="bg-[#0a0a0a] min-h-screen pb-32 text-[#f8f6f3] selection:bg-[#d4af37]/30">
+      {/* ── Navigation Node ── */}
+      <nav className="sticky top-0 z-40 w-full bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-[#d4af37]/10">
+        <div className="max-w-7xl mx-auto px-8 h-24 flex items-center justify-between">
           <button
-            type="button"
-            className="p-2.5 hover:bg-slate-50 rounded-xl transition-colors"
-            onClick={() => {
-              if (navigator.share) {
-                navigator
-                  .share({
-                    title: house?.title || "SmartRent Home",
-                    text: "Check out this property on SmartRent",
-                    url: window.location.href,
-                  })
-                  .catch(() => {});
-              } else {
-                navigator.clipboard
-                  .writeText(window.location.href)
-                  .then(() => alert("Link copied to clipboard"))
-                  .catch(() => alert("Unable to copy link"));
-              }
-            }}
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-3 text-[#9a9a9a] hover:text-[#d4af37] text-[10px] font-black uppercase tracking-[0.3em] transition-all group"
           >
-            <Share size={18} />
+            <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+            <span>Go Back</span>
           </button>
-          <button
-            type="button"
-            onClick={handleToggleSave}
-            disabled={saving}
-            className={`p-2.5 rounded-xl transition-colors ${
-              isSaved
-                ? "bg-red-50 text-red-500 hover:bg-red-100"
-                : "hover:bg-slate-50"
-            }`}
-          >
-            <Heart size={18} className={isSaved ? "fill-current" : ""} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              className="p-3.5 bg-white/5 border border-white/10 rounded-2xl hover:border-[#d4af37]/40 hover:text-[#d4af37] transition-all"
+              onClick={() => {
+                const link = window.location.href;
+                navigator.clipboard.writeText(link).then(() => toast.success("Property link copied to clipboard."));
+              }}
+            >
+              <Share size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleSave}
+              disabled={saving}
+              className={`p-3.5 rounded-2xl border transition-all ${
+                isSaved
+                  ? "bg-red-500/10 border-red-500/30 text-red-500"
+                  : "bg-white/5 border-white/10 text-[#9a9a9a] hover:border-[#d4af37]/40 hover:text-[#d4af37]"
+              }`}
+            >
+              <Heart size={18} className={isSaved ? "fill-current" : ""} />
+            </button>
+          </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-8 pt-10">
-        {/* ── Title & Badges ── */}
-        <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
-          <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
+      <main className="max-w-7xl mx-auto px-8 pt-16">
+        {/* ── Asset Identification ── */}
+        <div className="flex flex-col xl:flex-row justify-between items-start gap-8 mb-16">
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+               {house.verified?.status && <VerifiedBadge />}
+               {matchScore && <SmartMatchBadge percentage={matchScore} />}
+               <FairPriceBadge score={priceFairness?.score} />
+            </div>
+            <h1 className="text-6xl font-black text-[#f8f6f3] tracking-tighter mb-4 leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
               {house.title}
             </h1>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1 font-bold">
-                <Star size={14} className="fill-warning text-warning" />
-                <span>{house.averageRating?.toFixed(1) || "0.0"}</span>
-                <span className="text-slate-400 font-medium underline">
-                  ({house.ratings?.length || 0} reviews)
+            <div className="flex items-center gap-8 text-[11px] font-black uppercase tracking-[0.2em] text-[#9a9a9a]">
+              <div className="flex items-center gap-2">
+                <Star size={16} className="fill-amber-500 text-amber-500" />
+                <span className="text-[#f8f6f3]">{house.averageRating?.toFixed(1) || "New Property"}</span>
+                <span className="opacity-40 underline cursor-pointer hover:text-[#d4af37] transition-colors">
+                  {house.ratings?.length || 0} reviews
                 </span>
               </div>
-              {/* ── Fix #7: Clickable address opens map modal ── */}
               <button
                 type="button"
                 onClick={() => setShowMap(true)}
-                className="flex items-center gap-1 text-slate-500 font-bold hover:text-primary transition-colors group"
+                className="flex items-center gap-2 hover:text-[#d4af37] transition-all group"
               >
-                <MapPin size={14} />
-                <span className="underline group-hover:text-primary">
+                <MapPin size={16} className="text-[#d4af37]/60" />
+                <span className="underline decoration-[#d4af37]/20 group-hover:decoration-[#d4af37]">
                   {fullAddress}
                 </span>
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {matchScore && <SmartMatchBadge percentage={matchScore} />}
-            <FairPriceBadge score={priceFairness?.score} />
-          </div>
         </div>
 
-        {/* ── Photo Grid ── */}
+        {/* ── Visual Assets ── */}
         <PhotoGrid images={house.images} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-          <div className="lg:col-span-2 space-y-12">
-            {/* ── Host Header ── */}
-            <div className="flex justify-between items-center pb-8 border-b border-slate-100">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
+          <div className="lg:col-span-8 space-y-20">
+            {/* ── Property Details ── */}
+            <div className="flex justify-between items-center pb-12 border-b border-[#d4af37]/10">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 mb-2">
-                  Entire {house.propertyType} hosted by {house.ownerId?.name}
+                <h2 className="text-3xl text-[#f8f6f3] mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  {house.propertyType}
                 </h2>
-                <p className="text-slate-500 font-medium">
-                  {house.rooms?.bedrooms} bedrooms • {house.rooms?.bathrooms}{" "}
-                  baths • {house.size?.toLocaleString()} sqft
-                </p>
+                <div className="flex items-center gap-4 text-[10px] text-[#9a9a9a] font-black uppercase tracking-[0.3em]">
+                   <span>{house.rooms?.bedrooms} Bedrooms</span>
+                   <div className="w-1.5 h-1.5 rounded-full bg-[#d4af37]/40" />
+                   <span>{house.rooms?.bathrooms} Bathrooms</span>
+                   <div className="w-1.5 h-1.5 rounded-full bg-[#d4af37]/40" />
+                   <span>{house.size?.toLocaleString()} SQFT</span>
+                </div>
               </div>
-              <div className="w-14 h-14 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-md">
-                <img
-                  src={getImageUrl(
-                    house.ownerId?.avatar ||
-                      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100",
-                  )}
-                  alt="Host"
-                  className="w-full h-full object-cover"
-                />
+              <div className="group relative">
+                <div className="absolute inset-0 bg-[#d4af37] rounded-full blur-xl opacity-0 group-hover:opacity-20 transition-opacity" />
+                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-[#d4af37]/20 shadow-2xl">
+                  <img
+                    src={getImageUrl(house.ownerId?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100")}
+                    alt="Owner"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                </div>
               </div>
             </div>
 
             {/* ── Highlights ── */}
-            <div className="space-y-8">
-              {house.verified?.status && (
-                <div className="flex gap-4">
-                  <ShieldCheck className="text-slate-400 shrink-0" size={24} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              {[
+                { icon: ShieldCheck, label: "Verified Property", sub: "Physically audited for your safety." },
+                { icon: MapPin, label: "Great Location", sub: "Prime area with easy access." },
+                { icon: Calendar, label: "Flexible Cancellation", sub: "Full refund within 48h." }
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col gap-4 p-8 bg-[#111] border border-[#d4af37]/5 rounded-[2rem] hover:border-[#d4af37]/20 transition-all">
+                  <div className="w-12 h-12 bg-[#d4af37]/10 rounded-xl flex items-center justify-center text-[#d4af37]">
+                    <item.icon size={24} />
+                  </div>
                   <div>
-                    <p className="font-bold text-slate-900">Verified Listing</p>
-                    <p className="text-sm text-slate-500 font-medium">
-                      This home has been physically verified by SmartRent
-                      agents.
+                    <p className="font-bold text-[#f8f6f3] text-sm mb-1">{item.label}</p>
+                    <p className="text-[10px] text-[#9a9a9a] uppercase font-bold tracking-widest leading-relaxed">
+                      {item.sub}
                     </p>
                   </div>
                 </div>
-              )}
-              <div className="flex gap-4">
-                <MapPin className="text-slate-400 shrink-0" size={24} />
-                <div>
-                  <p className="font-bold text-slate-900">Great Location</p>
-                  <p className="text-sm text-slate-500 font-medium">
-                    100% of recent guests gave the location a 5-star rating.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <Calendar className="text-slate-400 shrink-0" size={24} />
-                <div>
-                  <p className="font-bold text-slate-900">
-                    Free cancellation for 48 hours
-                  </p>
-                  <p className="text-sm text-slate-500 font-medium">
-                    Get a full refund if you change your mind.
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* ── Description ── */}
-            <div className="space-y-6 pt-12 border-t border-slate-100">
-              <p className="text-slate-600 leading-relaxed font-medium">
+            {/* ── Property Description ── */}
+            <div className="space-y-8 pt-12 border-t border-[#d4af37]/10">
+              <h3 className="text-2xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>About this property</h3>
+              <p className="text-[#9a9a9a] leading-[2] font-medium text-lg italic">
                 {house.description}
               </p>
             </div>
 
-            {/* ── Property Details (extracted) ── */}
             <PropertyDetails house={house} />
 
-            {/* ── Amenities ── */}
-            <div className="pt-12 border-t border-slate-100">
-              <h3 className="text-xl font-black text-slate-900 mb-8">
-                What this place offers
+            {/* ── Operational Utilities ── */}
+            <div className="pt-20 border-t border-[#d4af37]/10">
+              <h3 className="text-3xl font-black text-[#f8f6f3] mb-12" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Prime Amenities
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
                 {house.amenities?.map((amenity, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-4 text-slate-600"
-                  >
-                    <Wifi size={22} className="shrink-0" />
-                    <span className="font-medium">{amenity}</span>
+                  <div key={idx} className="flex items-center gap-5 group">
+                    <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-[#9a9a9a] group-hover:bg-[#d4af37]/10 group-hover:text-[#d4af37] transition-all">
+                       <Wifi size={20} />
+                    </div>
+                    <span className="font-bold text-[#9a9a9a] uppercase tracking-widest text-[11px] group-hover:text-[#f8f6f3] transition-colors">{amenity}</span>
                   </div>
                 ))}
               </div>
               {house.amenities?.length > 6 && (
-                <button className="mt-10 px-8 py-3 border border-slate-900 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors">
+                <button className="mt-16 px-12 py-4 border border-[#d4af37]/20 rounded-2xl font-black text-[10px] text-[#d4af37] uppercase tracking-[0.3em] hover:bg-[#d4af37]/5 hover:border-[#d4af37]/60 transition-all shadow-xl">
                   Show all {house.amenities?.length} amenities
                 </button>
               )}
             </div>
 
-            {/* ── House Rules (extracted) ── */}
             <HouseRules rules={house.rules} />
 
-            {/* ── Host Section (extracted) ── */}
             <HostSection owner={house.ownerId} onStartChat={handleStartChat} />
 
-            {/* ── Reviews Section (extracted) ── */}
             <ReviewsSection
               ratings={house.ratings}
               averageRating={house.averageRating}
@@ -460,26 +424,44 @@ const DetailsPage = () => {
             />
           </div>
 
-          {/* ── Booking Widget (sidebar) ── */}
-          <div className="relative">
-            <BookingWidget house={house} user={user} />
+          {/* ── Commitment Widget ── */}
+          <div className="lg:col-span-4 relative">
+            <div className="sticky top-32">
+              <BookingWidget house={house} user={user} />
+              
+              <div className="mt-10 p-8 bg-amber-500/5 border border-amber-500/10 rounded-[2rem]">
+                 <div className="flex items-center gap-3 text-amber-500 mb-4">
+                    <Info size={18} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Booking Security</span>
+                 </div>
+                 <p className="text-[10px] text-amber-500/60 font-bold leading-relaxed uppercase tracking-widest">
+                    Your payment is held securely and only released to the host after the booking is finalized.
+                 </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ── Similar Properties (memoized) ── */}
+        {/* ── Similar Properties ── */}
         {displayedSimilarHouses.length > 0 && (
-          <div className="mt-16 mb-12">
-            <h2 className="text-2xl font-black text-slate-900 mb-8">
-              Similar Properties
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="mt-40 border-t border-[#d4af37]/10 pt-24 pb-20">
+            <div className="flex justify-between items-end mb-16">
+               <div>
+                  <p className="text-[#d4af37] text-[10px] font-black uppercase tracking-[0.4em] mb-4">Recommendations</p>
+                  <h2 className="text-5xl font-black text-[#f8f6f3] tracking-tighter" style={{ fontFamily: "'Playfair Display', serif" }}>
+                    Similar Properties
+                  </h2>
+               </div>
+               <button onClick={() => navigate("/search")} className="text-[10px] font-black text-[#9a9a9a] hover:text-[#d4af37] uppercase tracking-[0.3em] transition-all">View All Properties</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
               {displayedSimilarHouses.map((h) => (
                 <HouseCard
                   key={h._id}
                   house={{
                     id: h._id,
                     title: h.title,
-                    location: `${h.location?.city || ""}, ${h.location?.state || ""}`,
+                    location: `${h.location?.city || "Global"}, ${h.location?.state || "Territory"}`,
                     price: h.price,
                     rating: h.averageRating || 0,
                     beds: h.rooms?.bedrooms || 0,
@@ -496,14 +478,12 @@ const DetailsPage = () => {
         )}
       </main>
 
-      {/* ── Property Map Modal ── */}
       <PropertyMapModal
         isOpen={showMap}
         onClose={() => setShowMap(false)}
         location={house.location}
       />
 
-      {/* ── Payment Modal ── */}
       {showPayment && (
         <PaymentModal
           booking={currentBooking}

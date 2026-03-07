@@ -218,7 +218,7 @@ const PaymentHistory = () => {
                   <tr>
                     <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Descriptor</th>
                     <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Entity Intelligence</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Bond Value</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Amount</th>
                     <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Clearance</th>
                     <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Vector</th>
                     <th className="px-8 py-5 text-right text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Diagnostics</th>
@@ -241,7 +241,7 @@ const PaymentHistory = () => {
                       <td className="px-8 py-6 whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-[#f8f6f3] group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: "'Playfair Display', serif" }}>
-                            {payment.houseId?.title || "Establishment Bond"}
+                            {payment.houseId?.title || "Property Payment"}
                           </span>
                           <span className="text-[10px] text-[#9a9a9a] uppercase font-bold tracking-widest mt-1">
                             {isAdmin || isOwner ? `Identity: ${payment.userId?.name || 'Authorized User'}` : `Target: ${payment.ownerId?.name || 'Estate Owner'}`}
