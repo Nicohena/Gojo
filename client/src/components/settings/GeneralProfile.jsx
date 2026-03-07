@@ -130,7 +130,7 @@ const GeneralProfile = () => {
           </div>
           
           <div className="flex-1 text-center md:text-left">
-            <h4 className="text-[#f8f6f3] font-bold mb-1">Dossier Visual</h4>
+            <h4 className="text-[#f8f6f3] font-bold mb-1">Profile Picture</h4>
             <p className="text-xs text-[#9a9a9a] mb-4 uppercase tracking-widest">JPG, GIF OR PNG. MAX SIZE 800KB</p>
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button type="button" onClick={handleAvatarClick} className="px-6 py-2 bg-[#d4af37] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-widest hover:bg-[#b8941f] transition-all">Upload New</button>
@@ -145,14 +145,14 @@ const GeneralProfile = () => {
         {/* Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <label htmlFor="firstName" className={labelCls}>Legal Given Name</label>
+            <label htmlFor="firstName" className={labelCls}>First Name</label>
             <div className="relative">
               <User size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
               <input type="text" id="firstName" name="firstName" value={formData.firstName} onChange={handleInputChange} className={`${inputCls} pl-11`} required />
             </div>
           </div>
           <div>
-            <label htmlFor="lastName" className={labelCls}>Family Name</label>
+            <label htmlFor="lastName" className={labelCls}>Last Name</label>
             <div className="relative">
               <User size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
               <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleInputChange} className={`${inputCls} pl-11`} required />
@@ -163,14 +163,14 @@ const GeneralProfile = () => {
         {/* Contact Intelligence */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <label htmlFor="email" className={labelCls}>Secure Channel (Email)</label>
+            <label htmlFor="email" className={labelCls}>Email</label>
             <div className="relative">
               <Mail size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
               <input type="email" id="email" name="email" value={formData.email} className={`${inputCls} pl-11 opacity-50 cursor-not-allowed`} disabled />
             </div>
           </div>
           <div>
-            <label htmlFor="phone" className={labelCls}>Telecommunication Line</label>
+            <label htmlFor="phone" className={labelCls}>Phone Number</label>
             <div className="relative">
               <Phone size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
               <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className={`${inputCls} pl-11`} placeholder="+251 --- --- ---" />
@@ -180,7 +180,7 @@ const GeneralProfile = () => {
 
         {/* Bio */}
         <div>
-          <label htmlFor="bio" className={labelCls}>Entity Narrative (Bio)</label>
+          <label htmlFor="bio" className={labelCls}>Bio</label>
           <div className="relative">
             <FileText size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
             <textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} className={`${inputCls} pl-11 h-32 resize-none`} placeholder="Describe your background and requirements..." maxLength={500} />
@@ -191,7 +191,7 @@ const GeneralProfile = () => {
         {/* Save Button */}
         <div className="flex justify-end pt-4">
           <button type="submit" disabled={loading} className="px-10 py-3 bg-[#d4af37] text-[#0a0a0a] text-xs font-bold uppercase tracking-widest hover:bg-[#b8941f] shadow-2xl transition-all disabled:opacity-50">
-            {loading ? "Encrypting Changes..." : "Commit Intelligence"}
+            {loading ? "Applying Changes..." : "Save"}
           </button>
         </div>
       </form>

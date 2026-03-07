@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { calculateTotalPrice, validateMinLease } from "../../utils/priceUtils";
+import { calculateTotalPrice } from "../../utils/priceUtils";
 import bookingService from "../../api/bookingService";
 import { useAuth } from "../../context/AuthContext";
 
@@ -34,7 +34,7 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
   const [fetchingUserBookings, setFetchingUserBookings] = useState(false);
   const [hasApprovedBookingForHouse, setHasApprovedBookingForHouse] =
     useState(false);
-  const [occupants, setOccupants] = useState({ adults: 1, children: 0 });
+  const [occupants] = useState({ adults: 1, children: 0 });
 
   const isOwner = (user?._id || user?.id) === house.ownerId?._id;
 
@@ -77,7 +77,7 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
           return bookingHouseId === house._id && booking.status === "approved";
         });
         setHasApprovedBookingForHouse(hasApproved);
-      } catch (err) {
+      } catch {
         setHasApprovedBookingForHouse(false);
       } finally {
         setFetchingUserBookings(false);
