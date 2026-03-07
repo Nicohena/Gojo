@@ -83,7 +83,7 @@ export const Sidebar = () => {
             className="text-[#d4af37] tracking-[0.3em] text-xl"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            AURA
+            SMART RENT
           </span>
         </div>
       </div>

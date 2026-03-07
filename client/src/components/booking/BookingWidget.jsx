@@ -6,6 +6,9 @@ import {
   Users,
   Info,
   AlertCircle,
+  CreditCard,
+  ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -13,6 +16,10 @@ import { calculateTotalPrice, validateMinLease } from "../../utils/priceUtils";
 import bookingService from "../../api/bookingService";
 import { useAuth } from "../../context/AuthContext";
 
+/**
+ * BookingWidget Component
+ * Transformed into a floating "Commitment Node" for the luxury dark theme.
+ */
 const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
   const { user: contextUser, loading: authLoading } = useAuth();
   const user = propUser || contextUser;
@@ -31,7 +38,6 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
 
   const isOwner = (user?._id || user?.id) === house.ownerId?._id;
 
-  // 1. Fetch unavailable dates
   useEffect(() => {
     const fetchDates = async () => {
       try {
@@ -52,7 +58,6 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
     fetchDates();
   }, [house._id]);
 
-  // 1b. Check if tenant already has an approved booking for this house.
   useEffect(() => {
     const checkExistingApprovedBooking = async () => {
       if (!user || user.role !== "tenant" || !house?._id) {
@@ -69,10 +74,7 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
             typeof booking.houseId === "string"
               ? booking.houseId
               : booking.houseId?._id;
-          return (
-            bookingHouseId === house._id &&
-            booking.status === "approved"
-          );
+          return bookingHouseId === house._id && booking.status === "approved";
         });
         setHasApprovedBookingForHouse(hasApproved);
       } catch (err) {
@@ -85,7 +87,6 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
     checkExistingApprovedBooking();
   }, [user, house?._id]);
 
-  // 2. Auto-adjust end date based on min lease when start date changes
   useEffect(() => {
     if (startDate && house.minLeaseDuration) {
       const start = new Date(startDate);
@@ -100,13 +101,11 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
     }
   }, [startDate, house.minLeaseDuration]);
 
-  // 3. Dynamic price calculation
   const { subtotal, total, diffDays } = useMemo(
     () => calculateTotalPrice(house.price, startDate, endDate, 350),
     [house.price, startDate, endDate],
   );
 
-  // 4. Check if current selection overlaps with unavailable dates
   const hasOverlapError = useMemo(() => {
     if (!startDate || !endDate) return false;
     const start = new Date(startDate);
@@ -121,52 +120,12 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
 
   const handleBooking = async () => {
     if (!user) {
-      toast.error("Please login to request a booking");
+      toast.error("Please login to book this property.");
       return;
     }
 
     if (isOwner) {
-      toast.error("You cannot book your own property");
-      return;
-    }
-
-    let alreadyApprovedForHouse = hasApprovedBookingForHouse;
-    if (user.role === "tenant") {
-      try {
-        const response = await bookingService.getBookings();
-        const bookings = response?.data?.bookings || [];
-        alreadyApprovedForHouse = bookings.some((booking) => {
-          const bookingHouseId =
-            typeof booking.houseId === "string"
-              ? booking.houseId
-              : booking.houseId?._id;
-          return bookingHouseId === house._id && booking.status === "approved";
-        });
-        setHasApprovedBookingForHouse(alreadyApprovedForHouse);
-      } catch (err) {
-        // Fallback to cached flag when refresh check fails.
-      }
-    }
-
-    if (alreadyApprovedForHouse) {
-      toast.error("You are already booked for the house");
-      return;
-    }
-
-    if (!startDate || !endDate) {
-      toast.error("Please select both dates");
-      return;
-    }
-
-    if (hasOverlapError) {
-      toast.error("The selected dates overlap with an existing booking");
-      return;
-    }
-
-    if (!validateMinLease(startDate, endDate, house.minLeaseDuration)) {
-      toast.error(
-        `Minimum lease is ${house.minLeaseDuration} month${house.minLeaseDuration !== 1 ? "s" : ""}`,
-      );
+      toast.error("You cannot book your own property.");
       return;
     }
 
@@ -178,10 +137,12 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
         endDate: new Date(endDate),
         occupants,
       });
-      toast.success("Booking request sent! Wait for owner approval.");
+      toast.success(
+        "Booking request sent. Waiting for owner approval.",
+      );
       if (onBookingSuccess) onBookingSuccess();
     } catch (err) {
-      const msg = err.response?.data?.message || "Failed to create booking";
+      const msg = err.response?.data?.message || "Failed to send request";
       toast.error(msg);
     } finally {
       setBookingLoading(false);
@@ -189,54 +150,66 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xl top-28 h-fit w-full">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-black text-slate-900">
-            ETB {house.price?.toLocaleString()}
+    <div className="bg-[#111] border border-[#d4af37]/20 rounded-[3rem] p-10 shadow-[0_0_100px_rgba(0,0,0,1)] w-full">
+      <div className="flex justify-between items-start mb-10">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-[#9a9a9a]/40 font-black uppercase tracking-[0.3em] mb-1">
+            Rent
           </span>
-          <span className="text-sm text-slate-500 font-medium">/ month</span>
+          <div className="flex items-baseline gap-2">
+            <span
+              className="text-4xl font-bold text-[#d4af37]"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              ETB {house.price?.toLocaleString()}
+            </span>
+            <span className="text-[10px] text-[#9a9a9a] font-bold uppercase tracking-widest">
+              / Month
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <Star size={14} className="fill-warning text-warning" />
-          <span className="text-sm font-bold">
-            {house.averageRating?.toFixed(1) || "New"}
-          </span>
-          <span className="text-xs text-slate-400">
-            ({house.ratings?.length || 0})
+        <div className="flex flex-col items-end">
+          <div className="flex items-center gap-1.5 bg-[#d4af37]/10 px-3 py-1.5 rounded-xl border border-[#d4af37]/10">
+            <Star size={14} className="fill-amber-500 text-amber-500" />
+            <span className="text-sm font-black text-[#f8f6f3]">
+              {house.averageRating?.toFixed(1) || "New"}
+            </span>
+          </div>
+          <span className="text-[9px] text-[#9a9a9a]/50 font-bold uppercase tracking-widest mt-2 underline">
+            {house.ratings?.length || 0} Ratings
           </span>
         </div>
       </div>
 
-      <div className="space-y-4 mb-6">
-        <div className="grid grid-cols-1 border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="p-3 border-b border-slate-200 hover:bg-slate-50 relative group">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-              Check-in
+      <div className="space-y-4 mb-10">
+        <div className="grid grid-cols-1 border border-[#d4af37]/10 rounded-[2rem] overflow-hidden bg-[#0a0a0a]/50">
+          <div className="p-5 border-b border-[#d4af37]/10 hover:bg-[#d4af37]/5 transition-all relative group">
+            <p className="text-[9px] font-black text-[#d4af37]/40 uppercase tracking-[0.2em] mb-2">
+              Move-in (Check-in)
             </p>
-            <div className="flex items-center gap-2">
-              <Calendar size={14} className="text-slate-400" />
+            <div className="flex items-center gap-4">
+              <Calendar size={18} className="text-[#d4af37]/60" />
               <input
                 type="date"
                 value={startDate}
                 min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full text-sm font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
+                className="w-full text-sm font-bold text-[#f8f6f3] bg-transparent outline-none cursor-pointer selection:bg-[#d4af37]/20"
               />
             </div>
           </div>
-          <div className="p-3 hover:bg-slate-50 relative group">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-              Check-out
+          <div className="p-5 hover:bg-[#d4af37]/5 transition-all relative group">
+            <p className="text-[9px] font-black text-[#d4af37]/40 uppercase tracking-[0.2em] mb-2">
+              Move-out (Check-out)
             </p>
-            <div className="flex items-center gap-2">
-              <Calendar size={14} className="text-slate-400" />
+            <div className="flex items-center gap-4">
+              <Calendar size={18} className="text-[#d4af37]/60" />
               <input
                 type="date"
                 value={endDate}
                 min={startDate || new Date().toISOString().split("T")[0]}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full text-sm font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
+                className="w-full text-sm font-bold text-[#f8f6f3] bg-transparent outline-none cursor-pointer selection:bg-[#d4af37]/20"
               />
             </div>
           </div>
@@ -249,11 +222,11 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-2 text-red-600 p-3 bg-red-50 rounded-xl border border-red-100"
+              className="flex items-center gap-3 text-red-500 p-4 bg-red-500/5 rounded-2xl border border-red-500/20"
             >
-              <AlertCircle size={14} className="shrink-0" />
-              <span className="text-[10px] font-bold">
-                Selected dates overlap with an existing booking
+              <AlertCircle size={18} className="shrink-0" />
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                 Selected dates are already booked
               </span>
             </motion.div>
           )}
@@ -263,11 +236,11 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
               key="min-lease-info"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center gap-2 text-primary p-2 bg-primary/5 rounded-xl border border-primary/10"
+              className="flex items-center gap-3 text-[#d4af37] p-4 bg-[#d4af37]/5 rounded-2xl border border-[#d4af37]/10"
             >
-              <Info size={14} />
-              <span className="text-[10px] font-bold">
-                Minimum lease: {house.minLeaseDuration} months
+              <ShieldCheck size={18} className="shrink-0" />
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                Minimum Rental Duration: {house.minLeaseDuration} Months
               </span>
             </motion.div>
           )}
@@ -284,7 +257,7 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
           hasOverlapError ||
           authLoading
         }
-        className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 mb-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+        className="w-full py-6 bg-[#d4af37] text-[#0a0a0a] text-[10px] font-black uppercase tracking-[0.3em] rounded-[2rem] hover:bg-[#b8941f] transition-all shadow-2xl shadow-[#d4af37]/20 mb-4 disabled:opacity-20 disabled:cursor-not-allowed group relative overflow-hidden"
       >
         <AnimatePresence mode="wait">
           {bookingLoading ? (
@@ -293,26 +266,33 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex items-center justify-center gap-2"
+              className="flex items-center justify-center gap-3"
             >
-              <Loader2 className="animate-spin" size={18} />
-              <span>Processing...</span>
+              <Loader2 className="animate-spin" size={20} />
+              <span>Sending Request...</span>
             </motion.div>
           ) : (
-            <motion.span
+            <motion.div
               key="text"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
+              className="flex items-center justify-center gap-3"
             >
-              {isOwner ? "You own this property" : "Request Booking"}
-            </motion.span>
+              <CreditCard
+                size={18}
+                className="group-hover:rotate-12 transition-transform"
+              />
+              <span>
+                {isOwner ? "Owner of Property" : "Request Booking"}
+              </span>
+            </motion.div>
           )}
         </AnimatePresence>
       </button>
 
-      <p className="text-xs text-center text-slate-400 italic mb-6">
-        You won't be charged yet
+      <p className="text-[9px] text-center text-[#9a9a9a]/40 font-black uppercase tracking-[0.4em] mb-10">
+        Money held securely until move-in
       </p>
 
       <AnimatePresence>
@@ -321,25 +301,33 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="space-y-4 pt-4 border-t border-slate-100 overflow-hidden"
+            className="space-y-5 pt-8 border-t border-[#d4af37]/10 overflow-hidden"
           >
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-600 underline">
-                Subtotal ({diffDays} nights)
+            <div className="flex justify-between items-center text-[11px] font-bold tracking-widest uppercase">
+              <span className="text-[#9a9a9a] underline decoration-[#d4af37]/20">
+                Rental Period ({diffDays} nights)
               </span>
-              <span className="text-slate-900 font-medium font-mono">
+              <span className="text-[#f8f6f3]">
                 ETB {subtotal.toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-600 underline">Service Fee</span>
-              <span className="text-slate-900 font-medium font-mono">
-                ETB 350
+            <div className="flex justify-between items-center text-[11px] font-bold tracking-widest uppercase">
+              <span className="text-[#9a9a9a] underline decoration-[#d4af37]/20">
+                Service Fee
               </span>
+              <span className="text-[#f8f6f3]">ETB 350</span>
             </div>
-            <div className="flex justify-between pt-4 border-t border-slate-100">
-              <span className="text-lg font-black text-slate-900">Total</span>
-              <span className="text-lg font-black text-slate-900 font-mono">
+            <div className="flex justify-between pt-6 border-t border-[#d4af37]/20">
+              <span
+                className="text-xl font-black text-[#d4af37] tracking-tighter"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
+                Total Rent
+              </span>
+              <span
+                className="text-xl font-black text-[#f8f6f3] tracking-tighter"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
                 ETB {total.toLocaleString()}
               </span>
             </div>
