@@ -96,7 +96,7 @@ export const HouseCard = ({ house, isSaved = false, onToggleSave }) => {
               <span className="text-2xl font-bold text-[#d4af37]" style={{ fontFamily: "'Playfair Display', serif" }}>
                 ETB {house.price.toLocaleString()}
               </span>
-              <span className="text-[10px] text-[#9a9a9a] font-bold uppercase tracking-widest">/ Month</span>
+              <span className="text-[10px] text-[#9a9a9a] font-bold uppercase tracking-widest">Per Month</span>
             </div>
           </div>
           {house.isFair && <FairPriceBadge />}
