@@ -77,10 +77,11 @@ export const Sidebar = () => {
       <div className="p-6 border-b border-[#d4af37]/10">
         <div
           onClick={() => navigate("/")}
-          className="cursor-pointer"
+          className="flex items-center gap-3 cursor-pointer"
         >
+          <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
           <span
-            className="text-[#d4af37] tracking-[0.3em] text-xl"
+            className="text-[#d4af37] tracking-[0.2em] text-lg font-bold"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
             SMART RENT

@@ -131,8 +131,11 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-[#d4af37]/10">
         <div className="max-w-[1600px] mx-auto px-8 py-6 flex items-center justify-between">
-          <div className="text-[#d4af37] tracking-[0.3em] text-xl cursor-pointer" onClick={() => navigate("/")} style={{ fontFamily: "'Playfair Display', serif" }}>
-            SMART RENT
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
+            <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
+            <div className="text-[#d4af37] tracking-[0.3em] text-xl" style={{ fontFamily: "'Playfair Display', serif" }}>
+              SMART RENT
+            </div>
           </div>
           <div className="hidden md:flex items-center gap-12">
             <button onClick={() => navigate("/search")} className="text-[#f8f6f3] tracking-[0.1em] text-sm hover:text-[#d4af37] transition-colors">
@@ -329,11 +332,13 @@ export default function LandingPage() {
       <footer className="bg-[#0a0a0a] border-t border-[#d4af37]/10 py-12 px-8">
         <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div 
-            className="text-[#d4af37] tracking-[0.3em] text-lg cursor-pointer"
+            className="flex items-center gap-3 cursor-pointer"
             onClick={() => navigate("/")}
-            style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            SMART RENT
+            <img src="/logo.svg" alt="Logo" className="w-6 h-6" />
+            <div className="text-[#d4af37] tracking-[0.3em] text-lg" style={{ fontFamily: "'Playfair Display', serif" }}>
+              SMART RENT
+            </div>
           </div>
           <div className="text-[#9a9a9a] text-sm">
             © 2026 Smart Rental System.

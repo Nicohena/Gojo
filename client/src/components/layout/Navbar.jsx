@@ -110,6 +110,14 @@ export const Navbar = () => {
 
   return (
     <header className="h-16 border-b border-[#d4af37]/10 bg-[#0a0a0a]/90 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between">
+      {/* Logo */}
+      <div className="flex items-center gap-3 cursor-pointer mr-8 shrink-0" onClick={() => navigate("/")}>
+        <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
+        <span className="text-[#d4af37] tracking-[0.2em] text-sm font-bold hidden lg:block" style={{ fontFamily: "'Playfair Display', serif" }}>
+          SMART RENT
+        </span>
+      </div>
+
       {/* Search */}
       <div className="flex-1 max-w-xl">
         {showSearch && (

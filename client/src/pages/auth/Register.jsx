@@ -69,8 +69,9 @@ const Register = () => {
         {/* Logo */}
         <div
           onClick={() => navigate("/")}
-          className="flex justify-center mb-10 cursor-pointer"
+          className="flex flex-col items-center gap-3 mb-10 cursor-pointer"
         >
+          <img src="/logo.svg" alt="Logo" className="w-12 h-12" />
           <span
             className="text-[#d4af37] tracking-[0.4em] text-2xl"
             style={{ fontFamily: "'Playfair Display', serif" }}
