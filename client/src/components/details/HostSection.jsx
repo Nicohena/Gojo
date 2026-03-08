@@ -1,6 +1,7 @@
 import React from "react";
 import { MessageSquare, Star, ShieldCheck } from "lucide-react";
 import { getImageUrl } from "../../utils/imageUtils";
+import VerifiedOwnerBadge from "../ui/VerifiedOwnerBadge";
 
 /**
  * HostSection Component
@@ -28,19 +29,29 @@ const HostSection = ({ owner, onStartChat }) => {
            <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-4 h-4 rounded-full border-4 border-[#111] z-20" title="Host Online" />
         </div>
         <div>
-          <h4 className="text-xl font-bold text-[#f8f6f3] mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Host: {owner?.name}
-          </h4>
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="text-xl font-bold text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Host: {owner?.name}
+            </h4>
+            {owner?.isVerifiedOwner && <VerifiedOwnerBadge />}
+          </div>
           <div className="flex items-center gap-3 text-[9px] font-black text-[#9a9a9a] uppercase tracking-widest">
             <div className="flex items-center gap-1.5 text-amber-500">
                <Star size={10} className="fill-current" />
                <span>Host Rating: {owner?.rating?.average || "New"}</span>
             </div>
             <div className="w-1 h-1 rounded-full bg-white/20" />
-            <div className="flex items-center gap-1.5 text-emerald-400">
-               <ShieldCheck size={10} />
-               <span>Verified Host</span>
-            </div>
+            {owner?.isVerifiedOwner ? (
+              <div className="flex items-center gap-1.5 text-blue-300" title="Verified Owner">
+                <ShieldCheck size={10} />
+                <span>Verified Owner</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[#9a9a9a]">
+                <ShieldCheck size={10} />
+                <span>Host</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
