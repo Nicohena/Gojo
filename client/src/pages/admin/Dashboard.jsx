@@ -222,7 +222,9 @@ const AdminDashboard = () => {
                   {topOwners.map((owner) => (
                     <tr key={owner.ownerIdString || owner.ownerId} className="border-b border-[#d4af37]/5 last:border-b-0">
                       <td className="py-3">
-                        <p className="text-[#f8f6f3]">{owner.name}</p>
+                        <p className="font-semibold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]" style={{ color: "#ffffff" }}>
+                          {owner.name || owner.fullName || owner.username || owner.email?.split("@")[0] || `Owner ${String(owner.ownerIdString || owner.ownerId || "").slice(-6)}`}
+                        </p>
                         <p className="text-xs text-[#9a9a9a]">{owner.email}</p>
                         {owner?.banned?.isBanned && <p className="text-[11px] text-red-400 font-semibold mt-0.5">Banned</p>}
                       </td>

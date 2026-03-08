@@ -584,8 +584,8 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
     totalBookings,
     pendingVerifications,
     recentPayments,
-    topOwners,
-    paymentStatusBreakdown
+    paymentStatusBreakdown,
+    topOwners
   ] = await Promise.all([
     User.countDocuments(),
     House.countDocuments(),
