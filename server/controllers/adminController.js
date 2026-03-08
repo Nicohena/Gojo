@@ -432,7 +432,7 @@ const moderateListing = asyncHandler(async (req, res) => {
  * @access  Private (admin only)
  */
 const getUsers = asyncHandler(async (req, res) => {
-  const { role, verified, search, page = 1, limit = 20 } = req.query;
+  const { role, verified, isVerifiedOwner, search, page = 1, limit = 20 } = req.query;
   const skip = (Number(page) - 1) * Number(limit);
 
   const filter = {};
@@ -443,6 +443,16 @@ const getUsers = asyncHandler(async (req, res) => {
 
   if (verified !== undefined) {
     filter.verified = verified === 'true';
+  }
+
+  // Owner verification is a separate status and only applies to owner accounts.
+  if (isVerifiedOwner !== undefined) {
+    if (!role) {
+      filter.role = 'owner';
+    }
+    if ((role || filter.role) === 'owner') {
+      filter.isVerifiedOwner = isVerifiedOwner === 'true';
+    }
   }
 
   if (search) {
