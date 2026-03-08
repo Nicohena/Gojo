@@ -150,7 +150,7 @@ const updateUser = asyncHandler(async (req, res) => {
   
   // Admin can update more fields
   if (req.user.role === 'admin') {
-    allowedUpdates.push('verified', 'role');
+    allowedUpdates.push('verified', 'role', 'isVerifiedOwner');
   }
 
   // Filter request body to allowed fields
@@ -160,6 +160,17 @@ const updateUser = asyncHandler(async (req, res) => {
       updates[key] = req.body[key];
     }
   });
+
+  if (updates.isVerifiedOwner !== undefined) {
+    const targetUser = await User.findById(userId).select('role');
+    if (!targetUser) {
+      throw new ApiError('User not found', 404);
+    }
+    if (targetUser.role !== 'owner' && Boolean(updates.isVerifiedOwner) === true) {
+      throw new ApiError('Only users with owner role can be marked as verified owners', 400);
+    }
+    updates.isVerifiedOwner = Boolean(updates.isVerifiedOwner);
+  }
 
   if (updates.avatar && !isCloudinaryUrl(updates.avatar)) {
     throw new ApiError('Avatar must be a Cloudinary URL', 400);

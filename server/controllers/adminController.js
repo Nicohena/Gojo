@@ -484,7 +484,7 @@ const getUsers = asyncHandler(async (req, res) => {
  */
 const updateUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { role, verified, banned, banReason } = req.body;
+  const { role, verified, isVerifiedOwner, banned, banReason } = req.body;
 
   const user = await User.findById(id);
 
@@ -496,6 +496,7 @@ const updateUser = asyncHandler(async (req, res) => {
   const previousState = {
     role: user.role,
     verified: user.verified,
+    isVerifiedOwner: Boolean(user.isVerifiedOwner),
     banned: user.banned?.isBanned || false
   };
 
@@ -505,6 +506,12 @@ const updateUser = asyncHandler(async (req, res) => {
   }
   if (role) user.role = role;
   if (verified !== undefined) user.verified = verified;
+  if (isVerifiedOwner !== undefined) {
+    if (user.role !== 'owner' && Boolean(isVerifiedOwner) === true) {
+      throw new ApiError('Only users with owner role can be marked as verified owners', 400);
+    }
+    user.isVerifiedOwner = Boolean(isVerifiedOwner);
+  }
   if (typeof banned === 'boolean') {
     if (req.user._id.toString() === user._id.toString() && banned) {
       throw new ApiError('Admins cannot ban themselves', 400);
@@ -530,7 +537,13 @@ const updateUser = asyncHandler(async (req, res) => {
     performedBy: req.user._id,
     details: {
       previousState,
-      newState: { role: user.role, verified: user.verified, banned: user.banned?.isBanned || false, banReason: user.banned?.reason || '' },
+      newState: {
+        role: user.role,
+        verified: user.verified,
+        isVerifiedOwner: Boolean(user.isVerifiedOwner),
+        banned: user.banned?.isBanned || false,
+        banReason: user.banned?.reason || ''
+      },
       reason: typeof banned === 'boolean'
         ? (banned ? (banReason || 'Suspended by admin') : 'Account reinstated')
         : undefined
@@ -665,6 +678,7 @@ const getAdminAnalytics = asyncHandler(async (req, res) => {
           name: '$owner.name',
           email: '$owner.email',
           verified: '$owner.verified',
+          isVerifiedOwner: '$owner.isVerifiedOwner',
           banned: '$owner.banned',
           listings: 1,
           approvedListings: 1,

@@ -62,6 +62,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isVerifiedOwner: {
+    type: Boolean,
+    default: false
+  },
   banned: {
     isBanned: {
       type: Boolean,
@@ -259,6 +263,7 @@ userSchema.methods.getPublicProfile = function() {
     role: this.role,
     phone: this.phone,
     verified: this.verified,
+    isVerifiedOwner: this.isVerifiedOwner,
     rating: this.rating,
     language: this.language,
     avatar: this.avatar,

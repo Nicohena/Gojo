@@ -161,7 +161,7 @@ const getHouses = asyncHandler(async (req, res) => {
 
   const [houses, total] = await Promise.all([
     House.find(filter)
-      .populate('ownerId', 'name rating verified')
+      .populate('ownerId', 'name rating verified isVerifiedOwner')
       .sort(sortOption)
       .skip(skip)
       .limit(Number(limit)),
@@ -206,7 +206,7 @@ const getHouses = asyncHandler(async (req, res) => {
  */
 const getHouseById = asyncHandler(async (req, res) => {
   const house = await House.findById(req.params.id)
-    .populate('ownerId', 'name email phone rating verified avatar')
+    .populate('ownerId', 'name email phone rating verified isVerifiedOwner avatar')
     .populate('ratings.tenantId', 'name avatar');
 
   if (!house) {
