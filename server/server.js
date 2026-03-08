@@ -49,6 +49,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
 const uploadRoutes = require('./routes/uploadRoutes'); // Import upload routes
+const contactRoutes = require('./routes/contactRoutes');
 
 // ============================================
 // ENVIRONMENT VARIABLE VALIDATION
@@ -189,6 +190,7 @@ app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/recommendations', recommendationRoutes);
+app.use('/api/v1/contact', contactRoutes);
 
 // Compatibility fallback for old routes (optional but helpful during transition)
 app.use('/api/upload', uploadRoutes); // Register upload routes fallback
@@ -200,6 +202,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/contact', contactRoutes);
 
 // ============================================
 // GEOCODING PROXY (avoids browser CORS with Nominatim)

@@ -2,6 +2,14 @@
  * Price Calculation Utilities
  */
 
+export const SERVICE_FEE_RATE = 0.05;
+
+export const calculateServiceFee = (baseAmount = 0) => {
+  const amount = Number(baseAmount);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  return Math.floor(amount * SERVICE_FEE_RATE);
+};
+
 /**
  * Gets the number of days in a given month/year
  * @param {Date} date 
@@ -16,19 +24,18 @@ export const getDaysInMonth = (date) => {
  * @param {number} basePrice - Monthly price
  * @param {Date|string} startDate 
  * @param {Date|string} endDate 
- * @param {number} serviceFee - Fixed service fee
- * @returns {Object} { subtotal, total, diffDays }
+ * @returns {Object} { subtotal, serviceFee, total, diffDays, serviceFeeRate }
  */
-export const calculateTotalPrice = (basePrice, startDate, endDate, serviceFee = 350) => {
+export const calculateTotalPrice = (basePrice, startDate, endDate) => {
   if (!basePrice || !startDate || !endDate) {
-    return { subtotal: 0, total: 0, diffDays: 0 };
+    return { subtotal: 0, serviceFee: 0, total: 0, diffDays: 0, serviceFeeRate: SERVICE_FEE_RATE };
   }
 
   const start = new Date(startDate);
   const end = new Date(endDate);
 
   if (end <= start) {
-    return { subtotal: 0, total: 0, diffDays: 0 };
+    return { subtotal: 0, serviceFee: 0, total: 0, diffDays: 0, serviceFeeRate: SERVICE_FEE_RATE };
   }
 
   const diffMs = end - start;
@@ -38,11 +45,14 @@ export const calculateTotalPrice = (basePrice, startDate, endDate, serviceFee = 
   const daysInMonth = getDaysInMonth(start);
   const dailyRate = basePrice / daysInMonth;
   const subtotal = Math.round(dailyRate * diffDays);
+  const serviceFee = calculateServiceFee(subtotal);
   
   return {
     subtotal,
+    serviceFee,
     total: subtotal + serviceFee,
-    diffDays
+    diffDays,
+    serviceFeeRate: SERVICE_FEE_RATE
   };
 };
 

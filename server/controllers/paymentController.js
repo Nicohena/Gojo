@@ -19,7 +19,7 @@ const House = require('../models/House');
 const User = require('../models/User');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { verifyPaymentWithChapa } = require('../middlewares/chapaMiddleware');
-const { PAYMENT_STATUS, logPaymentEvent } = require('../utils/paymentUtils');
+const { PAYMENT_STATUS, logPaymentEvent, calculateServiceFee } = require('../utils/paymentUtils');
 const {
   sendPaymentSuccessEmails,
   sendPaymentFailedEmail,
@@ -181,7 +181,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
     console.log(`[Payment Debug] Invalid rent amount: ${rentAmount}`);
     throw new ApiError('Invalid booking amount. Please contact support.', 400);
   }
-  const serviceFee = Math.round(rentAmount * 0.05); // 5% service fee
+  const serviceFee = calculateServiceFee(rentAmount);
   const totalAmount = rentAmount + serviceFee;
 
   console.log(`[Payment] Initiating ${normalizedMethod} payment for booking ${bookingId}. Total: ${totalAmount}`);

@@ -20,6 +20,19 @@ const PAYMENT_STATUS = {
   CANCELLED: 'cancelled'
 };
 
+const SERVICE_FEE_RATE = 0.05;
+
+/**
+ * Calculate service fee capped at 5% of base amount (never higher)
+ * @param {number} baseAmount
+ * @returns {number}
+ */
+const calculateServiceFee = (baseAmount = 0) => {
+  const amount = Number(baseAmount);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  return Math.floor(amount * SERVICE_FEE_RATE);
+};
+
 /**
  * Log a financial transaction event
  * @param {Object} params - Logging parameters
@@ -68,6 +81,8 @@ const formatCurrency = (amount, currency = 'ETB') => {
 
 module.exports = {
   PAYMENT_STATUS,
+  SERVICE_FEE_RATE,
+  calculateServiceFee,
   logPaymentEvent,
   formatCurrency
 };
