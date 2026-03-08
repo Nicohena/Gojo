@@ -117,7 +117,7 @@ const Modal = ({
       <div
         ref={modalRef}
         className={clsx(
-          "bg-white rounded-xl shadow-2xl w-full transform transition-all",
+          "bg-[#111] text-[#f8f6f3] border border-[#d4af37]/15 rounded-xl shadow-2xl w-full transform transition-all",
           sizeClasses[size],
           className,
         )}
@@ -125,16 +125,16 @@ const Modal = ({
       >
         {/* Modal Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-[#d4af37]/10">
             {title && (
-              <h2 id="modal-title" className="text-2xl font-bold text-gray-900">
+              <h2 id="modal-title" className="text-2xl font-bold text-[#f8f6f3]">
                 {title}
               </h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+                className="text-[#9a9a9a] hover:text-[#f8f6f3] transition-colors p-1 rounded-lg hover:bg-[#d4af37]/10"
                 aria-label="Close modal"
               >
                 <X className="h-6 w-6" />
