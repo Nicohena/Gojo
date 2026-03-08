@@ -16,7 +16,7 @@ const UserManagement = () => {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
-  const [verifiedFilter, setVerifiedFilter] = useState("");
+  const [ownerVerificationFilter, setOwnerVerificationFilter] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(15);
   const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1, limit: 15 });
@@ -26,7 +26,7 @@ const UserManagement = () => {
   const [selectedUserActivity, setSelectedUserActivity] = useState(null);
   const { confirm, ConfirmDialog: ConfirmDialogComponent } = useConfirmDialog();
 
-  useEffect(() => { fetchUsers(); }, [page, roleFilter, verifiedFilter, searchTerm]);
+  useEffect(() => { fetchUsers(); }, [page, roleFilter, ownerVerificationFilter, searchTerm]);
 
   useEffect(() => {
     const trimmed = searchInput.trim();
@@ -45,7 +45,13 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const [data, stats] = await Promise.all([
-        adminService.getUsers({ page, limit, role: roleFilter || undefined, verified: verifiedFilter || undefined, search: searchTerm || undefined }),
+        adminService.getUsers({
+          page,
+          limit,
+          role: roleFilter || undefined,
+          isVerifiedOwner: ownerVerificationFilter || undefined,
+          search: searchTerm || undefined
+        }),
         adminService.getStats(),
       ]);
       const usersList = Array.isArray(data) ? data : data?.data?.users;
@@ -66,8 +72,15 @@ const UserManagement = () => {
   const handleExport = () => {
     if (!users.length) return;
     const rows = [
-      ["Name", "Email", "Phone", "Role", "Verified", "CreatedAt"],
-      ...users.map((u) => [u.name || "", u.email || "", u.phone || "", u.role || "", u.verified ? "Yes" : "No", u.createdAt ? new Date(u.createdAt).toISOString() : ""]),
+      ["Name", "Email", "Phone", "Role", "Owner Verified", "CreatedAt"],
+      ...users.map((u) => [
+        u.name || "",
+        u.email || "",
+        u.phone || "",
+        u.role || "",
+        u.role === "owner" ? (u.isVerifiedOwner ? "Yes" : "No") : "N/A",
+        u.createdAt ? new Date(u.createdAt).toISOString() : ""
+      ]),
     ];
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -189,12 +202,12 @@ const UserManagement = () => {
               <option value="owner">Owner</option>
               <option value="admin">Admin</option>
             </select>
-            <select value={verifiedFilter} onChange={(e) => { setPage(1); setVerifiedFilter(e.target.value); }} className={selectCls}>
-              <option value="">All Verification</option>
-              <option value="true">Verified</option>
-              <option value="false">Unverified</option>
+            <select value={ownerVerificationFilter} onChange={(e) => { setPage(1); setOwnerVerificationFilter(e.target.value); }} className={selectCls}>
+              <option value="">All Owner Verification</option>
+              <option value="true">Verified Owners</option>
+              <option value="false">Unverified Owners</option>
             </select>
-            <button onClick={() => { setSearchInput(""); setSearchTerm(""); setRoleFilter(""); setVerifiedFilter(""); setPage(1); setSuggestions([]); }} className="text-xs text-[#9a9a9a] uppercase tracking-widest hover:text-[#d4af37]">Reset</button>
+            <button onClick={() => { setSearchInput(""); setSearchTerm(""); setRoleFilter(""); setOwnerVerificationFilter(""); setPage(1); setSuggestions([]); }} className="text-xs text-[#9a9a9a] uppercase tracking-widest hover:text-[#d4af37]">Reset</button>
             <button onClick={handleExport} className="ml-auto flex items-center gap-2 px-4 py-2 border border-[#d4af37]/20 text-[#d4af37]/70 text-xs font-bold tracking-widest uppercase hover:border-[#d4af37] hover:text-[#d4af37]">Export CSV</button>
           </div>
           {suggestions.length > 0 && (
@@ -311,7 +324,14 @@ const UserManagement = () => {
                 { l: "Email", v: selectedUser.email },
                 { l: "Phone", v: selectedUser.phone || "N/A" },
                 { l: "Role", v: selectedUser.role.toUpperCase() },
-                { l: "Verification", v: selectedUser.verified ? "VERIFIED" : "NOT VERIFIED" },
+                
+                {
+                  l: "Verification",
+                  v:
+                    selectedUser.role === "owner"
+                      ? (selectedUser.isVerifiedOwner ? "VERIFIED OWNER" : "NOT VERIFIED OWNER")
+                      : "N/A"
+                },
                 { l: "Member Since", v: selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : "N/A" },
                 { l: "Account Status", v: selectedUser?.banned?.isBanned ? "SUSPENDED" : "ACTIVE" },
                 { l: "Rating", v: selectedUser.rating?.average ? `${selectedUser.rating.average.toFixed(1)} / 5.0` : "NEW" }
@@ -322,6 +342,13 @@ const UserManagement = () => {
                 </div>
               ))}
             </div>
+
+            {selectedUser.role === "owner" && selectedUser.isVerifiedOwner && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-400/40 bg-blue-500/15 text-blue-300 text-[11px] font-bold uppercase tracking-wider" title="Verified Owner">
+                <span className="w-2 h-2 rounded-full bg-blue-300" />
+                Verified Owner
+              </div>
+            )}
 
             {selectedUserActivity && (
               <div className="bg-[#0a0a0a] border border-[#d4af37]/10 p-5 space-y-3">

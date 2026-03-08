@@ -2,12 +2,138 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getRedirectPath } from "../utils/auth";
-import { Thermometer, Lightbulb, Shield, Zap, Key, ArrowRight, Loader2 } from 'lucide-react';
+import { Shield, Zap, Key, ArrowRight, Mail, Phone, MapPin, Clock } from 'lucide-react';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { houseService } from "../api/houseService";
+import contactService from "../api/contactService";
+import toast from "react-hot-toast";
+const ContactForm = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+  const [errors, setErrors] = useState({});
+  const maxMessageLen = 2000;
 
+  const isValidEmail = (v = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+
+  const validate = () => {
+    const e = {};
+    const tName = String(name || "").trim();
+    const tEmail = String(email || "").trim();
+    const tMsg = String(message || "").trim();
+    if (tName.length < 2) e.name = 'Please enter your full name.';
+    if (!isValidEmail(tEmail)) e.email = 'Please enter a valid email address.';
+    if (tMsg.length < 10) e.message = 'Message should be at least 10 characters.';
+    if (tMsg.length > maxMessageLen) e.message = `Message must be under ${maxMessageLen} characters.`;
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) {
+      toast.error('Please fix the highlighted errors.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await contactService.submitInquiry({ name: name.trim(), email: email.trim(), message: message.trim() });
+      toast.success("Message sent — we'll get back to you soon.");
+      setIsSent(true);
+      setName("");
+      setEmail("");
+      setMessage("");
+      setErrors({});
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to send message.';
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setIsSent(false);
+    setErrors({});
+    setName('');
+    setEmail('');
+    setMessage('');
+  };
+
+  if (isSent) {
+    return (
+      <div className="p-6 bg-emerald-900/5 border border-emerald-500/15 rounded">
+        <p className="text-[#d4af37] font-bold">Message sent</p>
+        <p className="text-[#f8f6f3] mt-2">Thank you — our team will respond to your inquiry shortly.</p>
+        <div className="mt-4">
+          <button onClick={resetForm} className="px-4 py-2 bg-[#d4af37] text-[#0a0a0a] font-bold">Send another</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2" noValidate>
+      <div>
+        <input
+          aria-label="Full name"
+          type="text"
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={isSubmitting}
+          className={`w-full bg-[#0a0a0a] border px-4 py-3 text-[#f8f6f3] placeholder-[#9a9a9a]/50 focus:outline-none focus:border-[#d4af37]/50 ${errors.name ? 'border-red-500' : 'border-[#d4af37]/15'}`}
+        />
+        {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+      </div>
+
+      <div>
+        <input
+          aria-label="Email address"
+          type="email"
+          placeholder="Email Address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={isSubmitting}
+          className={`w-full bg-[#0a0a0a] border px-4 py-3 text-[#f8f6f3] placeholder-[#9a9a9a]/50 focus:outline-none focus:border-[#d4af37]/50 ${errors.email ? 'border-red-500' : 'border-[#d4af37]/15'}`}
+        />
+        {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+      </div>
+
+      <div>
+        <textarea
+          aria-label="Message"
+          rows={6}
+          placeholder="Tell us what you're looking for..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          disabled={isSubmitting}
+          maxLength={maxMessageLen}
+          className={`w-full bg-[#0a0a0a] border px-4 py-3 text-[#f8f6f3] placeholder-[#9a9a9a]/50 focus:outline-none focus:border-[#d4af37]/50 resize-none ${errors.message ? 'border-red-500' : 'border-[#d4af37]/15'}`}
+        />
+        <div className="flex justify-between items-center">
+          {errors.message ? <p className="text-red-400 text-xs mt-1">{errors.message}</p> : <div />}
+          <p className={`text-xs mt-1 ${message.length > maxMessageLen * 0.9 ? 'text-red-400' : 'text-[#9a9a9a]'}`}>{message.length}/{maxMessageLen}</p>
+        </div>
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-8 py-3 bg-[#d4af37] text-[#0a0a0a] text-sm font-bold tracking-[0.1em] hover:bg-[#b8941f] transition-all disabled:opacity-50"
+        >
+          {isSubmitting ? 'Sending...' : 'Send Message'}
+        </button>
+      </div>
+    </form>
+  );
+};
 export default function LandingPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -24,19 +150,39 @@ export default function LandingPage() {
     const fetchFeatured = async () => {
       try {
         setLoading(true);
-        const response = await houseService.getHouses({
-          limit: 3,
-          sort: "-createdAt",
-        });
-        setFeaturedHouses(response.data.data.houses);
+        const response = await houseService.getHouses({ limit: 3, sort: '-createdAt' });
+        // Support different API shapes (data.data.houses or data.houses)
+        const houses = response?.data?.data?.houses || response?.data?.houses || [];
+        console.debug('fetchFeatured response:', response?.data);
+        setFeaturedHouses(Array.isArray(houses) ? houses : []);
       } catch (err) {
-        console.error("Failed to fetch featured houses", err);
+        console.error('Failed to fetch featured houses', err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchFeatured();
+  }, []);
+
+  useEffect(() => {
+    const elements = document.querySelectorAll("[data-reveal]");
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            obs.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
   }, []);
 
   const features = [
@@ -132,7 +278,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-[#d4af37]/10">
         <div className="max-w-[1600px] mx-auto px-8 py-6 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
-            <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
+            <img src="/logo-mark.svg" alt="Logo" className="w-8 h-8" />
             <div className="text-[#d4af37] tracking-[0.3em] text-xl" style={{ fontFamily: "'Playfair Display', serif" }}>
               SMART RENT
             </div>
@@ -143,6 +289,9 @@ export default function LandingPage() {
             </button>
             <a href="#experience" className="text-[#f8f6f3] tracking-[0.1em] text-sm hover:text-[#d4af37] transition-colors">
               How it works
+            </a>
+            <a href="#contact" className="text-[#f8f6f3] tracking-[0.1em] text-sm hover:text-[#d4af37] transition-colors">
+              Contact
             </a>
             <button onClick={() => navigate("/owner/dashboard")} className="text-[#f8f6f3] tracking-[0.1em] text-sm hover:text-[#d4af37] transition-colors">
              Landlords
@@ -171,17 +320,18 @@ export default function LandingPage() {
         </div>
         <div className="relative z-10 h-full flex flex-col items-center justify-center px-8">
           <h1 
-            className="text-6xl md:text-7xl lg:text-8xl text-center text-[#f8f6f3] mb-6 tracking-tight leading-[1.1]"
-            style={{ fontFamily: "'Playfair Display', serif" }}
+            data-reveal
+            className="reveal-on-scroll text-6xl md:text-7xl lg:text-8xl text-center text-[#f8f6f3] mb-6 tracking-tight leading-[1.1]"
+            style={{ fontFamily: "'Playfair Display', serif", transitionDelay: "80ms" }}
           >
             Elevated Living.
             <br />
             Architecturally Perfect.
           </h1>
-          <p className="text-lg md:text-xl text-[#9a9a9a] text-center max-w-2xl mb-12 tracking-wide">
+          <p data-reveal className="reveal-on-scroll text-lg md:text-xl text-[#9a9a9a] text-center max-w-2xl mb-12 tracking-wide" style={{ transitionDelay: "160ms" }}>
             Discover a curated collection of world-class smart residences, reserved for the discerning few.
           </p>
-          <button onClick={() => navigate("/search")} className="px-10 py-4 border-2 border-[#d4af37] text-[#d4af37] tracking-[0.1em] text-sm hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all">
+          <button data-reveal onClick={() => navigate("/search")} className="reveal-on-scroll px-10 py-4 border-2 border-[#d4af37] text-[#d4af37] tracking-[0.1em] text-sm hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all" style={{ transitionDelay: "240ms" }}>
             Explore the Collection
           </button>
         </div>
@@ -192,7 +342,7 @@ export default function LandingPage() {
       <section id="experience" className="bg-[#0a0a0a] py-32 px-8">
         <div className="max-w-[1600px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
-            <div>
+            <div data-reveal className="reveal-on-scroll">
               <h2 
                 className="text-5xl md:text-6xl text-[#f8f6f3] mb-6 leading-[1.1]"
                 style={{ fontFamily: "'Playfair Display', serif" }}
@@ -211,7 +361,9 @@ export default function LandingPage() {
                 return (
                   <div 
                     key={index}
-                    className="border-l-2 border-[#d4af37]/30 pl-6 py-4 hover:border-[#d4af37] transition-colors"
+                    data-reveal
+                    className="reveal-on-scroll border-l-2 border-[#d4af37]/30 pl-6 py-4 hover:border-[#d4af37] transition-colors"
+                    style={{ transitionDelay: `${120 + index * 80}ms` }}
                   >
                     <div className="mb-4">
                       <Icon className="w-8 h-8 text-[#d4af37]" strokeWidth={1.5} />
@@ -238,7 +390,8 @@ export default function LandingPage() {
         <div className="max-w-[1600px] mx-auto px-8 mb-16">
           <div className="flex items-end justify-between">
             <h2 
-              className="text-5xl md:text-6xl text-[#f8f6f3]"
+              data-reveal
+              className="reveal-on-scroll text-5xl md:text-6xl text-[#f8f6f3]"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
               Featured Properties
@@ -258,7 +411,7 @@ export default function LandingPage() {
                 Loading properties...
               </p>
         ) : (
-          <div className="pl-8 md:pl-16 lg:pl-24">
+          <div data-reveal className="reveal-on-scroll pl-8 md:pl-16 lg:pl-24">
             <Slider {...sliderSettings}>
               {properties.map((property, index) => (
                 <div key={index} className="px-3">
@@ -312,7 +465,7 @@ export default function LandingPage() {
         }}
       >
         <div className="absolute inset-0 bg-[#0a0a0a]/85" />
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
+        <div data-reveal className="reveal-on-scroll relative z-10 max-w-4xl mx-auto text-center">
           <h2 
             className="text-5xl md:text-7xl text-[#f8f6f3] mb-8 leading-[1.1]"
             style={{ fontFamily: "'Playfair Display', serif" }}
@@ -328,6 +481,48 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Contact Section */}
+      <section id="contact" className="bg-[#0a0a0a] py-32 px-8 border-t border-[#d4af37]/10">
+        <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+          <div data-reveal className="reveal-on-scroll">
+            <p className="text-[#d4af37] uppercase tracking-[0.3em] text-[11px] font-bold mb-4">Contact</p>
+            <h2 className="text-5xl md:text-6xl text-[#f8f6f3] mb-6 leading-[1.1]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Let's help you
+              <br />
+              find the right home.
+            </h2>
+            <p className="text-[#9a9a9a] text-lg max-w-xl leading-relaxed">
+              Reach out to our concierge team for listings, onboarding, and landlord support.
+            </p>
+            <div className="mt-10 space-y-4">
+              <a href="mailto:support@smartrent.com" className="flex items-center gap-4 text-[#f8f6f3] hover:text-[#d4af37] transition-colors">
+                <Mail className="w-5 h-5 text-[#d4af37]" />
+                support@smartrent.com
+              </a>
+              <a href="tel:+251911000000" className="flex items-center gap-4 text-[#f8f6f3] hover:text-[#d4af37] transition-colors">
+                <Phone className="w-5 h-5 text-[#d4af37]" />
+                +251 911 000 000
+              </a>
+              <div className="flex items-center gap-4 text-[#f8f6f3]">
+                <MapPin className="w-5 h-5 text-[#d4af37]" />
+                Addis Ababa, Ethiopia
+              </div>
+              <div className="flex items-center gap-4 text-[#9a9a9a]">
+                <Clock className="w-5 h-5 text-[#d4af37]" />
+                Mon - Sat, 8:00 AM - 8:00 PM
+              </div>
+            </div>
+          </div>
+
+          <div data-reveal className="reveal-on-scroll bg-[#111] border border-[#d4af37]/10 p-8 md:p-10 space-y-5">
+            <h3 className="text-2xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Send an Inquiry
+            </h3>
+            <ContactForm />
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-[#0a0a0a] border-t border-[#d4af37]/10 py-12 px-8">
         <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
@@ -335,7 +530,7 @@ export default function LandingPage() {
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <img src="/logo.svg" alt="Logo" className="w-6 h-6" />
+            <img src="/logo-mark.svg" alt="Logo" className="w-6 h-6" />
             <div className="text-[#d4af37] tracking-[0.3em] text-lg" style={{ fontFamily: "'Playfair Display', serif" }}>
               SMART RENT
             </div>

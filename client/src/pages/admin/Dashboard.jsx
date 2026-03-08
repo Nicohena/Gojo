@@ -95,16 +95,17 @@ const AdminDashboard = () => {
 
   const handleToggleUserVerification = async (owner) => {
     const ownerId = owner.ownerIdString || owner.ownerId;
+    const nextStatus = !Boolean(owner.isVerifiedOwner);
     try {
-      await adminService.updateUser(ownerId, { verified: !owner.verified });
+      await adminService.updateUser(ownerId, { isVerifiedOwner: nextStatus });
       setTopOwners((prev) =>
         prev.map((item) =>
-          (item.ownerIdString || item.ownerId) === ownerId ? { ...item, verified: !item.verified } : item
+          (item.ownerIdString || item.ownerId) === ownerId ? { ...item, isVerifiedOwner: nextStatus } : item
         )
       );
-      toast.success(!owner.verified ? `${owner.name} marked as verified.` : `${owner.name} marked as unverified.`);
+      toast.success(nextStatus ? `${owner.name} marked as verified owner.` : `${owner.name} marked as unverified owner.`);
     } catch (err) {
-      toast.error("Failed to update account verification.");
+      toast.error("Failed to update owner verification.");
     }
   };
 
@@ -233,18 +234,18 @@ const AdminDashboard = () => {
                       <td className="py-3 text-[#9a9a9a]">{owner.totalViews || 0}</td>
                       <td className="py-3 text-[#9a9a9a]">{owner.conversionRate || 0}%</td>
                       <td className="py-3">
-                        <span className={`text-xs px-2 py-1 font-bold ${owner.verified ? "text-emerald-400" : "text-amber-400"}`}>
-                          {owner.verified ? "Verified" : "Unverified"}
+                        <span className={`text-xs px-2 py-1 font-bold ${owner.isVerifiedOwner ? "text-blue-300" : "text-amber-400"}`}>
+                          {owner.isVerifiedOwner ? "Verified Owner" : "Unverified"}
                         </span>
                       </td>
                       <td className="py-3">
                         <button
                           onClick={() => handleToggleUserVerification(owner)}
                           className={`px-3 py-1 text-xs font-bold border transition-all ${
-                            owner.verified ? "border-[#d4af37]/20 text-[#9a9a9a] hover:border-[#d4af37]/50" : "border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-[#0a0a0a]"
+                            owner.isVerifiedOwner ? "border-blue-400/30 text-blue-300 hover:border-blue-300/60" : "border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-[#0a0a0a]"
                           }`}
                         >
-                          {owner.verified ? "Unverify" : "Verify"}
+                          {owner.isVerifiedOwner ? "Unverify" : "Verify"}
                         </button>
                       </td>
                     </tr>
