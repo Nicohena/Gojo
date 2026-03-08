@@ -14,8 +14,11 @@ import { StatCard } from "../../components/owner/StatCard";
 import { RevenueChart } from "../../components/owner/RevenueChart";
 import { BookingRequestCard } from "../../components/owner/BookingRequestCard";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../context/AuthContext";
+import VerifiedOwnerBadge from "../../components/ui/VerifiedOwnerBadge";
 
 const Overview = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -118,12 +121,15 @@ const Overview = () => {
       <div className="space-y-8 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1
-              className="text-4xl text-[#f8f6f3]"
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
-              Overview
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1
+                className="text-4xl text-[#f8f6f3]"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
+                Overview
+              </h1>
+              {user?.isVerifiedOwner && <VerifiedOwnerBadge />}
+            </div>
             <p className="text-[#9a9a9a] tracking-wide text-sm mt-1">
               Welcome back! Here's what's happening with your properties.
             </p>

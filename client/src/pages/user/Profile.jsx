@@ -5,6 +5,7 @@ import { User, Shield, Bell } from "lucide-react";
 import GeneralProfile from "../../components/settings/GeneralProfile";
 import SecuritySettings from "../../components/settings/SecuritySettings";
 import PreferencesSettings from "../../components/settings/PreferencesSettings";
+import VerifiedOwnerBadge from "../../components/ui/VerifiedOwnerBadge";
 import "../user/Settings.css";
 
 const Profile = () => {
@@ -30,12 +31,15 @@ const Profile = () => {
     <div className="min-h-screen bg-[#0a0a0a]">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1
-          className="text-4xl text-[#f8f6f3] mb-8"
-          style={{ fontFamily: "'Playfair Display', serif" }}
-        >
-          Account Settings
-        </h1>
+        <div className="mb-8 flex items-center gap-3">
+          <h1
+            className="text-4xl text-[#f8f6f3]"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            Account Settings
+          </h1>
+          {user?.role === "owner" && user?.isVerifiedOwner && <VerifiedOwnerBadge />}
+        </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Tab Sidebar */}
