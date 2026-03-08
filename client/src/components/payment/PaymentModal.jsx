@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import logger from "../../utils/logger";
 import { motion } from "framer-motion";
+import { SERVICE_FEE_RATE, calculateServiceFee } from "../../utils/priceUtils";
 
 const PaymentModal = ({ booking, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,7 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
   const [paymentMethod, setPaymentMethod] = useState("chapa");
 
   const rentAmount = booking.totalAmount || 0;
-  const serviceFee = Math.round(rentAmount * 0.05);
+  const serviceFee = calculateServiceFee(rentAmount);
   const totalAmount = rentAmount + serviceFee;
 
   const handleInitiatePayment = async () => {
@@ -133,7 +134,7 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
             </div>
             <div className="flex justify-between text-base">
               <div className="flex items-center gap-2 group cursor-help">
-                <span className="text-[#9a9a9a] font-medium tracking-tight">Security & Logistics (5%)</span>
+                <span className="text-[#9a9a9a] font-medium tracking-tight">Security & Logistics ({Math.round(SERVICE_FEE_RATE * 100)}%)</span>
                 <Info size={14} className="text-[#d4af37]/40 group-hover:text-[#d4af37] transition-colors" />
               </div>
               <span className="font-bold text-[#f8f6f3]">
