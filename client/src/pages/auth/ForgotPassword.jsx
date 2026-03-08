@@ -43,7 +43,7 @@ const ForgotPassword = () => {
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="flex flex-col items-center gap-3 mb-10">
-          <img src="/logo.svg" alt="Logo" className="w-12 h-12" />
+          <img src="/logo-mark.svg" alt="Logo" className="w-12 h-12" />
           <span
             className="text-[#d4af37] tracking-[0.4em] text-2xl"
             style={{ fontFamily: "'Playfair Display', serif" }}

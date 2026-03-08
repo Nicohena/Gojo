@@ -1,5 +1,5 @@
 import React from "react";
-import { SmartMatchBadge, VerifiedBadge, FairPriceBadge } from "./Badges";
+import { SmartMatchBadge, FairPriceBadge } from "./Badges";
 import { Star, MapPin, Heart, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getImageUrl } from "../../utils/imageUtils";
@@ -10,8 +10,6 @@ import { getImageUrl } from "../../utils/imageUtils";
  */
 export const HouseCard = ({ house, isSaved = false, onToggleSave }) => {
   const navigate = useNavigate();
-  const isVerified =
-    typeof house.verified === "boolean" ? house.verified : !!house.verified?.status;
   const views = Number(house.views || house.viewCount || 0);
 
   return (
@@ -36,7 +34,6 @@ export const HouseCard = ({ house, isSaved = false, onToggleSave }) => {
 
         {/* Intelligence Badges */}
         <div className="absolute top-6 left-6 flex flex-col gap-2.5 z-10 translate-y-0 group-hover:-translate-y-1 transition-transform duration-700">
-          {isVerified && <VerifiedBadge />}
           {house.match && <SmartMatchBadge percentage={house.match} />}
         </div>
 

@@ -101,8 +101,8 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
     }
   }, [startDate, house.minLeaseDuration]);
 
-  const { subtotal, total, diffDays } = useMemo(
-    () => calculateTotalPrice(house.price, startDate, endDate, 350),
+  const { subtotal, serviceFee, total, diffDays, serviceFeeRate } = useMemo(
+    () => calculateTotalPrice(house.price, startDate, endDate),
     [house.price, startDate, endDate],
   );
 
@@ -313,9 +313,9 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
             </div>
             <div className="flex justify-between items-center text-[11px] font-bold tracking-widest uppercase">
               <span className="text-[#9a9a9a] underline decoration-[#d4af37]/20">
-                Service Fee
+                Service Fee ({Math.round(serviceFeeRate * 100)}%)
               </span>
-              <span className="text-[#f8f6f3]">ETB 350</span>
+              <span className="text-[#f8f6f3]">ETB {serviceFee.toLocaleString()}</span>
             </div>
             <div className="flex justify-between pt-6 border-t border-[#d4af37]/20">
               <span
