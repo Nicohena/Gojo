@@ -75,13 +75,13 @@ const PreferencesSettings = () => {
       key: "emailNotifications",
       icon: Bell,
       title: "Booking Alerts",
-      description: "Get notified when there's an update on your booking requests.",
+      description: "Receive updates regarding your booking requests and status changes.",
     },
     {
       key: "marketingEmails",
       icon: Mail,
       title: "Offers & Listings",
-      description: "Receive updates on new properties and special property alerts.",
+      description: "Receive information regarding new property listings and exclusive alerts.",
     },
   ];
 
@@ -89,10 +89,10 @@ const PreferencesSettings = () => {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-10">
         <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
-          Preferences
+          Notification Preferences
         </h2>
         <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">
-          Customize your notification settings and stay updated with your preferred content.
+          Configure your notification preferences to stay informed on system activity.
         </p>
       </div>
 

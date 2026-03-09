@@ -59,10 +59,10 @@ const SecuritySettings = () => {
     <div className="max-w-2xl">
       <div className="mb-10">
         <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
-          Security
+          Security Settings
         </h2>
         <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">
-          Manage your password and account security settings.
+          Maintain your account security and authentication credentials.
         </p>
       </div>
 
@@ -70,12 +70,12 @@ const SecuritySettings = () => {
       <div className="mb-12 pb-12 border-b border-[#d4af37]/10">
         <h3 className="text-sm font-bold text-[#d4af37] mb-6 flex items-center gap-3 uppercase tracking-widest">
           <Mail size={18} />
-          Change Password
+          Update Password
         </h3>
 
         <p className="text-sm text-[#9a9a9a] mb-6 leading-relaxed">
-          To change your password, we'll send a secure reset link to your registered email address.
-          Follow the instructions in the email to set a new password.
+          To update your password, a secure reset link will be dispatched to your registered email address.
+          Follow the instructions provided in the correspondence to establish new credentials.
         </p>
 
         <div className="bg-[#111] border border-[#d4af37]/10 rounded-xl p-6 mb-6">
@@ -105,7 +105,7 @@ const SecuritySettings = () => {
             disabled={loading}
             className="w-full bg-[#d4af37] text-[#0a0a0a] font-bold text-xs uppercase tracking-[0.2em] py-4 rounded-xl hover:bg-[#b8941f] transition-all disabled:opacity-50"
           >
-            {loading ? "Sending..." : "Send Password Reset Email"}
+            {loading ? "Dispatching..." : "Dispatch Reset Link"}
           </button>
         )}
       </div>

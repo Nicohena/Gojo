@@ -107,8 +107,8 @@ const GeneralProfile = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-10">
-        <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Profile Information</h2>
-        <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">Manage your public profile and contact details.</p>
+        <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>General Profile</h2>
+        <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">Manage your personal details and account information.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
@@ -191,7 +191,7 @@ const GeneralProfile = () => {
         {/* Save Button */}
         <div className="flex justify-end pt-4">
           <button type="submit" disabled={loading} className="px-10 py-3 bg-[#d4af37] text-[#0a0a0a] text-xs font-bold uppercase tracking-widest hover:bg-[#b8941f] shadow-2xl transition-all disabled:opacity-50">
-            {loading ? "Applying Changes..." : "Save"}
+            {loading ? "Updating Profile..." : "Save Changes"}
           </button>
         </div>
       </form>
