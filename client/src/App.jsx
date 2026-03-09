@@ -20,7 +20,7 @@ const SearchPage = lazy(() => import("./pages/tenant/Search"));
 const DetailsPage = lazy(() => import("./pages/tenant/Details"));
 const TenantDashboard = lazy(() => import("./pages/tenant/Dashboard"));
 const SavedHomesPage = lazy(() => import("./pages/tenant/SavedHomes"));
-const NotificationsPage = lazy(() => import("./pages/tenant/Notifications"));
+const NotificationsPage = lazy(() => import("./pages/user/Notifications"));
 const OwnerDashboard = lazy(() => import("./pages/owner/Overview"));
 const OwnerListings = lazy(() => import("./pages/owner/Listings"));
 const AddListing = lazy(() => import("./pages/owner/AddListing"));
