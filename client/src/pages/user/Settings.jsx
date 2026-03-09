@@ -10,7 +10,7 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
 
   const tabs = [
-    { id: "general", label: "General Profile", icon: User },
+    { id: "general", label: "Profile", icon: User },
     { id: "security", label: "Security", icon: Shield },
     { id: "preferences", label: "Preferences", icon: Bell },
   ];
@@ -29,26 +29,28 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f8f6f3]">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <nav className="settings-nav">
+          <aside className="lg:w-72 flex-shrink-0">
+            <div className="bg-[#111] rounded-2xl border border-[#d4af37]/10 overflow-hidden sticky top-24">
+              <nav className="flex flex-col p-2">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`settings-nav-item ${
-                        activeTab === tab.id ? "active" : ""
+                      className={`flex items-center gap-4 px-6 py-4 rounded-xl text-sm font-bold transition-all duration-300 ${
+                        activeTab === tab.id
+                          ? "bg-[#d4af37] text-[#0a0a0a] shadow-[0_0_20px_rgba(212,175,55,0.2)]"
+                          : "text-[#9a9a9a] hover:text-[#f8f6f3] hover:bg-white/5"
                       }`}
                     >
-                      <Icon className="w-5 h-5" />
-                      <span>{tab.label}</span>
+                      <Icon size={18} />
+                      <span className="tracking-wide">{tab.label}</span>
                     </button>
                   );
                 })}
@@ -58,7 +60,7 @@ const Settings = () => {
 
           {/* Main Content */}
           <main className="flex-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#111] rounded-2xl border border-[#d4af37]/10 p-8 lg:p-10 shadow-2xl">
               {renderContent()}
             </div>
           </main>

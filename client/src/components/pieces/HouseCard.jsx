@@ -1,6 +1,6 @@
 import React from "react";
-import { SmartMatchBadge, FairPriceBadge } from "./Badges";
-import { Star, MapPin, Heart, Eye } from "lucide-react";
+import { SmartMatchBadge, FairPriceBadge, VerifiedBadge } from "./Badges";
+import { Star, MapPin, Heart, Eye, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getImageUrl } from "../../utils/imageUtils";
 
@@ -11,6 +11,7 @@ import { getImageUrl } from "../../utils/imageUtils";
 export const HouseCard = ({ house, isSaved = false, onToggleSave }) => {
   const navigate = useNavigate();
   const views = Number(house.views || house.viewCount || 0);
+  const isVerified = house.verified?.status || house.verified === true;
 
   return (
     <div
@@ -34,6 +35,16 @@ export const HouseCard = ({ house, isSaved = false, onToggleSave }) => {
 
         {/* Intelligence Badges */}
         <div className="absolute top-6 left-6 flex flex-col gap-2.5 z-10 translate-y-0 group-hover:-translate-y-1 transition-transform duration-700">
+          {isVerified ? (
+            <VerifiedBadge />
+          ) : (
+            <div className="inline-flex items-center gap-1.5 bg-[#0a0a0a]/70 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">
+              <ShieldCheck size={12} className="text-[#9a9a9a]" />
+              <span className="text-[9px] font-black text-[#9a9a9a] tracking-[0.1em] uppercase">
+                Unverified
+              </span>
+            </div>
+          )}
           {house.match && <SmartMatchBadge percentage={house.match} />}
         </div>
 

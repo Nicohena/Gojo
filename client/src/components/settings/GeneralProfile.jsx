@@ -73,7 +73,7 @@ const GeneralProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.firstName.trim() || !formData.lastName.trim()) { toast.error("Name is required"); return; }
+    if (!formData.firstName.trim()) { toast.error("First name is required"); return; }
 
     try {
       setLoading(true);
@@ -107,8 +107,8 @@ const GeneralProfile = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-10">
-        <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Personal Identity</h2>
-        <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">Refine your digital presence and contact intelligence.</p>
+        <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Profile Information</h2>
+        <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">Manage your public profile and contact details.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
@@ -155,12 +155,12 @@ const GeneralProfile = () => {
             <label htmlFor="lastName" className={labelCls}>Last Name</label>
             <div className="relative">
               <User size={14} className="absolute left-4 top-4 text-[#d4af37]/40" />
-              <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleInputChange} className={`${inputCls} pl-11`} required />
+              <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleInputChange} className={`${inputCls} pl-11`} />
             </div>
           </div>
         </div>
 
-        {/* Contact Intelligence */}
+        {/* Contact Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
             <label htmlFor="email" className={labelCls}>Email</label>

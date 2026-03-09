@@ -40,7 +40,6 @@ const PreferencesSettings = () => {
   }, [user]);
 
   const handleToggle = async (key) => {
-    // Use user.id (from getPublicProfile) not user._id
     const userId = user?.id || user?._id;
     if (!userId) {
       toast.error("User not authenticated");
@@ -56,19 +55,15 @@ const PreferencesSettings = () => {
         [key]: newValue,
       }));
 
-      // Auto-save to backend
       await userService.updatePreferences(userId, { [key]: newValue });
-
-      toast.success("Preferences updated");
+      toast.success("Notification preferences updated");
     } catch (error) {
-      // Revert on error
       setPreferences((prev) => ({
         ...prev,
         [key]: !newValue,
       }));
-      console.error("Preferences update error:", error);
       toast.error(
-        error.response?.data?.message || "Failed to update preferences",
+        error.response?.data?.message || "Failed to update preferences"
       );
     } finally {
       setLoading(false);
@@ -79,23 +74,25 @@ const PreferencesSettings = () => {
     {
       key: "emailNotifications",
       icon: Bell,
-      title: "Email Notifications",
-      description: "Receive updates about your booking requests.",
+      title: "Booking Alerts",
+      description: "Get notified when there's an update on your booking requests.",
     },
     {
       key: "marketingEmails",
       icon: Mail,
-      title: "Marketing Emails",
-      description: "Receive offers and new listing alerts.",
+      title: "Offers & Listings",
+      description: "Receive updates on new properties and special property alerts.",
     },
   ];
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Preferences</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Manage your app experience settings.
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="mb-10">
+        <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          Preferences
+        </h2>
+        <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">
+          Customize your notification settings and stay updated with your preferred content.
         </p>
       </div>
 
@@ -105,29 +102,30 @@ const PreferencesSettings = () => {
           return (
             <div
               key={item.key}
-              className="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0"
+              className="flex items-center justify-between p-6 bg-[#0a0a0a] border border-[#d4af37]/10 rounded-xl transition-all hover:border-[#d4af37]/30"
             >
-              <div className="flex items-start gap-3 flex-1">
-                <div className="mt-1">
-                  <Icon className="w-5 h-5 text-gray-600" />
+              <div className="flex items-start gap-4 flex-1">
+                <div className="mt-1 p-2 bg-[#d4af37]/10 rounded-lg">
+                  <Icon className="w-5 h-5 text-[#d4af37]" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-bold text-[#f8f6f3]">
                     {item.title}
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-xs text-[#9a9a9a] mt-1 pr-4">
                     {item.description}
                   </p>
                 </div>
               </div>
-              <label className="toggle-switch ml-4">
+              <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
+                  className="sr-only peer"
                   checked={preferences[item.key]}
                   onChange={() => handleToggle(item.key)}
                   disabled={loading}
                 />
-                <span className="toggle-slider"></span>
+                <div className="w-11 h-6 bg-[#1a1a1a] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d4af37]"></div>
               </label>
             </div>
           );
