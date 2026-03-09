@@ -35,6 +35,7 @@ export const Navbar = () => {
     path === "/search" ||
     path.startsWith("/tenant") ||
     path.startsWith("/owner") ||
+    path.startsWith("/admin") ||
     path === "/messages" ||
     path === "/payments";
 
