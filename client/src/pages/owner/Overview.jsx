@@ -131,7 +131,7 @@ const Overview = () => {
               {user?.isVerifiedOwner && <VerifiedOwnerBadge />}
             </div>
             <p className="text-[#9a9a9a] tracking-wide text-sm mt-1">
-              Welcome back! Here's what's happening with your properties.
+              Welcome back. Review the current status and performance of your property listings.
             </p>
           </div>
           <button
@@ -175,7 +175,7 @@ const Overview = () => {
                     <Users className="text-[#d4af37]/40" size={24} />
                   </div>
                   <p className="text-[#f8f6f3] text-sm">No pending requests</p>
-                  <p className="text-[#9a9a9a] text-xs mt-1">You're all caught up!</p>
+                  <p className="text-[#9a9a9a] text-xs mt-1">All requests have been addressed.</p>
                 </div>
               ) : (
                 pendingRequests.map((request) => (

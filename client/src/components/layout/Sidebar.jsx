@@ -156,7 +156,7 @@ export const Sidebar = () => {
           <>
             <div className="mb-6">
               <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
-                System Control
+                Administrative Setup
               </p>
               <div>
                 <NavItem
@@ -182,7 +182,7 @@ export const Sidebar = () => {
 
             <div>
               <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
-                Intelligence
+                Reporting & Analytics
               </p>
               <div>
                 <NavItem
