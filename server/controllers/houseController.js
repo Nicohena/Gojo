@@ -160,10 +160,6 @@ const getHouses = asyncHandler(async (req, res) => {
   // Execute query with pagination
   const skip = (Number(page) - 1) * Number(limit);
 
-  console.log('[DEBUG getHouses] Filter:', JSON.stringify(filter));
-  console.log('[DEBUG getHouses] Sort:', JSON.stringify(sortOption), 'skip:', skip, 'limit:', limit);
-  console.log('[DEBUG getHouses] Starting DB query...');
-
   const [houses, total] = await Promise.all([
     House.find(filter)
       .populate('ownerId', 'name rating verified isVerifiedOwner')
@@ -172,8 +168,6 @@ const getHouses = asyncHandler(async (req, res) => {
       .limit(Number(limit)),
     House.countDocuments(filter)
   ]);
-
-  console.log('[DEBUG getHouses] DB query complete. Found', houses.length, 'houses, total:', total);
 
   // If user is authenticated, calculate smart match scores
   let housesWithMatch = houses;

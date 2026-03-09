@@ -151,9 +151,9 @@ export default function LandingPage() {
       try {
         setLoading(true);
         const response = await houseService.getHouses({ limit: 3, sort: '-createdAt' });
-        // API response structure: response.data.data.houses (Axios wraps in .data)
-        const houses = response?.data?.data?.houses || [];
-        console.debug('fetchFeatured response:', response?.data?.data);
+        // API response structure: supports multiple backend response formats
+        const houses = response?.data?.data?.houses || response?.data?.houses || [];
+        console.debug('fetchFeatured response:', response?.data?.data || response?.data);
         setFeaturedHouses(Array.isArray(houses) ? houses : []);
       } catch (err) {
         console.error('Failed to fetch featured houses', err);
@@ -166,11 +166,13 @@ export default function LandingPage() {
 
   useEffect(() => {
     const elements = document.querySelectorAll("[data-reveal]");
+    console.debug('[Landing] data-reveal elements found:', elements.length);
     if (!elements.length) return;
 
     const observer = new IntersectionObserver(
       (entries, obs) => {
         entries.forEach((entry) => {
+          console.debug('[Landing] reveal entry:', entry.target, 'isIntersecting:', entry.isIntersecting);
           if (entry.isIntersecting) {
             entry.target.classList.add("is-visible");
             obs.unobserve(entry.target);
@@ -180,10 +182,16 @@ export default function LandingPage() {
       { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
     );
 
-    elements.forEach((el) => observer.observe(el));
+    elements.forEach((el) => {
+      console.debug('[Landing] observing element:', el);
+      observer.observe(el);
+    });
 
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      console.debug('[Landing] disconnecting observer');
+      observer.disconnect();
+    };
+  }, [loading]);
 
   const features = [
     {
@@ -206,7 +214,7 @@ export default function LandingPage() {
   // Map real data if available, otherwise fallback to the beautiful placeholders
   const properties = featuredHouses.length > 0 ? featuredHouses.map(house => ({
     id: house._id,
-    image: house.images?.[0]?.url || house.images?.[0] || 'https://images.unsplash.com/photo-1728019192740-6370819df1c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBnbGFzcyUyMHZpbGxhJTIwZm9yZXN0JTIwYXJjaGl0ZWN0dXJlJTIwbHV4dXJ5fGVufDF8fHx8MTc3Mjg3NDIwOXww&ixlib=rb-4.1.0&q=80&w=1080',
+    image: house.images?.[0]?.url || house.images?.[0] || 'https://images.unsplash.com/photo-1613977257363-707ba9348227',
     title: house.title,
     location: `${house.location?.city || ''}, ${house.location?.state || ''}`,
     price: `$${house.price} / mo`,
@@ -250,7 +258,7 @@ export default function LandingPage() {
     dots: false,
     infinite: properties.length > 2,
     speed: 800,
-    slidesToShow: Math.min(properties.length, 2.2),
+    slidesToShow: Math.min(properties.length, 2),
     slidesToScroll: 1,
     arrows: false,
     autoplay: true,
