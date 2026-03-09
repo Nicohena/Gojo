@@ -223,7 +223,12 @@ export const Sidebar = () => {
             {user?.avatar ? (
               <img src={getImageUrl(user.avatar)} alt="User" className="w-full h-full object-cover" />
             ) : (
-              <UserIcon size={16} className="text-[#d4af37]" />
+              <span
+                className="text-[#d4af37] text-sm font-bold"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
+                {user?.name?.[0]?.toUpperCase() || "U"}
+              </span>
             )}
           </div>
           <div className="flex-1 min-w-0">
