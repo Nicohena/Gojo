@@ -151,9 +151,9 @@ export default function LandingPage() {
       try {
         setLoading(true);
         const response = await houseService.getHouses({ limit: 3, sort: '-createdAt' });
-        // Support different API shapes (data.data.houses or data.houses)
-        const houses = response?.data?.data?.houses || response?.data?.houses || [];
-        console.debug('fetchFeatured response:', response?.data);
+        // API response structure: response.data.data.houses (Axios wraps in .data)
+        const houses = response?.data?.data?.houses || [];
+        console.debug('fetchFeatured response:', response?.data?.data);
         setFeaturedHouses(Array.isArray(houses) ? houses : []);
       } catch (err) {
         console.error('Failed to fetch featured houses', err);
