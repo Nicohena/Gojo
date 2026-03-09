@@ -26,13 +26,15 @@ export const StatCard = ({
   return (
     <div className="bg-[#111] rounded-2xl border border-[#d4af37]/5 p-8 flex flex-col justify-between h-full shadow-2xl hover:border-[#d4af37]/30 transition-all duration-500 group relative overflow-hidden">
       {/* Subtle Background Icon Decoration */}
-      <div className="absolute right-[-10%] bottom-[-10%] opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-700 pointer-events-none">
+      <div className="absolute right-[-10%] bottom-[-10%] opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-700 pointer-events-none">
          <Icon size={120} className="text-white" />
       </div>
       
       <div className="flex justify-between items-start mb-6">
         <div>
-          <p className="text-[#9a9a9a] text-[10px] font-bold uppercase tracking-[0.2em] mb-2">{label}</p>
+          <p className="text-[#9a9a9a] text-[10px] font-bold uppercase tracking-[0.2em] mb-2">
+            {label}
+          </p>
           <h3 className="text-3xl font-bold text-[#f8f6f3] tracking-tight group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: "'Playfair Display', serif" }}>
             {value}
           </h3>

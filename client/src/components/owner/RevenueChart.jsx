@@ -36,7 +36,7 @@ export const RevenueChart = ({ data, loading }) => {
           {/* Vertical Grid lines - sophisticated look */}
           <div className="absolute inset-x-0 bottom-10 top-0 flex flex-col justify-between pointer-events-none -z-10 h-full">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="w-full border-t border-[#d4af37]/5 h-0" />
+              <div key={i} className="w-full border-t border-[#d4af37]/10 h-0" />
             ))}
           </div>
 
@@ -58,10 +58,10 @@ export const RevenueChart = ({ data, loading }) => {
 
                 {/* Bar */}
                 <div
-                  className={`w-full max-w-[45px] rounded-t-lg transition-all duration-700 relative overflow-hidden group-hover:shadow-[0_0_20px_rgba(212,175,55,0.2)] ${
+                  className={`w-full max-w-[45px] rounded-t-lg transition-all duration-700 relative overflow-hidden group-hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] ${
                     index === data.length - 1 
-                      ? "bg-gradient-to-t from-[#d4af37] to-[#f8f6f3]/20 shadow-lg shadow-[#d4af37]/10" 
-                      : "bg-[#1a1a1a] group-hover:bg-[#252525] border border-[#d4af37]/5"
+                      ? "bg-gradient-to-t from-[#d4af37] to-[#f8f6f3]/40 shadow-lg shadow-[#d4af37]/20" 
+                      : "bg-[#2a2a2a] group-hover:bg-[#333] border border-[#d4af37]/15"
                   }`}
                   style={{ height: `${heightPercentage}%` }}
                 >
@@ -72,7 +72,7 @@ export const RevenueChart = ({ data, loading }) => {
                 </div>
 
                 {/* Label */}
-                <span className="text-[10px] font-black text-[#9a9a9a]/40 uppercase tracking-widest absolute bottom-0">
+                <span className="text-[10px] font-black text-[#9a9a9a]/60 uppercase tracking-widest absolute bottom-0">
                   {item.label}
                 </span>
               </div>
