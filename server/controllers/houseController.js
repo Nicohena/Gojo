@@ -14,6 +14,7 @@ const BookingRequest = require('../models/BookingRequest');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { calculateSmartMatch } = require('../utils/smartMatch');
 const { getPriceFairness } = require('../utils/priceFairness');
+const notificationService = require('../utils/notificationService');
 
 const isCloudinaryUrl = (url) =>
   typeof url === 'string' && /^https?:\/\/res\.cloudinary\.com\//i.test(url);
@@ -48,6 +49,14 @@ const createHouse = asyncHandler(async (req, res) => {
 
   // Create house
   const house = await House.create(houseData);
+
+  // Notify all Admins that a new listing was created and needs review.
+  notificationService.notifyAdmins(req.io, {
+    type: 'system',
+    title: 'New Listing Created',
+    message: `A new property "${house.title}" has been listed by ${req.user.name} and requires verification.`,
+    metadata: { house: house._id }
+  }).catch(() => {});
 
   res.status(201).json({
     success: true,
@@ -535,6 +544,14 @@ const reportRejectedListingIssue = asyncHandler(async (req, res) => {
   };
 
   await house.save();
+
+  // Notify all Admins that an owner has reported an issue with a rejected listing.
+  notificationService.notifyAdmins(req.io, {
+    type: 'system',
+    title: 'Rejection Report',
+    message: `Owner ${req.user.name} reported an issue with listing: "${house.title}".`,
+    metadata: { house: house._id }
+  }).catch(() => {});
 
   res.status(200).json({
     success: true,

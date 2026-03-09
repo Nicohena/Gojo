@@ -15,6 +15,7 @@ const Payment = require('../models/Payment');
 const AdminLog = require('../models/AdminLog');
 const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { getAnalytics } = require('../utils/analytics');
+const notificationService = require('../utils/notificationService');
 
 const escapeRegExp = (value = '') =>
   String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -248,6 +249,16 @@ const verifyListing = asyncHandler(async (req, res) => {
     });
   }
 
+  // Create in-app notification for owner
+  notificationService.createNotification(house.ownerId._id, req.io, {
+    type: 'system',
+    title: approved ? 'Listing Verified' : 'Listing Rejected',
+    message: approved
+      ? `Your listing "${house.title}" has been successfully verified.`
+      : `Your listing "${house.title}" was rejected. Reason: ${reason || 'Rejected by admin'}`,
+    metadata: { house: house._id }
+  }).catch(() => {});
+
   res.status(200).json({
     success: true,
     message: `Listing ${approved ? 'verified' : 'rejected'} successfully`,
@@ -417,6 +428,16 @@ const moderateListing = asyncHandler(async (req, res) => {
         reason: trimmedReason
       });
     }
+  }
+
+  // Create in-app notification for owner
+  if (action !== 'delete') {
+    notificationService.createNotification(house.ownerId._id || house.ownerId, req.io, {
+      type: 'system',
+      title: `Listing Updated: ${action.charAt(0).toUpperCase() + action.slice(1)}`,
+      message: `Admin has updated your listing "${house.title}" to status: ${action}.`,
+      metadata: { house: house._id }
+    }).catch(() => {});
   }
 
   res.status(200).json({

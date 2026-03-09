@@ -14,6 +14,7 @@ const {
   sendBookingCreatedEmails,
   sendBookingStatusEmail
 } = require('../utils/emailNotifications');
+const notificationService = require('../utils/notificationService');
 
 /**
  * @desc    Create a booking request
@@ -106,6 +107,14 @@ const createBooking = asyncHandler(async (req, res) => {
       dates: { startDate, endDate }
     });
   }
+
+  // Create in-app notification for owner
+  notificationService.createNotification(house.ownerId._id, req.io, {
+    type: 'booking',
+    title: 'New Booking Request',
+    message: `${req.user.name} requested to book "${house.title}".`,
+    metadata: { house: house._id, booking: booking._id }
+  }).catch(() => {});
 
   sendBookingCreatedEmails({
     tenantName: req.user.name,
@@ -285,6 +294,24 @@ const updateBooking = asyncHandler(async (req, res) => {
       status,
       message
     });
+  }
+
+  // Create in-app notification for tenant
+  notificationService.createNotification(booking.tenantId._id, req.io, {
+    type: 'booking',
+    title: `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+    message: `Your booking for "${booking.houseId.title}" has been ${status}.`,
+    metadata: { house: booking.houseId._id, booking: booking._id }
+  }).catch(() => {});
+
+  // If tenant cancelled, notify owner
+  if (isTenant && status === 'cancelled') {
+    notificationService.createNotification(booking.ownerId._id, req.io, {
+      type: 'booking',
+      title: 'Booking Cancelled',
+      message: `${req.user.name} has cancelled their booking for "${booking.houseId.title}".`,
+      metadata: { house: booking.houseId._id, booking: booking._id }
+    }).catch(() => {});
   }
 
   sendBookingStatusEmail({

@@ -21,10 +21,9 @@ const { asyncHandler, ApiError } = require('../middlewares/errorHandler');
 const { verifyPaymentWithChapa } = require('../middlewares/chapaMiddleware');
 const { PAYMENT_STATUS, logPaymentEvent, calculateServiceFee } = require('../utils/paymentUtils');
 const {
-  sendPaymentSuccessEmails,
-  sendPaymentFailedEmail,
   sendRefundProcessedEmail
 } = require('../utils/emailNotifications');
+const notificationService = require('../utils/notificationService');
 const fs = require('fs');
 
 // Helper for file logging
@@ -75,6 +74,22 @@ const sendPaymentSuccessNotifications = async (payment) => {
     transactionId: payment.transactionId,
     invoiceNumber: payment.invoiceNumber
   });
+
+  // Create in-app notification for tenant
+  notificationService.createNotification(payment.userId, null, { // req.io is not available here, but we can pass null or handle it
+    type: 'system',
+    title: 'Payment Successful',
+    message: `Your payment for "${house?.title || 'your booking'}" has been processed successfully.`,
+    metadata: { house: payment.houseId, booking: payment.bookingId, payment: payment._id }
+  }).catch(() => {});
+
+  // Create in-app notification for owner
+  notificationService.createNotification(payment.ownerId, null, {
+    type: 'system',
+    title: 'Payment Received',
+    message: `You have received a payment for "${house?.title || 'your property'}".`,
+    metadata: { house: payment.houseId, booking: payment.bookingId, payment: payment._id }
+  }).catch(() => {});
 };
 
 const sendPaymentFailureNotification = async (payment, reason) => {
@@ -95,6 +110,14 @@ const sendPaymentFailureNotification = async (payment, reason) => {
     currency: payment.currency,
     reason
   });
+
+  // Create in-app notification for tenant
+  notificationService.createNotification(payment.userId, null, {
+    type: 'system',
+    title: 'Payment Failed',
+    message: `Your payment for "${house?.title || 'your booking'}" has failed. Reason: ${reason || 'Unknown error'}`,
+    metadata: { house: payment.houseId, booking: payment.bookingId, payment: payment._id }
+  }).catch(() => {});
 };
 
 /**
