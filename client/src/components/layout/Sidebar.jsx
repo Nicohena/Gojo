@@ -9,6 +9,11 @@ import {
   Settings,
   LogOut,
   User as UserIcon,
+  LayoutDashboard,
+  Home,
+  Users,
+  BarChart2,
+  History,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -142,6 +147,67 @@ export const Sidebar = () => {
                   label="Settings"
                   active={location.pathname === "/settings"}
                   onClick={() => navigate("/settings")}
+                />
+              </div>
+            </div>
+          </>
+        ) : user?.role === "admin" ? (
+          /* Admin Menu */
+          <>
+            <div className="mb-6">
+              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
+                System Control
+              </p>
+              <div>
+                <NavItem
+                  icon={LayoutDashboard}
+                  label="Dashboard"
+                  active={location.pathname === "/admin"}
+                  onClick={() => navigate("/admin")}
+                />
+                <NavItem
+                  icon={Home}
+                  label="Listings"
+                  active={location.pathname === "/admin/listings"}
+                  onClick={() => navigate("/admin/listings")}
+                />
+                <NavItem
+                  icon={Users}
+                  label="Users"
+                  active={location.pathname === "/admin/users"}
+                  onClick={() => navigate("/admin/users")}
+                />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
+                Intelligence
+              </p>
+              <div>
+                <NavItem
+                  icon={BarChart2}
+                  label="Analytics"
+                  active={location.pathname === "/admin/analytics"}
+                  onClick={() => navigate("/admin/analytics")}
+                />
+                <NavItem
+                  icon={History}
+                  label="Audit Logs"
+                  active={location.pathname === "/admin/logs"}
+                  onClick={() => navigate("/admin/logs")}
+                />
+                <NavItem
+                  icon={Bell}
+                  label="Notifications"
+                  active={location.pathname === "/notifications"}
+                  onClick={() => navigate("/notifications")}
+                />
+                <NavItem
+                  icon={Settings}
+                  label="Settings"
+                  active={location.pathname === "/profile"}
+                  onClick={() => navigate("/profile")}
                 />
               </div>
             </div>
