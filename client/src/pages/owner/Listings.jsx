@@ -37,7 +37,7 @@ const OwnerListings = () => {
       setListings(response.data.data.houses || []);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to load your listings. Please try again.");
+      setError(err.response?.data?.message || "Unable to retrieve property listings. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ const OwnerListings = () => {
   };
 
   const handleReportIssue = async (house) => {
-    const message = window.prompt("Describe the issue and what you fixed so admin can re-review this listing:")?.trim();
+    const message = window.prompt("Please describe the corrective actions taken to address the previous rejection and request a re-review:")?.trim();
     if (!message) return;
     try {
       setUpdatingId(house._id);
@@ -143,7 +143,7 @@ const OwnerListings = () => {
               My Listings
             </h1>
             <p className="text-[#9a9a9a] tracking-wide text-sm mt-1">
-              Manage your properties and track their performance.
+              Oversee your property portfolio and monitor listing performance metrics.
             </p>
           </div>
           <button
@@ -203,8 +203,8 @@ const OwnerListings = () => {
           <div className="border border-red-500/30 bg-red-500/10 text-red-400 p-6 text-center">{error}</div>
         ) : filteredAndSorted.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-[#9a9a9a] text-lg mb-2">You don&apos;t have any listings yet.</p>
-            <p className="text-[#9a9a9a]/60 text-sm mb-6">Create your first listing to start receiving booking requests.</p>
+            <p className="text-[#9a9a9a] text-lg mb-2">No property listings found.</p>
+            <p className="text-[#9a9a9a]/60 text-sm mb-6">Start by creating your first listing to receive booking inquiries from prospective tenants.</p>
             <button
               type="button"
               onClick={() => navigate("/owner/listings/add")}

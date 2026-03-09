@@ -99,7 +99,7 @@ const AuditLogs = () => {
             </Link>
             <div>
               <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Audit Logs</h1>
-              <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Track all admin actions across the platform</p>
+              <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Monitor all administrative actions and system events.</p>
             </div>
           </div>
           <span className="text-sm text-[#9a9a9a]/50">{filteredLogs.length} entries</span>

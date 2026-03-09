@@ -157,9 +157,9 @@ const UserManagement = () => {
           <div>
             <h1 className="text-4xl text-[#f8f6f3] flex items-center gap-3" style={{ fontFamily: "'Playfair Display', serif" }}>
               <Users className="h-8 w-8 text-[#d4af37]" />
-              User Directory
+              User Management
             </h1>
-            <p className="mt-2 text-[#9a9a9a] tracking-wide">Manage user accounts and platform permissions</p>
+            <p className="mt-2 text-[#9a9a9a] tracking-wide">Oversee user accounts, roles, and administrative permissions.</p>
           </div>
           <div className="text-right border-l border-[#d4af37]/10 pl-6">
             <div className="text-[10px] uppercase font-bold text-[#d4af37]/50 tracking-widest">Total Users</div>
@@ -313,7 +313,7 @@ const UserManagement = () => {
       <Modal
         isOpen={!!selectedUser}
         onClose={() => { setSelectedUser(null); setSelectedUserActivity(null); }}
-        title="User Intelligence Profile"
+        title="User Profile Details"
         size="md"
       >
         {selectedUser && (
@@ -352,7 +352,7 @@ const UserManagement = () => {
 
             {selectedUserActivity && (
               <div className="bg-[#0a0a0a] border border-[#d4af37]/10 p-5 space-y-3">
-                <p className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-[#d4af37]/10 pb-2 mb-3">Activity Analytics</p>
+                <p className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-[#d4af37]/10 pb-2 mb-3">User Activity Summary</p>
                 <div className="grid grid-cols-2 gap-3 text-[12px]">
                   <p className="text-[#9a9a9a]">Owned Listings: <span className="text-[#f8f6f3] font-bold">{selectedUserActivity.listingsCount || 0}</span></p>
                   <p className="text-[#9a9a9a]">Bookings (T): <span className="text-[#f8f6f3] font-bold">{selectedUserActivity.bookingsAsTenant || 0}</span></p>

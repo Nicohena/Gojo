@@ -114,7 +114,7 @@ const AdminDashboard = () => {
       <Navbar />
       <div className="max-w-7xl mx-auto py-20 flex items-center justify-center gap-3">
         <Loader2 className="animate-spin text-[#d4af37]" size={36} />
-        <span className="text-[#9a9a9a] tracking-wide">Loading Control Panel...</span>
+        <span className="text-[#9a9a9a] tracking-wide">Initializing Administrative Dashboard...</span>
       </div>
     </div>
   );
@@ -126,9 +126,9 @@ const AdminDashboard = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Admin Control Panel
+              Administrative Dashboard
             </h1>
-            <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Live operational overview and decision queues</p>
+            <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Real-time operational summary and administrative queues</p>
           </div>
           <div className="flex gap-2">
             {["7d", "30d", "90d", "1y"].map((p) => (
@@ -149,7 +149,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <StatCard title="Total Users" value={derived.totalUsers} icon={Users} trend={derived.trends.users} />
           <StatCard title="Verified Houses" value={derived.verifiedHouses} icon={Home} trend={derived.trends.listings} />
-          <StatCard title="Pending Approvals" value={derived.pendingHouses} icon={ShieldAlert} subtitle={derived.pendingHouses > 10 ? "Backlog is high" : "Queue manageable"} />
+          <StatCard title="Pending Approvals" value={derived.pendingHouses} icon={ShieldAlert} subtitle={derived.pendingHouses > 10 ? "Action required: High volume" : "Queue within standard capacity"} />
           <StatCard title="Total Bookings" value={derived.totalBookings} icon={CalendarCheck} trend={derived.trends.bookings} />
         </div>
 
@@ -189,12 +189,12 @@ const AdminDashboard = () => {
 
         {/* Management Shortcuts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {[
-            { to: "/admin/listings", title: "Listing Management", desc: "Review, approve, or reject new house listings submitted by owners.", badge: `${derived.pendingHouses} pending` },
-            { to: "/admin/users", title: "User Management", desc: "Manage user accounts, roles, and permissions across the platform." },
-            { to: "/admin/analytics", title: "Analytics", desc: "View platform performance, revenue trends, and usage statistics." },
-            { to: "/admin/logs", title: "Audit Logs", desc: "Track all admin actions, verification decisions, and system events." },
-          ].map(({ to, title, desc, badge }) => (
+            { [
+              { to: "/admin/listings", title: "Property Management", desc: "Review, approve, or reject property listings submitted by owners.", badge: `${derived.pendingHouses} pending` },
+              { to: "/admin/users", title: "User Management", desc: "Manage user accounts, roles, and permissions across the platform." },
+              { to: "/admin/analytics", title: "Analytics", desc: "Monitor platform performance, revenue trends, and usage statistics." },
+              { to: "/admin/logs", title: "Audit Logs", desc: "Track administrative actions, verification decisions, and system events." },
+            ].map(({ to, title, desc, badge }) => (
             <Link key={to} to={to} className="bg-[#111] p-8 border border-[#d4af37]/10 hover:border-[#d4af37]/30 transition-all group block">
               <h2 className="text-2xl text-[#f8f6f3] mb-2 group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: "'Playfair Display', serif" }}>{title}</h2>
               <p className="text-[#9a9a9a] text-sm tracking-wide mb-4">{desc}</p>

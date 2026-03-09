@@ -226,7 +226,7 @@ const AddListing = () => {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center py-40">
            <div className="w-12 h-12 border-4 border-[#d4af37] border-t-transparent rounded-full animate-spin mb-6" />
-           <span className="text-[#9a9a9a] uppercase tracking-widest text-xs font-bold font-serif">Initializing Secure Dossier...</span>
+           <span className="text-[#9a9a9a] uppercase tracking-widest text-xs font-bold font-serif">Initializing Property Form...</span>
         </div>
       </DashboardLayout>
     );
@@ -246,12 +246,12 @@ const AddListing = () => {
             </button>
             <div>
               <h1 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
-                Add New Estate
+                Add New Property
               </h1>
-              <p className="text-[10px] text-[#9a9a9a] uppercase tracking-widest font-bold mt-1">Establishing Property Intelligence</p>
+              <p className="text-[10px] text-[#9a9a9a] uppercase tracking-widest font-bold mt-1">Provide detailed property information</p>
             </div>
           </div>
-          <div className="hidden md:block text-[10px] text-[#d4af37]/50 font-bold uppercase tracking-widest bg-[#111] px-4 py-2 border border-[#d4af37]/10 rounded-full">Secure Entry Mode</div>
+          <div className="hidden md:block text-[10px] text-[#d4af37]/50 font-bold uppercase tracking-widest bg-[#111] px-4 py-2 border border-[#d4af37]/10 rounded-full">Property Management Mode</div>
         </div>
 
         {/* Scrollable Form Area */}
@@ -260,33 +260,33 @@ const AddListing = () => {
             {/* General Info */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Core Intelligence</div>
-                <div className="section-desc">Primary Identity and Financials</div>
+                <div className="section-title">General Information</div>
+                <div className="section-desc">Property details and pricing</div>
               </div>
               <div className="form-grid">
                 <div className="form-group full-width">
-                  <label className="label">Estate Title</label>
+                  <label className="label">Property Title</label>
                   <input
                     type="text"
                     name="title"
                     className="input-field"
-                    placeholder="e.g. The Imperial Heights Loft"
+                    placeholder="e.g. Modern Minimalist Loft"
                     value={formData.title}
                     onChange={handleInputChange}
                   />
                 </div>
                 <div className="form-group full-width">
-                  <label className="label">Dossier Narrative</label>
+                  <label className="label">Property Description</label>
                   <textarea
                     name="description"
                     className="input-field"
-                    placeholder="Provide a sophisticated narrative of the property's unique characteristics..."
+                    placeholder="Provide a detailed description of the property's unique features..."
                     value={formData.description}
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="form-group">
-                  <label className="label">Estate Type</label>
+                 <div className="form-group">
+                  <label className="label">Property Type</label>
                   <div style={{ position: "relative" }}>
                     <select
                       name="propertyType"
@@ -315,7 +315,7 @@ const AddListing = () => {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="label">Premium Rent (ETB)</label>
+                  <label className="label">Monthly Rent (ETB)</label>
                   <input
                     type="number"
                     name="price"
@@ -331,12 +331,12 @@ const AddListing = () => {
             {/* Property Specs */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Spatial Specifications</div>
-                <div className="section-desc">Architecture and Capacity</div>
+                <div className="section-title">Property Specifications</div>
+                <div className="section-desc">Rooms and occupancy</div>
               </div>
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="label">Suites (Bedrooms)</label>
+                  <label className="label">Bedrooms</label>
                   <input
                     type="number"
                     name="bedrooms"
@@ -356,7 +356,7 @@ const AddListing = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="label">Square Area</label>
+                  <label className="label">Size (sq. ft.)</label>
                   <input
                     type="number"
                     name="size"
@@ -381,23 +381,23 @@ const AddListing = () => {
             {/* Location */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Geographic Coordinates</div>
-                <div className="section-desc">Global Positioning</div>
+                <div className="section-title">Location Details</div>
+                <div className="section-desc">Physical address and mapping</div>
               </div>
               <div className="form-grid">
                 <div className="form-group full-width">
-                  <label className="label">Point of Interest (Address)</label>
+                  <label className="label">Street Address</label>
                   <input
                     type="text"
                     name="address"
                     className="input-field"
-                    placeholder="Enter precise street coordinates"
+                    placeholder="Enter the street address"
                     value={formData.address}
                     onChange={handleInputChange}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="label">City Hub</label>
+                  <label className="label">City</label>
                   <input
                     type="text"
                     name="city"
@@ -408,7 +408,7 @@ const AddListing = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="label">District / State</label>
+                  <label className="label">State / Region</label>
                   <input
                     type="text"
                     name="state"
@@ -418,7 +418,7 @@ const AddListing = () => {
                   />
                 </div>
                 <div className="form-group full-width">
-                  <label className="label">Digital Map Interface</label>
+                  <label className="label">Map Location</label>
                   <div className="map-placeholder">
                     <MapContainer
                       center={mapCenter}
@@ -445,8 +445,8 @@ const AddListing = () => {
             {/* Amenities */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Luxury Provisions</div>
-                <div className="section-desc">Enhanced Living Experience</div>
+                <div className="section-title">Amenities</div>
+                <div className="section-desc">Available features and services</div>
               </div>
               <div className="amenities-grid">
                 {amenitiesList.map((amenity) => (
@@ -467,8 +467,8 @@ const AddListing = () => {
             {/* Photos */}
             <div className="section-card">
               <div className="section-header">
-                <div className="section-title">Visual Dossier</div>
-                <div className="section-desc">Curation of Property Imagery</div>
+                <div className="section-title">Property Images</div>
+                <div className="section-desc">Upload high-quality photos of the property</div>
               </div>
 
               <div
@@ -571,12 +571,12 @@ const AddListing = () => {
                     letterSpacing: "0.1em"
                   }}
                 >
-                  Encrypt New Imagery
+                  Upload Images
                 </div>
                 <div
                   style={{ fontSize: "10px", color: "#9a9a9a", textTransform: "uppercase", letterSpacing: "0.05em" }}
                 >
-                  Secure upload (Max 800KB per entity)
+                  Supported formats: JPG, PNG. Max size: 800KB.
                 </div>
               </div>
             </div>
@@ -585,7 +585,7 @@ const AddListing = () => {
 
         {/* Actions Footer */}
         <div className="actions-footer">
-          <button className="btn btn-secondary" onClick={() => navigate(-1)}>Abort Dossier</button>
+          <button className="btn btn-secondary" onClick={() => navigate(-1)}>Cancel</button>
           <button
             className="btn btn-primary"
             onClick={handleSubmit}
@@ -596,7 +596,7 @@ const AddListing = () => {
             ) : (
               <>
                 <Check size={16} />
-                Commit Listing
+                Create Listing
               </>
             )}
           </button>

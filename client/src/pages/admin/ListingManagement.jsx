@@ -247,8 +247,8 @@ const ListingManagement = () => {
       <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Listing Management</h1>
-            <p className="mt-2 text-[#9a9a9a] tracking-wide max-w-2xl">Review listing quality, moderate availability, and manage verification lifecycle across the platform.</p>
+            <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Property Management</h1>
+            <p className="mt-2 text-[#9a9a9a] tracking-wide max-w-2xl">Oversee property listings—review, approve, or reject new submissions from property owners.</p>
           </div>
           <button onClick={handleExport} className="flex items-center gap-2 px-6 py-2 border border-[#d4af37]/20 text-[#d4af37] text-xs font-bold tracking-widest uppercase hover:border-[#d4af37] transition-all">Export CSV</button>
         </div>
@@ -262,7 +262,7 @@ const ListingManagement = () => {
         </div>
 
         <div className="bg-[#111] border border-[#d4af37]/10 p-6 mb-8">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-[#d4af37]/50 mb-4 flex items-center gap-2"><Filter size={12} /> Advanced Intelligence Filters</p>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-[#d4af37]/50 mb-4 flex items-center gap-2"><Filter size={12} /> Search and Filter Properties</p>
           <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
             <input value={draftFilters.city} onChange={(e) => setDraftFilters(p => ({ ...p, city: e.target.value }))} placeholder="City" className={inputCls} />
             <input value={draftFilters.state} onChange={(e) => setDraftFilters(p => ({ ...p, state: e.target.value }))} placeholder="State" className={inputCls} />
@@ -274,8 +274,8 @@ const ListingManagement = () => {
             <select value={draftFilters.available} onChange={(e) => setDraftFilters(p => ({ ...p, available: e.target.value }))} className={`${selectCls} w-full`}><option value="">Availability</option><option value="true">Active</option><option value="false">Paused</option></select>
           </div>
           <div className="mt-6 flex items-center gap-4 border-t border-[#d4af37]/5 pt-6">
-            <button onClick={() => setAppliedFilters(draftFilters)} className="px-6 py-2 bg-[#d4af37] text-[#0a0a0a] text-xs font-bold tracking-widest uppercase hover:bg-[#b8941f] transition-all">Apply Intelligence</button>
-            <button onClick={() => { const r = { city: "", state: "", propertyType: "", minPrice: "", maxPrice: "", available: "" }; setDraftFilters(r); setAppliedFilters(r); }} className="text-xs text-[#9a9a9a] uppercase tracking-widest hover:text-[#d4af37] transition-all">Reset All</button>
+            <button onClick={() => setAppliedFilters(draftFilters)} className="px-6 py-2 bg-[#d4af37] text-[#0a0a0a] text-xs font-bold tracking-widest uppercase hover:bg-[#b8941f] transition-all">Apply Filters</button>
+            <button onClick={() => { const r = { city: "", state: "", propertyType: "", minPrice: "", maxPrice: "", available: "" }; setDraftFilters(r); setAppliedFilters(r); }} className="text-xs text-[#9a9a9a] uppercase tracking-widest hover:text-[#d4af37] transition-all">Clear Filters</button>
             <div className="ml-auto relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#9a9a9a]" />
               <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search title, address..." className={`${inputCls} w-full pl-10`} onKeyDown={(e) => e.key === 'Enter' && setSearchTerm(searchInput.trim())} />
@@ -284,22 +284,22 @@ const ListingManagement = () => {
         </div>
 
         <div className="mb-6 flex items-center justify-between text-[11px] uppercase tracking-widest font-bold text-[#9a9a9a]">
-          <span>Analysis Results: {pagination.total} Listings</span>
-          {selectedIds.length > 0 && <span className="text-[#d4af37]">{selectedIds.length} Selected Objects</span>}
+          <span>Search Results: {pagination.total} Listings</span>
+          {selectedIds.length > 0 && <span className="text-[#d4af37]">{selectedIds.length} Listings Selected</span>}
         </div>
 
         {!loading && listings.length > 0 && (
           <div className="mb-8 bg-[#1a1a1a] border border-[#d4af37]/20 p-4 flex flex-wrap items-center gap-4">
             <label className="flex items-center gap-3 text-xs text-[#f8f6f3] font-medium cursor-pointer">
               <input type="checkbox" checked={areAllSelected} onChange={toggleSelectAllVisible} className="h-4 w-4 bg-[#0a0a0a] border-[#d4af37]/30 rounded focus:ring-0 checked:bg-[#d4af37]" />
-              Select Visibility Range
+              Select All Listings
             </label>
             <div className="h-4 w-px bg-[#d4af37]/10 mx-2" />
             <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)} className={`${selectCls} min-w-[160px] border-[#d4af37]/30`}>
-              <option value="">Bulk Operational Mode...</option><option value="approve">Approve</option><option value="reject">Reject</option><option value="pause">Pause</option><option value="activate">Activate</option><option value="delete">Delete</option>
+              <option value="">Bulk Action...</option><option value="approve">Approve</option><option value="reject">Reject</option><option value="pause">Pause</option><option value="activate">Activate</option><option value="delete">Delete</option>
             </select>
             <button onClick={handleBulkModeration} disabled={!selectedIds.length || !bulkAction || bulkProcessing} className="px-6 py-2 bg-[#d4af37] text-[#0a0a0a] text-xs font-bold tracking-widest uppercase hover:bg-[#b8941f] disabled:opacity-30 transition-all">
-              {bulkProcessing ? `Executing...` : "Run Processor"}
+              {bulkProcessing ? `Processing...` : "Apply Action"}
             </button>
             <button onClick={() => setSelectedIds([])} className="text-xs text-[#9a9a9a] uppercase tracking-widest hover:text-white ml-2">Clear</button>
           </div>
@@ -309,8 +309,8 @@ const ListingManagement = () => {
           <div className="mb-8 p-5 border border-[#d4af37]/30 bg-[#d4af37]/5 animate-in fade-in slide-in-from-top-2">
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
-                <p className="text-xs font-bold text-[#d4af37] uppercase tracking-widest flex items-center gap-2"><History size={14} /> Processor Intelligence Log</p>
-                <p className="text-[13px] text-[#f8f6f3] mt-2">Mode: <span className="uppercase text-[#d4af37]">{bulkResult.action}</span> | Status: {bulkResult.successCount} Successful, {bulkResult.failureCount} Failures</p>
+                <p className="text-xs font-bold text-[#d4af37] uppercase tracking-widest flex items-center gap-2"><History size={14} /> Action History Log</p>
+                <p className="text-[13px] text-[#f8f6f3] mt-2">Action: <span className="uppercase text-[#d4af37]">{bulkResult.action}</span> | Status: {bulkResult.successCount} Successful, {bulkResult.failureCount} Failures</p>
               </div>
               <div className="flex gap-2">
                 {bulkResult.failureCount > 0 && <button onClick={handleRetryFailedOnly} className="px-4 py-1.5 bg-red-500 text-white text-[10px] font-bold uppercase tracking-tighter">Retry Failures</button>}
@@ -384,8 +384,8 @@ const ListingManagement = () => {
             {listings.length === 0 && (
               <div className="bg-[#111] p-24 text-center border border-dashed border-[#d4af37]/20">
                 <Search className="h-16 w-16 text-[#d4af37]/10 mx-auto mb-6" />
-                <p className="text-[#f8f6f3] text-2xl font-bold italic mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>Zero Matches Identified</p>
-                <p className="text-[#9a9a9a] uppercase tracking-widest text-[10px] font-bold">Adjust intelligence parameters and try again.</p>
+                <p className="text-[#f8f6f3] text-2xl font-bold italic mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>No results found</p>
+                <p className="text-[#9a9a9a] uppercase tracking-widest text-[10px] font-bold">Adjust your filters and try again.</p>
               </div>
             )}
           </div>
@@ -394,22 +394,22 @@ const ListingManagement = () => {
         {!loading && pagination.pages > 1 && (
           <div className="mt-12 flex items-center justify-between">
             <button disabled={pagination.page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="px-8 py-3 border border-[#d4af37]/15 text-[#9a9a9a] text-[10px] font-bold uppercase tracking-widest hover:border-[#d4af37] hover:text-[#f8f6f3] disabled:opacity-20 transition-all">Previous</button>
-            <span className="text-[10px] text-[#9a9a9a] font-bold tracking-widest uppercase">Encryption / Page {pagination.page} OF {pagination.pages}</span>
+            <span className="text-[10px] text-[#9a9a9a] font-bold tracking-widest uppercase">Page {pagination.page} OF {pagination.pages}</span>
             <button disabled={pagination.page >= pagination.pages} onClick={() => setPage(p => Math.min(pagination.pages, p + 1))} className="px-8 py-3 border border-[#d4af37]/15 text-[#9a9a9a] text-[10px] font-bold uppercase tracking-widest hover:border-[#d4af37] hover:text-[#f8f6f3] disabled:opacity-20 transition-all">Next</button>
           </div>
         )}
       </div>
 
-      <Modal isOpen={!!selectedListing} onClose={() => setSelectedListing(null)} title="Intelligence Profile Dossier" size="lg">
+      <Modal isOpen={!!selectedListing} onClose={() => setSelectedListing(null)} title="Property Details" size="lg">
         {selectedListing && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 text-[13px] text-[#f8f6f3] py-4">
             <div className="space-y-4">
               <div className="border-b border-[#d4af37]/10 pb-2">
-                <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">Identification</p>
+                <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">Property Identity</p>
                 <p className="mt-1 font-bold text-lg">{selectedListing.title}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">Spatial Description</p>
+                <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">Description</p>
                 <p className="mt-1 text-[#9a9a9a] leading-relaxed">{selectedListing.description}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -418,16 +418,16 @@ const ListingManagement = () => {
               </div>
             </div>
             <div className="space-y-2">
-               <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest mb-3 italic">Technical Metadata</p>
+               <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest mb-3 italic">Property Specifications</p>
                {[
-                 {l: "Listing UID", v: selectedListing._id},
-                 {l: "Ownership Entity", v: selectedListing.ownerId?.name || "N/A"},
-                 {l: "Contact Channel", v: selectedListing.ownerId?.email || "N/A"},
-                 {l: "Entity Status", v: selectedListing.ownerId?.banned?.isBanned ? "RESTRICTED" : "ACTIVE"},
-                 {l: "Rating Metric", v: `${Number(selectedListing.ownerId?.rating?.average || 0).toFixed(1)} / 5.0`},
-                 {l: "Primary Market City", v: selectedListing.location?.city || "N/A"},
-                 {l: "Financial Yield", v: `ETB ${Number(selectedListing.price || 0).toLocaleString()} / Mo`},
-                 {l: "Moderation Status", v: (selectedListing.verified?.decision || "pending").toUpperCase()}
+                 {l: "Property ID", v: selectedListing._id},
+                 {l: "Property Owner", v: selectedListing.ownerId?.name || "N/A"},
+                 {l: "Contact Email", v: selectedListing.ownerId?.email || "N/A"},
+                 {l: "Owner Status", v: selectedListing.ownerId?.banned?.isBanned ? "RESTRICTED" : "ACTIVE"},
+                 {l: "Owner Rating", v: `${Number(selectedListing.ownerId?.rating?.average || 0).toFixed(1)} / 5.0`},
+                 {l: "City", v: selectedListing.location?.city || "N/A"},
+                 {l: "Monthly Rent", v: `ETB ${Number(selectedListing.price || 0).toLocaleString()} / Mo`},
+                 {l: "Status", v: (selectedListing.verified?.decision || "pending").toUpperCase()}
                ].map(i => (
                  <div key={i.l} className="flex justify-between items-center py-1.5 border-b border-[#d4af37]/5 last:border-0">
                     <span className="text-[11px] text-[#9a9a9a] uppercase tracking-tighter">{i.l}</span>
@@ -435,8 +435,8 @@ const ListingManagement = () => {
                  </div>
                ))}
                <div className="mt-6 p-4 bg-[#0a0a0a] border border-[#d4af37]/10 text-[11px] leading-relaxed text-[#9a9a9a]">
-                  <span className="text-[#d4af37] font-bold uppercase tracking-widest mr-2">Audit Trace:</span>
-                  Created on {new Date(selectedListing.createdAt).toLocaleString()} with {selectedListing.viewCount || 0} interaction records.
+                  <span className="text-[#d4af37] font-bold uppercase tracking-widest mr-2">History:</span>
+                  Created on {new Date(selectedListing.createdAt).toLocaleString()} with {selectedListing.viewCount || 0} views.
                </div>
             </div>
           </div>

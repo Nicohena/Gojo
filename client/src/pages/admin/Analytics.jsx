@@ -108,7 +108,7 @@ const AdminAnalytics = () => {
             </Link>
             <div>
               <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Analytics</h1>
-              <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Platform performance overview</p>
+              <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Comprehensive platform performance and operational metrics.</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -182,7 +182,7 @@ const AdminAnalytics = () => {
           </div>
 
           <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-            <h3 className="text-[#f8f6f3] mb-4 text-sm font-bold tracking-wide">Listing Intelligence</h3>
+            <h3 className="text-[#f8f6f3] mb-4 text-sm font-bold tracking-wide">Listing Performance</h3>
             <div className="space-y-3 text-sm">
               {[
                 { label: "New Listings", value: listingStats.newListings || 0 },
