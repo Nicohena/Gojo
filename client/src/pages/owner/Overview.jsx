@@ -110,7 +110,7 @@ const Overview = () => {
     return (
       <DashboardLayout>
         <div className="h-[80vh] flex items-center justify-center">
-          <Loader2 className="animate-spin text-[#d4af37]" size={40} />
+          <Loader2 className="animate-spin" size={40} style={{ color: 'var(--accent)' }} />
         </div>
       </DashboardLayout>
     );
@@ -123,21 +123,22 @@ const Overview = () => {
           <div>
             <div className="flex items-center gap-3">
               <h1
-                className="text-4xl text-[#f8f6f3]"
-                style={{ fontFamily: "'Playfair Display', serif" }}
+                className="text-4xl"
+                style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}
               >
                 Overview
               </h1>
               {user?.isVerifiedOwner && <VerifiedOwnerBadge />}
             </div>
-            <p className="text-[#9a9a9a] tracking-wide text-sm mt-1">
+            <p className="tracking-wide text-sm mt-1" style={{ color: 'var(--muted)' }}>
               Welcome back. Review the current status and performance of your property listings.
             </p>
           </div>
           <button
             type="button"
             onClick={() => navigate("/owner/listings/add")}
-            className="inline-flex items-center gap-2 px-6 py-2.5 border border-[#d4af37] text-[#d4af37] text-sm tracking-[0.05em] hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm tracking-[0.05em] transition-all"
+            style={{ border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--accent)', background: 'transparent' }}
           >
             <PlusCircle size={16} />
             <span>Add Property</span>
@@ -158,12 +159,12 @@ const Overview = () => {
           </div>
 
           {/* Booking Requests Panel */}
-          <div className="bg-[#111] border border-[#d4af37]/15 p-6 flex flex-col h-full min-h-[400px]">
+          <div className="p-6 flex flex-col h-full min-h-[400px]" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h3 className="text-xl" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
                 Booking Requests
               </h3>
-              <button onClick={() => navigate("/owner/bookings")} className="text-xs font-bold text-[#d4af37] hover:text-[#b8941f] tracking-widest uppercase">
+              <button onClick={() => navigate("/owner/bookings")} className="text-xs font-bold tracking-widest uppercase" style={{ color: 'var(--accent)' }}>
                 View All
               </button>
             </div>
@@ -171,11 +172,11 @@ const Overview = () => {
             <div className="flex-1 overflow-y-auto space-y-4 pr-1 -mr-1">
               {pendingRequests.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                  <div className="w-14 h-14 border border-[#d4af37]/20 flex items-center justify-center mb-4">
-                    <Users className="text-[#d4af37]/40" size={24} />
+                  <div className="w-14 h-14 border flex items-center justify-center mb-4" style={{ borderColor: 'rgba(212,175,55,0.2)' }}>
+                    <Users size={24} style={{ color: 'rgba(212,175,55,0.4)' }} />
                   </div>
-                  <p className="text-[#f8f6f3] text-sm">No pending requests</p>
-                  <p className="text-[#9a9a9a] text-xs mt-1">All requests have been addressed.</p>
+                  <p className="text-sm" style={{ color: 'var(--text)' }}>No pending requests</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>All requests have been addressed.</p>
                 </div>
               ) : (
                 pendingRequests.map((request) => (
