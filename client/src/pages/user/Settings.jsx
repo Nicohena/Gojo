@@ -29,13 +29,13 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f8f6f3]">
+    <div className="min-h-screen">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
           <aside className="lg:w-72 flex-shrink-0">
-            <div className="bg-[#111] rounded-2xl border border-[#d4af37]/10 overflow-hidden sticky top-24">
+            <div className="rounded-2xl overflow-hidden sticky top-24" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
               <nav className="flex flex-col p-2">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -43,11 +43,12 @@ const Settings = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-4 px-6 py-4 rounded-xl text-sm font-bold transition-all duration-300 ${
+                      className={`flex items-center gap-4 px-6 py-4 rounded-xl text-sm font-bold transition-all duration-300`}
+                      style={
                         activeTab === tab.id
-                          ? "bg-[#d4af37] text-[#0a0a0a] shadow-[0_0_20px_rgba(212,175,55,0.2)]"
-                          : "text-[#9a9a9a] hover:text-[#f8f6f3] hover:bg-white/5"
-                      }`}
+                          ? { background: 'var(--accent)', color: 'var(--panel)', boxShadow: '0 0 20px rgba(212,175,55,0.2)' }
+                          : { color: 'var(--muted)' }
+                      }
                     >
                       <Icon size={18} />
                       <span className="tracking-wide">{tab.label}</span>
@@ -60,7 +61,7 @@ const Settings = () => {
 
           {/* Main Content */}
           <main className="flex-1">
-            <div className="bg-[#111] rounded-2xl border border-[#d4af37]/10 p-8 lg:p-10 shadow-2xl">
+            <div className="rounded-2xl p-8 lg:p-10 shadow-2xl" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
               {renderContent()}
             </div>
           </main>
