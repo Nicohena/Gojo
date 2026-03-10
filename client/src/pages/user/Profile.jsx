@@ -28,13 +28,13 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex items-center gap-3">
           <h1
-            className="text-4xl text-[#f8f6f3]"
-            style={{ fontFamily: "'Playfair Display', serif" }}
+            className="text-4xl"
+            style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}
           >
             Account Settings
           </h1>
@@ -44,7 +44,7 @@ const Profile = () => {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Tab Sidebar */}
           <aside className="lg:w-64 flex-shrink-0">
-            <div className="bg-[#111] border border-[#d4af37]/10 overflow-hidden">
+            <div className="overflow-hidden" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
               <nav>
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -53,11 +53,8 @@ const Profile = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-5 py-4 text-sm text-left transition-all border-l-2 ${
-                        isActive
-                          ? "border-[#d4af37] text-[#d4af37] bg-[#d4af37]/5"
-                          : "border-transparent text-[#9a9a9a] hover:text-[#f8f6f3] hover:border-[#d4af37]/30"
-                      }`}
+                      className={`w-full flex items-center gap-3 px-5 py-4 text-sm text-left transition-all border-l-2`}
+                      style={isActive ? { borderColor: 'var(--accent)', color: 'var(--accent)', background: 'rgba(212,175,55,0.05)' } : { borderColor: 'transparent', color: 'var(--muted)' }}
                     >
                       <Icon className="w-4 h-4" />
                       <span className="tracking-wide">{tab.label}</span>
@@ -70,7 +67,7 @@ const Profile = () => {
 
           {/* Main Content */}
           <main className="flex-1">
-            <div className="bg-[#111] border border-[#d4af37]/10 p-6">
+            <div className="p-6" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
               {renderContent()}
             </div>
           </main>
