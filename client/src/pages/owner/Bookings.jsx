@@ -8,17 +8,17 @@ const OwnerBookings = () => {
       <div className="space-y-6">
         <div>
           <h1
-            className="text-4xl text-[#f8f6f3]"
-            style={{ fontFamily: "'Playfair Display', serif" }}
+            className="text-4xl"
+            style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}
           >
             Bookings
           </h1>
-          <p className="text-[#9a9a9a] tracking-wide text-sm mt-2">
+          <p className="tracking-wide text-sm mt-2" style={{ color: 'var(--muted)' }}>
             Manage your booking requests and history.
           </p>
         </div>
 
-        <div className="border border-[#d4af37]/10 bg-[#111] p-6">
+        <div className="p-6" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
           <BookingList role="owner" />
         </div>
       </div>
