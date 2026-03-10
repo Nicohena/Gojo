@@ -271,8 +271,8 @@ const EditListing = () => {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center py-40">
-          <div className="w-12 h-12 border-4 border-[#d4af37] border-t-transparent rounded-full animate-spin mb-4" />
-          <span className="text-[#9a9a9a] uppercase tracking-widest text-xs font-bold">Loading Property Details...</span>
+          <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mb-4" style={{ borderColor: 'var(--accent)' }} />
+          <span className="uppercase tracking-widest text-xs font-bold" style={{ color: 'var(--muted)' }}>Loading Property Details...</span>
         </div>
       </DashboardLayout>
     );
@@ -285,13 +285,14 @@ const EditListing = () => {
           <div className="flex items-center gap-6">
             <button
               onClick={() => navigate(-1)}
-              className="p-3 bg-[#111] border border-[#d4af37]/20 rounded-full hover:border-[#d4af37] transition-all"
+              className="p-3 rounded-full transition-all"
+              style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}
             >
-              <ArrowLeft size={18} className="text-[#d4af37]" />
+              <ArrowLeft size={18} style={{ color: 'var(--accent)' }} />
             </button>
             <div>
-              <h1 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Edit Property</h1>
-              <p className="text-[10px] text-[#9a9a9a] uppercase tracking-widest font-bold mt-1">Update property information and specifications</p>
+              <h1 className="text-3xl" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>Edit Property</h1>
+              <p className="text-[10px] uppercase tracking-widest font-bold mt-1" style={{ color: 'var(--muted)' }}>Update property information and specifications</p>
             </div>
           </div>
         </div>
@@ -349,7 +350,7 @@ const EditListing = () => {
                         right: "16px",
                         top: "16px",
                         pointerEvents: "none",
-                        color: "#d4af37",
+                        color: 'var(--accent)',
                       }}
                       size={16}
                     />
@@ -497,7 +498,7 @@ const EditListing = () => {
                     <div className="checkbox-custom">
                       <Check size={14} />
                     </div>
-                    <span style={{ fontSize: "12px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", color: formData.amenities.includes(amenity) ? "#d4af37" : "#9a9a9a" }}>{amenity}</span>
+                    <span style={{ fontSize: "12px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", color: formData.amenities.includes(amenity) ? 'var(--accent)' : 'var(--muted)' }}>{amenity}</span>
                   </div>
                 ))}
               </div>
@@ -549,7 +550,7 @@ const EditListing = () => {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "#ef4444",
+                        color: "var(--danger)",
                         cursor: "pointer",
                         border: "1px solid rgba(255,255,255,0.1)"
                       }}
@@ -568,8 +569,8 @@ const EditListing = () => {
                           position: "absolute",
                           bottom: "8px",
                           left: "8px",
-                          background: "#d4af37",
-                          color: "#0a0a0a",
+                          background: "var(--accent)",
+                          color: "var(--panel)",
                           padding: "2px 8px",
                           borderRadius: "4px",
                           fontSize: "8px",
@@ -606,7 +607,7 @@ const EditListing = () => {
                     fontWeight: "700",
                     fontSize: "14px",
                     marginBottom: "8px",
-                    color: "#f8f6f3",
+                    color: "var(--text)",
                     textTransform: "uppercase",
                     letterSpacing: "0.1em"
                   }}
@@ -614,7 +615,7 @@ const EditListing = () => {
                   Upload Images
                 </div>
                 <div
-                  style={{ fontSize: "10px", color: "#9a9a9a", textTransform: "uppercase", letterSpacing: "0.05em" }}
+                  style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}
                 >
                   Supported formats: JPG, PNG. Max size: 800KB.
                 </div>
