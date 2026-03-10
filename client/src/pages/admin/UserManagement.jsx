@@ -143,9 +143,9 @@ const UserManagement = () => {
 
   const getRoleBadgeClass = (role) => {
     switch (role) {
-      case "admin": return "text-purple-400 border border-purple-500/20 bg-purple-500/10";
-      case "owner": return "text-emerald-400 border border-emerald-500/20 bg-emerald-500/10";
-      default: return "text-[#9a9a9a] border border-[#d4af37]/10 bg-[#1a1a1a]";
+      case "admin": return { color: 'var(--accent)', borderColor: 'var(--panel-border)' };
+      case "owner": return { color: 'var(--success)', borderColor: 'var(--panel-border)' };
+      default: return { color: 'var(--muted)', borderColor: 'var(--panel-border)' };
     }
   };
 
@@ -197,7 +197,7 @@ const UserManagement = () => {
             >
               Search
             </button>
-            <div className="h-8 w-px bg-[#d4af37]/10 mx-1 hidden lg:block" />
+            <div className="h-8 w-px mx-1 hidden lg:block" style={{ background: 'var(--panel-border)' }} />
             <select value={roleFilter} onChange={(e) => { setPage(1); setRoleFilter(e.target.value); }} className={selectCls} style={{ border: '1px solid', borderColor: 'var(--panel-border)', background: 'transparent', color: 'var(--text)' }}>
               <option value="">All Roles</option>
               <option value="tenant">Tenant</option>
@@ -231,41 +231,38 @@ const UserManagement = () => {
 
         {loading ? (
           <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-20 bg-[#111] animate-pulse border border-[#d4af37]/5" />)}
+            {[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-20 animate-pulse" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }} />)}
           </div>
         ) : users.length > 0 ? (
-          <div className="bg-[#111] border border-[#d4af37]/10 overflow-hidden">
-            <ul className="divide-y divide-[#d4af37]/5">
-              {users.map((user) => (
-                <li key={user._id} className="hover:bg-[#d4af37]/3 transition-colors">
+          <div style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }} className="overflow-hidden">
+            <ul>
+              {users.map((user) => {
+                const badgeStyle = getRoleBadgeClass(user.role);
+                return (
+                <li key={user._id} className="transition-colors hover:opacity-95">
                   <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <p className="text-lg text-[#f8f6f3] font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>{user.name}</p>
-                        <span className={`px-2 py-0.5 text-[10px] uppercase font-bold tracking-widest ${getRoleBadgeClass(user.role)}`}>
-                          {user.role}
-                        </span>
+                        <p className="text-lg font-bold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>{user.name}</p>
+                        <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-widest" style={{ color: badgeStyle.color, border: '1px solid', borderColor: badgeStyle.borderColor }}>{user.role}</span>
                         {user?.banned?.isBanned && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-widest">
+                          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest" style={{ background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', border: '1px solid', borderColor: 'rgba(239,68,68,0.2)' }}>
                             banned
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[#9a9a9a]">
-                        <span className="flex items-center gap-1.5"><Search size={12} className="text-[#d4af37]/40" /> {user.email}</span>
-                        {user.phone && <span className="flex items-center gap-1.5"><Filter size={12} className="text-[#d4af37]/40" /> {user.phone}</span>}
+                      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm" style={{ color: 'var(--muted)' }}>
+                        <span className="flex items-center gap-1.5"><Search size={12} style={{ color: 'var(--panel-border)' }} /> {user.email}</span>
+                        {user.phone && <span className="flex items-center gap-1.5"><Filter size={12} style={{ color: 'var(--panel-border)' }} /> {user.phone}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {user.role !== "admin" && (
                         <button
                           onClick={() => handleToggleBan(user)}
-                          className={`p-2 border transition-all ${
-                            user?.banned?.isBanned
-                              ? "border-emerald-500/20 text-emerald-400 hover:border-emerald-500/50"
-                              : "border-amber-500/20 text-amber-400 hover:border-amber-500/50"
-                          }`}
+                          className="p-2 transition-all"
                           title={user?.banned?.isBanned ? "Unban" : "Ban"}
+                          style={{ border: '1px solid', borderColor: 'var(--panel-border)', color: user?.banned?.isBanned ? 'var(--success)' : 'var(--accent)' }}
                         >
                           <Ban size={16} />
                         </button>
@@ -273,15 +270,17 @@ const UserManagement = () => {
                       {user.role !== "admin" && (
                         <button
                           onClick={() => handleDeleteUser(user)}
-                          className="p-2 border border-red-500/20 text-red-500 hover:border-red-500/50 transition-all"
+                          className="p-2 transition-all"
                           title="Delete User"
+                          style={{ border: '1px solid', borderColor: 'rgba(239,68,68,0.2)', color: 'var(--danger)' }}
                         >
                           <Trash2 size={16} />
                         </button>
                       )}
                       <button
                         onClick={() => handleViewUser(user._id)}
-                        className="flex items-center gap-2 px-4 py-2 border border-[#d4af37]/20 text-[#d4af37] text-xs font-bold tracking-widest uppercase hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all"
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase transition-all"
+                        style={{ border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--accent)' }}
                       >
                         <UserCircle2 size={14} />
                         View
@@ -289,24 +288,24 @@ const UserManagement = () => {
                     </div>
                   </div>
                 </li>
-              ))}
+              )})}
             </ul>
           </div>
         ) : (
-          <div className="bg-[#111] p-16 text-center border border-dashed border-[#d4af37]/20">
-            <Users className="h-12 w-12 text-[#d4af37]/20 mx-auto mb-4" />
-            <p className="text-[#f8f6f3] text-xl font-bold mb-2">No users found</p>
-            <p className="text-[#9a9a9a] text-sm tracking-wide">Users will appear here once they register on the platform.</p>
+          <div className="p-16 text-center" style={{ background: 'var(--panel)', border: '1px dashed', borderColor: 'var(--panel-border)' }}>
+            <Users className="h-12 w-12 mx-auto mb-4" style={{ color: 'rgba(212,175,55,0.2)' }} />
+            <p className="text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>No users found</p>
+            <p className="text-sm tracking-wide" style={{ color: 'var(--muted)' }}>Users will appear here once they register on the platform.</p>
           </div>
         )}
 
         {!loading && pagination.pages > 1 && (
           <div className="mt-8 flex items-center justify-between">
-            <button disabled={pagination.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-5 py-2 border border-[#d4af37]/15 text-[#9a9a9a] text-sm hover:border-[#d4af37]/40 hover:text-[#f8f6f3] disabled:opacity-30 transition-all uppercase tracking-widest text-xs">
+            <button disabled={pagination.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-5 py-2 disabled:opacity-30 transition-all uppercase tracking-widest text-xs" style={{ border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--muted)' }}>
               Previous
             </button>
-            <span className="text-xs text-[#9a9a9a] font-bold">Page {pagination.page} of {pagination.pages}</span>
-            <button disabled={pagination.page >= pagination.pages} onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))} className="px-5 py-2 border border-[#d4af37]/15 text-[#9a9a9a] text-sm hover:border-[#d4af37]/40 hover:text-[#f8f6f3] disabled:opacity-30 transition-all uppercase tracking-widest text-xs">
+            <span className="text-xs font-bold" style={{ color: 'var(--muted)' }}>Page {pagination.page} of {pagination.pages}</span>
+            <button disabled={pagination.page >= pagination.pages} onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))} className="px-5 py-2 disabled:opacity-30 transition-all uppercase tracking-widest text-xs" style={{ border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--muted)' }}>
               Next
             </button>
           </div>
@@ -339,37 +338,37 @@ const UserManagement = () => {
                 { l: "Account Status", v: selectedUser?.banned?.isBanned ? "SUSPENDED" : "ACTIVE" },
                 { l: "Rating", v: selectedUser.rating?.average ? `${selectedUser.rating.average.toFixed(1)} / 5.0` : "NEW" }
               ].map(item => (
-                <div key={item.l} className="border-b border-[#d4af37]/5 pb-1">
-                  <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">{item.l}</p>
-                  <p className="text-[#f8f6f3] mt-0.5 font-medium">{item.v}</p>
+                <div key={item.l} className="pb-1" style={{ borderBottom: '1px solid', borderColor: 'var(--panel-border)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>{item.l}</p>
+                  <p style={{ color: 'var(--text)' }} className="mt-0.5 font-medium">{item.v}</p>
                 </div>
               ))}
             </div>
 
             {selectedUser.role === "owner" && selectedUser.isVerifiedOwner && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-400/40 bg-blue-500/15 text-blue-300 text-[11px] font-bold uppercase tracking-wider" title="Verified Owner">
-                <span className="w-2 h-2 rounded-full bg-blue-300" />
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider" title="Verified Owner" style={{ border: '1px solid', borderColor: 'var(--panel-border)', background: 'rgba(16,185,129,0.06)', color: 'var(--success)' }}>
+                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--success)' }} />
                 Verified Owner
               </div>
             )}
 
             {selectedUserActivity && (
-              <div className="bg-[#0a0a0a] border border-[#d4af37]/10 p-5 space-y-3">
-                <p className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-[#d4af37]/10 pb-2 mb-3">User Activity Summary</p>
+              <div className="p-5 space-y-3" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
+                <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)', borderBottom: '1px solid', borderColor: 'var(--panel-border)', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>User Activity Summary</p>
                 <div className="grid grid-cols-2 gap-3 text-[12px]">
-                  <p className="text-[#9a9a9a]">Owned Listings: <span className="text-[#f8f6f3] font-bold">{selectedUserActivity.listingsCount || 0}</span></p>
-                  <p className="text-[#9a9a9a]">Bookings (T): <span className="text-[#f8f6f3] font-bold">{selectedUserActivity.bookingsAsTenant || 0}</span></p>
-                  <p className="text-[#9a9a9a]">Revenue: <span className="text-[#d4af37] font-bold">ETB {Number(selectedUserActivity.revenueGenerated || 0).toLocaleString()}</span></p>
-                  <p className="text-[#9a9a9a]">Transactions: <span className="text-[#f8f6f3] font-bold">{selectedUserActivity.successfulTransactions || 0}</span></p>
+                  <p style={{ color: 'var(--muted)' }}>Owned Listings: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{selectedUserActivity.listingsCount || 0}</span></p>
+                  <p style={{ color: 'var(--muted)' }}>Bookings (T): <span style={{ color: 'var(--text)', fontWeight: 700 }}>{selectedUserActivity.bookingsAsTenant || 0}</span></p>
+                  <p style={{ color: 'var(--muted)' }}>Revenue: <span style={{ color: 'var(--accent)', fontWeight: 700 }}>ETB {Number(selectedUserActivity.revenueGenerated || 0).toLocaleString()}</span></p>
+                  <p style={{ color: 'var(--muted)' }}>Transactions: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{selectedUserActivity.successfulTransactions || 0}</span></p>
                 </div>
               </div>
             )}
 
             {selectedUser?.banned?.isBanned && (
-              <div className="p-4 bg-red-900/10 border border-red-500/20">
-                <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Ban Reason</p>
-                <p className="text-red-300/70">{selectedUser?.banned?.reason || "No reason provided."}</p>
-                <p className="text-[10px] text-red-400/50 mt-2 italic">Banned on {new Date(selectedUser.banned.bannedAt).toLocaleString()}</p>
+              <div className="p-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid', borderColor: 'rgba(239,68,68,0.15)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--danger)' }}>Ban Reason</p>
+                <p style={{ color: 'rgba(255,255,255,0.8)' }}>{selectedUser?.banned?.reason || "No reason provided."}</p>
+                <p className="text-[10px] mt-2 italic" style={{ color: 'rgba(255,255,255,0.6)' }}>Banned on {new Date(selectedUser.banned.bannedAt).toLocaleString()}</p>
               </div>
             )}
           </div>
