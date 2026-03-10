@@ -12,6 +12,7 @@
   --panel-border: rgba(15,23,42,0.06);
   --muted: #6b7280; /* muted text */
   --accent: #d4af37;
+  --danger: #ef4444;
 }
 
 /* Dark theme overrides */
@@ -22,6 +23,7 @@ html[data-theme="dark"] {
   --panel-border: rgba(212,175,55,0.10);
   --muted: #9a9a9a;
   --accent: #d4af37;
+  --danger: #ef4444;
 }
 
 body {
