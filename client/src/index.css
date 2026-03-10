@@ -2,31 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme variables (light defaults) */
 :root {
   --primary: #2563eb;
   --success: #10b981;
+  --bg: #f8fafc; /* light page background (near slate-50) */
+  --text: #0f172a; /* slate-900 */
+  --panel: #ffffff; /* card/panel background */
+  --panel-border: rgba(15,23,42,0.06);
+  --muted: #6b7280; /* muted text */
+  --accent: #d4af37;
+}
+
+/* Dark theme overrides */
+html[data-theme="dark"] {
+  --bg: #0f1724; /* slate-900-ish */
+  --text: #f8f6f3;
+  --panel: #0b0b0b;
+  --panel-border: rgba(212,175,55,0.10);
+  --muted: #9a9a9a;
+  --accent: #d4af37;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
-}
-
-html[data-theme="dark"] body {
-  @apply bg-slate-900 text-slate-100;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html[data-theme="dark"] .dark-header {
-  @apply bg-slate-900/90 border-slate-700;
+  background: var(--panel);
+  border-color: var(--panel-border);
 }
 
 html[data-theme="dark"] .dark-header input {
-  @apply bg-slate-800 text-slate-100 placeholder:text-slate-400;
+  background: #111;
+  color: var(--text);
 }
 
 html[data-theme="dark"] .dark-header button,
 html[data-theme="dark"] .dark-header p,
 html[data-theme="dark"] .dark-header span {
-  @apply text-slate-200;
+  color: var(--text);
 }
 
 .reveal-on-scroll {
