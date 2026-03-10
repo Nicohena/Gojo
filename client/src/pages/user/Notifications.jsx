@@ -59,11 +59,11 @@ const NotificationsPage = () => {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl text-[#f8f6f3] flex items-center gap-3" style={{ fontFamily: "'Playfair Display', serif" }}>
-              <Bell className="text-[#d4af37]" size={32} strokeWidth={1.5} />
+            <h1 className="text-4xl flex items-center gap-3" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+              <Bell size={32} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
               Notifications
             </h1>
-            <p className="text-[#9a9a9a] tracking-wide text-sm mt-2">
+            <p style={{ color: 'var(--muted)' }} className="tracking-wide text-sm mt-2">
               Stay up to date with activity on your account.
             </p>
           </div>
@@ -72,7 +72,8 @@ const NotificationsPage = () => {
               type="button"
               onClick={handleMarkAllRead}
               disabled={markingAll || unreadCount === 0}
-              className="px-5 py-2.5 border border-[#d4af37]/20 text-[#d4af37]/70 text-xs tracking-widest uppercase hover:border-[#d4af37] hover:text-[#d4af37] transition-all disabled:opacity-40"
+              className="px-5 py-2.5 text-xs tracking-widest uppercase transition-all disabled:opacity-40"
+              style={{ border: '1px solid', borderColor: 'rgba(212,175,55,0.2)', color: 'rgba(212,175,55,0.7)' }}
             >
               {markingAll ? "Marking..." : "Mark all as read"}
             </button>
@@ -81,36 +82,35 @@ const NotificationsPage = () => {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="animate-spin text-[#d4af37]" size={40} />
-            <p className="text-[#9a9a9a] tracking-wide">Loading your notifications...</p>
+            <Loader2 className="animate-spin" size={40} style={{ color: 'var(--accent)' }} />
+            <p className="tracking-wide" style={{ color: 'var(--muted)' }}>Loading your notifications...</p>
           </div>
         ) : error ? (
-          <div className="border border-red-500/30 bg-red-500/10 text-red-400 p-6 text-center">{error}</div>
+          <div className="p-6 text-center" style={{ border: '1px solid rgba(239,68,68,0.12)', background: 'rgba(239,68,68,0.05)', color: 'rgba(220,38,38,0.9)' }}>{error}</div>
         ) : notifications.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-[#9a9a9a] text-lg mb-2">You have no notifications yet.</p>
-            <p className="text-[#9a9a9a]/60 text-sm">Activity like saved homes and bookings will appear here.</p>
+            <p className="text-lg mb-2" style={{ color: 'var(--muted)' }}>You have no notifications yet.</p>
+            <p className="text-sm" style={{ color: 'rgba(154,154,154,0.6)' }}>Activity like saved homes and bookings will appear here.</p>
           </div>
         ) : (
-          <div className="bg-[#111] border border-[#d4af37]/10 divide-y divide-[#d4af37]/5 overflow-hidden">
+          <div style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)', overflow: 'hidden' }}>
             {notifications.map((n) => (
               <div
                 key={n._id}
                 onClick={() => !n.read && handleMarkOneRead(n._id)}
-                className={`px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors ${
-                  !n.read ? "bg-[#d4af37]/5 cursor-pointer hover:bg-[#d4af37]/8" : ""
-                }`}
+                className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors"
+                style={!n.read ? { background: 'rgba(212,175,55,0.05)', cursor: 'pointer' } : {}}
               >
                 <div className="flex items-start gap-3">
                   {!n.read && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#d4af37] mt-2 flex-shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: 'var(--accent)' }} />
                   )}
                   <div>
-                    <p className="font-semibold text-[#f8f6f3] text-sm">{n.title}</p>
-                    <p className="text-xs text-[#9a9a9a] mt-1">{n.message}</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>{n.title}</p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{n.message}</p>
                   </div>
                 </div>
-                <div className="text-right text-[10px] text-[#9a9a9a]/50 whitespace-nowrap">
+                <div className="text-right text-[10px] whitespace-nowrap" style={{ color: 'rgba(154,154,154,0.5)' }}>
                   {n.createdAt ? new Date(n.createdAt).toLocaleString() : ""}
                 </div>
               </div>
