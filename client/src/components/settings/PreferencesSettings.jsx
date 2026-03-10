@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Mail } from "lucide-react";
+import { Bell, Mail, Sun, Moon } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import userService from "../../api/userService";
 import toast from "react-hot-toast";
+import { applyTheme, getStoredTheme } from "../../utils/theme";
 
 const PreferencesSettings = () => {
   const { user } = useAuth();
@@ -38,6 +39,14 @@ const PreferencesSettings = () => {
 
     loadPreferences();
   }, [user]);
+
+  const [theme, setTheme] = useState(getStoredTheme());
+
+  const handleThemeToggle = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    applyTheme(next);
+    setTheme(next);
+  };
 
   const handleToggle = async (key) => {
     const userId = user?.id || user?._id;
@@ -83,6 +92,12 @@ const PreferencesSettings = () => {
       title: "Offers & Listings",
       description: "Receive information regarding new property listings and exclusive alerts.",
     },
+    {
+      key: "theme",
+      icon: theme === "dark" ? Moon : Sun,
+      title: "Theme",
+      description: "Toggle between light and dark interface modes.",
+    },
   ];
 
   return (
@@ -102,31 +117,46 @@ const PreferencesSettings = () => {
           return (
             <div
               key={item.key}
-              className="flex items-center justify-between p-6 bg-[#0a0a0a] border border-[#d4af37]/10 rounded-xl transition-all hover:border-[#d4af37]/30"
+              className="flex items-center justify-between p-6 rounded-xl transition-all"
+              style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}
             >
               <div className="flex items-start gap-4 flex-1">
                 <div className="mt-1 p-2 bg-[#d4af37]/10 rounded-lg">
                   <Icon className="w-5 h-5 text-[#d4af37]" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#f8f6f3]">
+                  <p className="text-sm font-bold" style={{ color: 'var(--text)' }}>
                     {item.title}
                   </p>
-                  <p className="text-xs text-[#9a9a9a] mt-1 pr-4">
+                  <p className="text-xs mt-1 pr-4" style={{ color: 'var(--muted)' }}>
                     {item.description}
                   </p>
                 </div>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={preferences[item.key]}
-                  onChange={() => handleToggle(item.key)}
-                  disabled={loading}
-                />
-                <div className="w-11 h-6 bg-[#1a1a1a] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d4af37]"></div>
-              </label>
+              {item.key === 'theme' ? (
+                <button
+                  onClick={handleThemeToggle}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border"
+                  style={{ borderColor: 'var(--panel-border)', background: 'transparent', color: 'var(--text)' }}
+                >
+                  {theme === 'dark' ? (
+                    <><Moon className="w-4 h-4" /> <span>Dark</span></>
+                  ) : (
+                    <><Sun className="w-4 h-4" /> <span>Light</span></>
+                  )}
+                </button>
+              ) : (
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={preferences[item.key]}
+                    onChange={() => handleToggle(item.key)}
+                    disabled={loading}
+                  />
+                  <div className="w-11 h-6 bg-[#1a1a1a] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d4af37]"></div>
+                </label>
+              )}
             </div>
           );
         })}
