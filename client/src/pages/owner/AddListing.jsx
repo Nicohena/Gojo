@@ -221,12 +221,12 @@ const AddListing = () => {
     }
   };
 
-  if (loading && !formData.title) {
+    if (loading && !formData.title) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center py-40">
-           <div className="w-12 h-12 border-4 border-[#d4af37] border-t-transparent rounded-full animate-spin mb-6" />
-           <span className="text-[#9a9a9a] uppercase tracking-widest text-xs font-bold font-serif">Initializing Property Form...</span>
+           <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mb-6" style={{ borderColor: 'var(--accent)' }} />
+           <span style={{ color: 'var(--muted)' }} className="uppercase tracking-widest text-xs font-bold font-serif">Initializing Property Form...</span>
         </div>
       </DashboardLayout>
     );
@@ -240,18 +240,19 @@ const AddListing = () => {
           <div className="flex items-center gap-6">
             <button
               onClick={() => navigate(-1)}
-              className="p-3 bg-[#111] border border-[#d4af37]/20 rounded-full hover:border-[#d4af37] transition-all"
+              className="p-3 rounded-full transition-all"
+              style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}
             >
-              <ArrowLeft size={18} className="text-[#d4af37]" />
+              <ArrowLeft size={18} style={{ color: 'var(--accent)' }} />
             </button>
             <div>
-              <h1 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h1 className="text-3xl" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
                 Add New Property
               </h1>
-              <p className="text-[10px] text-[#9a9a9a] uppercase tracking-widest font-bold mt-1">Provide detailed property information</p>
+              <p className="text-[10px] uppercase tracking-widest font-bold mt-1" style={{ color: 'var(--muted)' }}>Provide detailed property information</p>
             </div>
           </div>
-          <div className="hidden md:block text-[10px] text-[#d4af37]/50 font-bold uppercase tracking-widest bg-[#111] px-4 py-2 border border-[#d4af37]/10 rounded-full">Property Management Mode</div>
+          <div className="hidden md:block text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full" style={{ color: 'rgba(212,175,55,0.5)', background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>Property Management Mode</div>
         </div>
 
         {/* Scrollable Form Area */}
@@ -308,7 +309,7 @@ const AddListing = () => {
                         right: "16px",
                         top: "16px",
                         pointerEvents: "none",
-                        color: "#d4af37",
+                        color: 'var(--accent)',
                       }}
                       size={16}
                     />
@@ -458,7 +459,7 @@ const AddListing = () => {
                     <div className="checkbox-custom">
                       <Check size={14} />
                     </div>
-                    <span style={{ fontSize: "12px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", color: formData.amenities.includes(amenity) ? "#d4af37" : "#9a9a9a" }}>{amenity}</span>
+                    <span style={{ fontSize: "12px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", color: formData.amenities.includes(amenity) ? 'var(--accent)' : 'var(--muted)' }}>{amenity}</span>
                   </div>
                 ))}
               </div>
