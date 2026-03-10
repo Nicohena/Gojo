@@ -139,17 +139,18 @@ const OwnerListings = () => {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h1 className="text-4xl" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
               My Listings
             </h1>
-            <p className="text-[#9a9a9a] tracking-wide text-sm mt-1">
+            <p className="tracking-wide text-sm mt-1" style={{ color: 'var(--muted)' }}>
               Oversee your property portfolio and monitor listing performance metrics.
             </p>
           </div>
           <button
             type="button"
             onClick={() => navigate("/owner/listings/add")}
-            className="inline-flex items-center gap-2 px-6 py-2.5 border border-[#d4af37] text-[#d4af37] text-sm tracking-[0.05em] hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm tracking-[0.05em] transition-all"
+            style={{ border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--accent)', background: 'transparent' }}
           >
             <PlusCircle size={16} />
             <span>Add New Listing</span>
@@ -164,9 +165,9 @@ const OwnerListings = () => {
             { label: "Average Rating", value: `${stats.avgRating.toFixed(1)} / 5` },
             { label: "Paused Listings", value: stats.paused },
           ].map(({ label, value }) => (
-            <div key={label} className="bg-[#111] border border-[#d4af37]/10 p-5">
-              <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">{label}</p>
-              <p className="mt-2 text-2xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>{value}</p>
+            <div key={label} className="p-5" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>{label}</p>
+              <p className="mt-2 text-2xl" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>{value}</p>
             </div>
           ))}
         </div>
@@ -184,7 +185,8 @@ const OwnerListings = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="text-sm border border-[#d4af37]/10 bg-[#1a1a1a] text-[#f8f6f3] px-3 py-1.5 focus:outline-none focus:border-[#d4af37]/40"
+              className="text-sm px-3 py-1.5 focus:outline-none"
+              style={{ border: '1px solid', borderColor: 'var(--panel-border)', background: 'transparent', color: 'var(--text)' }}
             >
               <option value="createdAt">Newest</option>
               <option value="views">Most views</option>
@@ -196,19 +198,20 @@ const OwnerListings = () => {
         {/* Content */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="animate-spin text-[#d4af37]" size={40} />
-            <p className="text-[#9a9a9a] tracking-wide">Loading your listings...</p>
+            <Loader2 className="animate-spin" size={40} style={{ color: 'var(--accent)' }} />
+            <p className="tracking-wide" style={{ color: 'var(--muted)' }}>Loading your listings...</p>
           </div>
         ) : error ? (
           <div className="border border-red-500/30 bg-red-500/10 text-red-400 p-6 text-center">{error}</div>
         ) : filteredAndSorted.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-[#9a9a9a] text-lg mb-2">No property listings found.</p>
-            <p className="text-[#9a9a9a]/60 text-sm mb-6">Start by creating your first listing to receive booking inquiries from prospective tenants.</p>
+            <p className="text-lg mb-2" style={{ color: 'var(--muted)' }}>No property listings found.</p>
+            <p className="text-sm mb-6" style={{ color: 'rgba(154,154,154,0.6)' }}>Start by creating your first listing to receive booking inquiries from prospective tenants.</p>
             <button
               type="button"
               onClick={() => navigate("/owner/listings/add")}
-              className="inline-flex items-center gap-2 px-6 py-2.5 border border-[#d4af37] text-[#d4af37] text-sm tracking-[0.05em] hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all"
+              className="inline-flex items-center gap-2 px-6 py-2.5 text-sm tracking-[0.05em] transition-all"
+              style={{ border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--accent)', background: 'transparent' }}
             >
               <PlusCircle size={16} />
               <span>Add New Listing</span>
