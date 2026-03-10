@@ -8,7 +8,7 @@ import Modal from "../../components/ui/Modal";
 import logger from "../../utils/logger";
 import { Trash2, Users, Ban, UserCircle2, Search, Filter } from "lucide-react";
 
-const selectCls = "appearance-none bg-[#1a1a1a] border border-[#d4af37]/10 text-[#9a9a9a] px-4 py-2 text-sm focus:outline-none focus:border-[#d4af37]/40 hover:border-[#d4af37]/30 transition-all cursor-pointer";
+const selectCls = "appearance-none px-4 py-2 text-sm focus:outline-none cursor-pointer";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -150,20 +150,20 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen">
       <Navbar />
       <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-4xl text-[#f8f6f3] flex items-center gap-3" style={{ fontFamily: "'Playfair Display', serif" }}>
-              <Users className="h-8 w-8 text-[#d4af37]" />
+            <h1 className="text-4xl flex items-center gap-3" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
+              <Users className="h-8 w-8" style={{ color: 'var(--accent)' }} />
               User Management
             </h1>
-            <p className="mt-2 text-[#9a9a9a] tracking-wide">Oversee user accounts, roles, and administrative permissions.</p>
+            <p className="mt-2 tracking-wide" style={{ color: 'var(--muted)' }}>Oversee user accounts, roles, and administrative permissions.</p>
           </div>
-          <div className="text-right border-l border-[#d4af37]/10 pl-6">
-            <div className="text-[10px] uppercase font-bold text-[#d4af37]/50 tracking-widest">Total Users</div>
-            <div className="text-3xl font-bold text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <div className="text-right pl-6" style={{ borderLeft: '1px solid', borderColor: 'var(--panel-border)' }}>
+            <div className="text-[10px] uppercase font-bold tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Users</div>
+            <div className="text-3xl font-bold" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>
               {pagination.total}
             </div>
           </div>
@@ -171,55 +171,58 @@ const UserManagement = () => {
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {[{ label: "Tenants", val: roleSummary.tenant || 0 }, { label: "Owners", val: roleSummary.owner || 0 }, { label: "Admins", val: roleSummary.admin || 0 }].map((s) => (
-            <div key={s.label} className="bg-[#111] border border-[#d4af37]/10 p-4">
-              <p className="text-[10px] uppercase tracking-widest font-bold text-[#d4af37]/50">{s.label}</p>
-              <p className="text-2xl mt-1 text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>{s.val}</p>
+            <div key={s.label} className="p-4" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
+              <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'rgba(212,175,55,0.5)' }}>{s.label}</p>
+              <p className="text-2xl mt-1" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>{s.val}</p>
             </div>
           ))}
         </div>
 
-        <div className="bg-[#111] border border-[#d4af37]/10 p-4 mb-6">
+        <div className="p-4 mb-6" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#9a9a9a]" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4" style={{ color: 'var(--muted)' }} />
               <input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search by name or email..."
-                className="w-full bg-[#0a0a0a] border border-[#d4af37]/10 text-[#f8f6f3] pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-[#d4af37]/40 placeholder-[#9a9a9a]/30"
+                className="w-full pl-10 pr-4 py-2 text-sm"
+                style={{ background: 'transparent', border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--text)', paddingLeft: '2.5rem' }}
               />
             </div>
             <button
               onClick={() => { setPage(1); setSearchTerm(searchInput.trim()); setSuggestions([]); }}
-              className="px-6 py-2 bg-[#d4af37] text-[#0a0a0a] text-xs font-bold tracking-widest uppercase hover:bg-[#b8941f] transition-all"
+              className="px-6 py-2 text-xs font-bold tracking-widest uppercase transition-all"
+              style={{ background: 'var(--accent)', color: 'var(--panel)' }}
             >
               Search
             </button>
             <div className="h-8 w-px bg-[#d4af37]/10 mx-1 hidden lg:block" />
-            <select value={roleFilter} onChange={(e) => { setPage(1); setRoleFilter(e.target.value); }} className={selectCls}>
+            <select value={roleFilter} onChange={(e) => { setPage(1); setRoleFilter(e.target.value); }} className={selectCls} style={{ border: '1px solid', borderColor: 'var(--panel-border)', background: 'transparent', color: 'var(--text)' }}>
               <option value="">All Roles</option>
               <option value="tenant">Tenant</option>
               <option value="owner">Owner</option>
               <option value="admin">Admin</option>
             </select>
-            <select value={ownerVerificationFilter} onChange={(e) => { setPage(1); setOwnerVerificationFilter(e.target.value); }} className={selectCls}>
+            <select value={ownerVerificationFilter} onChange={(e) => { setPage(1); setOwnerVerificationFilter(e.target.value); }} className={selectCls} style={{ border: '1px solid', borderColor: 'var(--panel-border)', background: 'transparent', color: 'var(--text)' }}>
               <option value="">All Owner Verification</option>
               <option value="true">Verified Owners</option>
               <option value="false">Unverified Owners</option>
             </select>
-            <button onClick={() => { setSearchInput(""); setSearchTerm(""); setRoleFilter(""); setOwnerVerificationFilter(""); setPage(1); setSuggestions([]); }} className="text-xs text-[#9a9a9a] uppercase tracking-widest hover:text-[#d4af37]">Reset</button>
-            <button onClick={handleExport} className="ml-auto flex items-center gap-2 px-4 py-2 border border-[#d4af37]/20 text-[#d4af37]/70 text-xs font-bold tracking-widest uppercase hover:border-[#d4af37] hover:text-[#d4af37]">Export CSV</button>
+            <button onClick={() => { setSearchInput(""); setSearchTerm(""); setRoleFilter(""); setOwnerVerificationFilter(""); setPage(1); setSuggestions([]); }} className="text-xs uppercase tracking-widest" style={{ color: 'var(--muted)' }}>Reset</button>
+            <button onClick={handleExport} className="ml-auto flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest uppercase transition-all" style={{ border: '1px solid', borderColor: 'rgba(212,175,55,0.2)', color: 'rgba(212,175,55,0.7)' }}>Export CSV</button>
           </div>
           {suggestions.length > 0 && (
-            <div className="absolute z-20 mt-2 bg-[#1a1a1a] border border-[#d4af37]/20 shadow-2xl max-w-xl w-full">
+            <div className="absolute z-20 mt-2 shadow-2xl max-w-xl w-full" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
               {suggestions.map((u) => (
                 <button
                   key={u._id}
                   onClick={() => { setSearchInput(u.name || ""); setSearchTerm(u.name || ""); setSuggestions([]); handleViewUser(u._id); }}
-                  className="w-full text-left px-4 py-3 hover:bg-[#d4af37]/5 border-b border-[#d4af37]/5 last:border-0 group"
+                  className="w-full text-left px-4 py-3 border-b last:border-0 group"
+                  style={{ borderBottom: '1px solid rgba(212,175,55,0.05)' }}
                 >
-                  <span className="font-medium text-[#f8f6f3] group-hover:text-[#d4af37]">{u.name}</span>
-                  <span className="text-[#9a9a9a] text-xs ml-2">({u.email})</span>
+                  <span className="font-medium" style={{ color: 'var(--text)' }}>{u.name}</span>
+                  <span className="text-xs ml-2" style={{ color: 'var(--muted)' }}>({u.email})</span>
                 </button>
               ))}
             </div>
