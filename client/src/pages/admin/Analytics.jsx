@@ -8,34 +8,34 @@ import {
 } from "lucide-react";
 
 const StatCard = ({ icon: Icon, label, value, subtext }) => (
-  <div className="bg-[#111] p-6 border border-[#d4af37]/10">
+  <div className="p-6" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
     <div className="flex items-center gap-4">
-      <div className="w-10 h-10 border border-[#d4af37]/20 flex items-center justify-center">
-        <Icon size={18} className="text-[#d4af37]" />
+      <div className="w-10 h-10 border flex items-center justify-center" style={{ borderColor: 'rgba(212,175,55,0.2)' }}>
+        <Icon size={18} style={{ color: 'var(--accent)' }} />
       </div>
       <div>
-        <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">{label}</p>
-        <p className="text-2xl text-[#f8f6f3] mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>{value}</p>
-        {subtext && <p className="text-xs text-[#9a9a9a] mt-0.5">{subtext}</p>}
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>{label}</p>
+        <p className="text-2xl mt-1" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>{value}</p>
+        {subtext && <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{subtext}</p>}
       </div>
     </div>
   </div>
 );
 
 const BreakdownCard = ({ title, data, colorMap }) => (
-  <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-    <h3 className="text-[#f8f6f3] mb-4 text-sm font-bold tracking-wide">{title}</h3>
+  <div className="p-6" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
+    <h3 className="mb-4 text-sm font-bold tracking-wide" style={{ color: 'var(--text)' }}>{title}</h3>
     <div className="space-y-3">
       {Object.entries(data || {}).map(([key, count]) => (
-        <div key={key} className="flex items-center justify-between border-b border-[#d4af37]/5 pb-2">
+        <div key={key} className="flex items-center justify-between" style={{ borderBottom: '1px solid rgba(212,175,55,0.05)', paddingBottom: '0.5rem' }}>
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${colorMap?.[key] || "bg-[#9a9a9a]"}`} />
-            <span className="text-sm text-[#9a9a9a] capitalize">{key}</span>
+            <div className={`w-2 h-2 rounded-full`} style={{ background: colorMap?.[key] ? undefined : 'var(--muted)' }} />
+            <span className="text-sm capitalize" style={{ color: 'var(--muted)' }}>{key}</span>
           </div>
-          <span className="font-bold text-[#f8f6f3] text-sm">{count}</span>
+          <span className="font-bold text-sm" style={{ color: 'var(--text)' }}>{count}</span>
         </div>
       ))}
-      {(!data || Object.keys(data).length === 0) && <p className="text-sm text-[#9a9a9a]/50">No data yet</p>}
+      {(!data || Object.keys(data).length === 0) && <p className="text-sm" style={{ color: 'rgba(154,154,154,0.5)' }}>No data yet</p>}
     </div>
   </div>
 );
@@ -88,36 +88,36 @@ const AdminAnalytics = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen">
       <Navbar />
       <div className="flex items-center justify-center py-20 gap-3">
-        <Loader2 className="animate-spin text-[#d4af37]" size={40} />
-        <span className="text-[#9a9a9a] tracking-wide">Loading analytics...</span>
+        <Loader2 className="animate-spin" size={40} style={{ color: 'var(--accent)' }} />
+        <span className="tracking-wide" style={{ color: 'var(--muted)' }}>Loading analytics...</span>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen">
       <Navbar />
       <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Link to="/admin" className="p-2 border border-[#d4af37]/15 text-[#9a9a9a] hover:border-[#d4af37]/40 hover:text-[#d4af37] transition-all">
+            <Link to="/admin" className="p-2 transition-all" style={{ border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--muted)' }}>
               <ArrowLeft size={18} />
             </Link>
             <div>
-              <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Analytics</h1>
-              <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Comprehensive platform performance and operational metrics.</p>
+              <h1 className="text-4xl" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--text)' }}>Analytics</h1>
+              <p className="text-sm mt-1 tracking-wide" style={{ color: 'var(--muted)' }}>Comprehensive platform performance and operational metrics.</p>
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={exportDailyRevenue} className="px-3 py-1.5 text-xs font-bold border border-[#d4af37]/20 text-[#d4af37]/70 hover:border-[#d4af37] hover:text-[#d4af37] inline-flex items-center gap-1.5 tracking-wide transition-all">
+            <button onClick={exportDailyRevenue} className="px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5 tracking-wide transition-all" style={{ border: '1px solid', borderColor: 'rgba(212,175,55,0.2)', color: 'rgba(212,175,55,0.7)' }}>
               <Download size={12} />
               Export CSV
             </button>
             {["7d", "30d", "90d", "1y"].map((p) => (
-              <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 text-xs tracking-widest uppercase transition-all ${period === p ? "bg-[#d4af37] text-[#0a0a0a] font-bold" : "border border-[#d4af37]/20 text-[#9a9a9a] hover:border-[#d4af37]/50 hover:text-[#f8f6f3]"}`}>
+              <button key={p} onClick={() => setPeriod(p)} className="px-3 py-1.5 text-xs tracking-widest uppercase transition-all" style={period === p ? { background: 'var(--accent)', color: 'var(--panel)', fontWeight: 700 } : { border: '1px solid', borderColor: 'var(--panel-border)', color: 'var(--muted)' }}>
                 {p}
               </button>
             ))}
@@ -134,13 +134,13 @@ const AdminAnalytics = () => {
           ].map((item) => {
             const positive = item.value >= 0;
             return (
-              <div key={item.label} className="bg-[#111] p-4 border border-[#d4af37]/10">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-[#d4af37]/50">{item.label} Trend</p>
-                <div className={`mt-2 inline-flex items-center gap-1 text-sm font-bold ${positive ? "text-emerald-400" : "text-red-400"}`}>
+              <div key={item.label} className="p-4" style={{ background: 'var(--panel)', border: '1px solid', borderColor: 'var(--panel-border)' }}>
+                <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'rgba(212,175,55,0.5)' }}>{item.label} Trend</p>
+                <div className="mt-2 inline-flex items-center gap-1 text-sm font-bold" style={{ color: positive ? 'var(--success)' : 'var(--danger)' }}>
                   {positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                   {item.value > 0 ? "+" : ""}{item.value}%
                 </div>
-                <p className="text-[10px] text-[#9a9a9a] mt-1">vs previous period</p>
+                <p className="text-[10px] mt-1" style={{ color: 'var(--muted)' }}>vs previous period</p>
               </div>
             );
           })}
