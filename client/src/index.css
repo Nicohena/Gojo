@@ -7,6 +7,30 @@
   --success: #10b981;
 }
 
+/* Theme tokens used by components to ensure visibility in both themes */
+:root {
+  --accent: #d4af37;
+  --muted: #9a9a9a;
+  --dark-bg: #0a0a0a;
+  --dark-panel: #111111;
+  --dark-text: #f8f6f3;
+}
+
+/* Helper utility classes that apply only in dark mode. Use these instead of hard-coded hex classes. */
+html[data-theme="dark"] .dark-bg { background-color: var(--dark-bg) !important; }
+html[data-theme="dark"] .dark-panel { background-color: var(--dark-panel) !important; }
+html[data-theme="dark"] .dark-text { color: var(--dark-text) !important; }
+html[data-theme="dark"] .muted { color: var(--muted) !important; }
+html[data-theme="dark"] .accent { color: var(--accent) !important; }
+html[data-theme="dark"] .accent-bg { background-color: var(--accent) !important; color: #0a0a0a !important; }
+html[data-theme="dark"] .border-accent { border-color: var(--accent) !important; }
+html[data-theme="dark"] .border-accent-5 { border-color: rgba(212,175,55,0.05) !important; }
+html[data-theme="dark"] .border-accent-10 { border-color: rgba(212,175,55,0.1) !important; }
+html[data-theme="dark"] .border-accent-20 { border-color: rgba(212,175,55,0.2) !important; }
+html[data-theme="dark"] .bg-accent-5 { background-color: rgba(212,175,55,0.05) !important; }
+html[data-theme="dark"] .bg-accent-30 { background-color: rgba(212,175,55,0.3) !important; }
+
+
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
