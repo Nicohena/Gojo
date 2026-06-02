@@ -55,41 +55,36 @@ Finally, Playwright tests caught edge cases I never considered: failed payments,
 
 ## 📚 What I Learned
 
-**`React Query`** — Server state isn't useState. Caching and invalidation are the real challenges.
-
-**`Socket.io`** — Events are powerful, but careless listeners create chaos. Connection handling matters.
-
-**`JWT Auth`** — Access tokens vs. refresh tokens. Security in distributed systems.
-
-**`MongoDB Indexing`** — Slow searches taught me that databases are query engines, not just storage.
-
-**`Stripe & Idempotency`** — Duplicate charges are career-ending. Idempotency keys save lives.
-
-**`Chapa Integration`** — Working with Ethiopia's own payment gateway taught me local currency handling (ETB), bank callback patterns, and region-specific webhook challenges.
-
-**`Component Composition`** — Tailwind + Framer Motion forced me to think in reusable parts.
-
-**`Validation`** — Zod + express-validator created a shared contract. Validation is a feature.
-
-**`Security Middleware`** — Helmet, CORS, rate limiting. Understanding *why* makes you a thoughtful builder.
+| Concept | Lesson |
+|---------|--------|
+| **React Query** | Server state isn't `useState`. Caching and invalidation are the real challenges. |
+| **Socket.io** | Events are powerful, but careless listeners create chaos. Connection handling matters. |
+| **JWT Auth** | Access tokens vs. refresh tokens. Security in distributed systems. |
+| **MongoDB Indexing** | Slow searches taught me that databases are query engines, not just storage. |
+| **Stripe & Idempotency** | Duplicate charges are career-ending. Idempotency keys save lives. |
+| **Chapa Integration** | Local currency (ETB), bank callback patterns, and region-specific webhook challenges. |
+| **Component Composition** | Tailwind + Framer Motion forced me to think in reusable parts. |
+| **Validation** | Zod + express-validator created a shared contract. Validation is a feature. |
+| **Security Middleware** | Helmet, CORS, rate limiting. Understanding *why* makes you a thoughtful builder. |
 
 ---
 
 ## 🚀 How Can It Be Improved?
 
-- Advanced search (date range, amenities, neighborhood autocomplete)
-- Owner dashboard with analytics & occupancy tracking
-- Automated review prompts & sentiment analysis
-- Email notifications (Nodemailer)
-- Wishlist sharing with friends
-- Booking calendar (Google Calendar sync)
-- Admin moderation panel
-- React Native mobile app
-- Installment payment plans
-- AI-powered chat assistant for recommendations
-- Video tour integration
+- [ ] Advanced search (date range, amenities, neighborhood autocomplete)
+- [ ] Owner dashboard with analytics & occupancy tracking
+- [ ] Automated review prompts & sentiment analysis
+- [ ] Email notifications (Nodemailer)
+- [ ] Wishlist sharing with friends
+- [ ] Booking calendar (Google Calendar sync)
+- [ ] Admin moderation panel
+- [ ] React Native mobile app
+- [ ] Installment payment plans
+- [ ] AI-powered chat assistant for recommendations
+- [ ] Video tour integration
 
 ---
+
 ## 🛠️ Running the Project
 
 ```bash
