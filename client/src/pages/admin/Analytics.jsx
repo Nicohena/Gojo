@@ -1,45 +1,77 @@
 import React, { useState, useEffect } from "react";
 import adminService from "../../api/adminService";
-import Navbar from "../../components/layout/Navbar";
-import { Link } from "react-router-dom";
+import { DashboardLayout } from "../../components/layout/DashboardLayout";
+import { Navbar } from "../../components/layout/Navbar";
 import {
   TrendingUp, TrendingDown, Users, Home, CalendarCheck, DollarSign,
-  ShieldCheck, BarChart3, Loader2, ArrowLeft, Download,
+  ShieldCheck, BarChart3, Loader2, Download, Wallet,
 } from "lucide-react";
 
-const StatCard = ({ icon: Icon, label, value, subtext }) => (
-  <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-    <div className="flex items-center gap-4">
-      <div className="w-10 h-10 border border-[#d4af37]/20 flex items-center justify-center">
-        <Icon size={18} className="text-[#d4af37]" />
-      </div>
+const CORAL = "#E67E5F";
+
+// ── Stat card ─────────────────────────────────────────────────────────────────
+const StatCard = ({ icon: Icon, label, value, subtext, iconBg }) => (
+  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <div className="flex items-start justify-between">
       <div>
-        <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">{label}</p>
-        <p className="text-2xl text-[#f8f6f3] mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>{value}</p>
-        {subtext && <p className="text-xs text-[#9a9a9a] mt-0.5">{subtext}</p>}
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
+        <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
+        {subtext && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
+      </div>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: iconBg || "#FEF0EC" }}>
+        <Icon size={18} style={{ color: CORAL }} />
       </div>
     </div>
   </div>
 );
 
-const BreakdownCard = ({ title, data, colorMap }) => (
-  <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-    <h3 className="text-[#f8f6f3] mb-4 text-sm font-bold tracking-wide">{title}</h3>
-    <div className="space-y-3">
-      {Object.entries(data || {}).map(([key, count]) => (
-        <div key={key} className="flex items-center justify-between border-b border-[#d4af37]/5 pb-2">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${colorMap?.[key] || "bg-[#9a9a9a]"}`} />
-            <span className="text-sm text-[#9a9a9a] capitalize">{key}</span>
-          </div>
-          <span className="font-bold text-[#f8f6f3] text-sm">{count}</span>
-        </div>
-      ))}
-      {(!data || Object.keys(data).length === 0) && <p className="text-sm text-[#9a9a9a]/50">No data yet</p>}
+// ── Trend badge ───────────────────────────────────────────────────────────────
+const TrendCard = ({ label, value }) => {
+  const positive = value >= 0;
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{label} Trend</p>
+      <div className={`inline-flex items-center gap-1.5 text-lg font-bold ${positive ? "text-emerald-600" : "text-red-500"}`}>
+        {positive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+        {value > 0 ? "+" : ""}{value}%
+      </div>
+      <p className="text-xs text-gray-400 mt-1">vs previous period</p>
     </div>
-  </div>
-);
+  );
+};
 
+// ── Breakdown card ────────────────────────────────────────────────────────────
+const BreakdownCard = ({ title, data, colorMap }) => {
+  const entries = Object.entries(data || {});
+  const total = entries.reduce((s, [, v]) => s + Number(v), 0);
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <h3 className="text-sm font-bold text-gray-800 mb-4">{title}</h3>
+      {entries.length === 0 ? (
+        <p className="text-sm text-gray-400">No data yet</p>
+      ) : (
+        <div className="space-y-3">
+          {entries.map(([key, count]) => {
+            const pct = total > 0 ? Math.round((Number(count) / total) * 100) : 0;
+            return (
+              <div key={key}>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-gray-600 capitalize font-medium">{key}</span>
+                  <span className="font-bold text-gray-800">{count}</span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: colorMap?.[key] || CORAL }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 const AdminAnalytics = () => {
   const [analytics, setAnalytics] = useState(null);
   const [stats, setStats] = useState(null);
@@ -57,180 +89,164 @@ const AdminAnalytics = () => {
       ]);
       setAnalytics(analyticsData?.data || analyticsData);
       setStats(statsData?.data || statsData);
-    } catch (err) {
-      console.error("Failed to fetch analytics", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error("Failed to fetch analytics", err); }
+    finally { setLoading(false); }
   };
 
-  const roleColors = { tenant: "bg-[#d4af37]", owner: "bg-emerald-400", admin: "bg-purple-400" };
-  const statusColors = { pending: "bg-yellow-400", approved: "bg-emerald-400", rejected: "bg-red-400", cancelled: "bg-slate-400", completed: "bg-[#d4af37]" };
-  const typeColors = { apartment: "bg-[#d4af37]", house: "bg-emerald-400", condo: "bg-purple-400", townhouse: "bg-orange-400", studio: "bg-pink-400", room: "bg-yellow-400", unspecified: "bg-slate-400" };
+  const roleColors   = { tenant: "#3B82F6", owner: "#10B981", admin: "#8B5CF6" };
+  const statusColors = { pending: "#F59E0B", approved: "#10B981", rejected: "#EF4444", cancelled: "#9CA3AF", completed: CORAL };
+  const typeColors   = { apartment: CORAL, house: "#10B981", condo: "#8B5CF6", townhouse: "#F59E0B", studio: "#EC4899", room: "#F59E0B" };
 
-  const trends = analytics?.analytics?.trends || {};
+  const trends       = analytics?.analytics?.trends || {};
   const trendChanges = trends?.changes || {};
   const revenueStats = analytics?.analytics?.revenue || {};
   const listingStats = analytics?.analytics?.listings || {};
+  const overview     = analytics?.overview || {};
   const topPropertyTypes = Object.entries(listingStats.byPropertyType || {}).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  const overview = analytics?.overview || {};
 
   const exportDailyRevenue = () => {
-    const rows = [["Date", "Revenue", "Transactions"], ...(revenueStats.dailyBreakdown || []).map((d) => [d._id, d.revenue || 0, d.count || 0])];
-    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const rows = [["Date","Revenue","Transactions"], ...(revenueStats.dailyBreakdown || []).map(d => [d._id, d.revenue || 0, d.count || 0])];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `analytics-daily-revenue-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+    a.href = url; a.download = `analytics-${period}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <DashboardLayout>
       <Navbar />
-      <div className="flex items-center justify-center py-20 gap-3">
-        <Loader2 className="animate-spin text-[#d4af37]" size={40} />
-        <span className="text-[#9a9a9a] tracking-wide">Loading analytics...</span>
+      <div className="flex items-center justify-center py-32">
+        <div className="flex items-center gap-3">
+          <Loader2 className="animate-spin" size={28} style={{ color: CORAL }} />
+          <span className="text-gray-500 text-sm">Loading analytics...</span>
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <DashboardLayout>
       <Navbar />
-      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <Link to="/admin" className="p-2 border border-[#d4af37]/15 text-[#9a9a9a] hover:border-[#d4af37]/40 hover:text-[#d4af37] transition-all">
-              <ArrowLeft size={18} />
-            </Link>
-            <div>
-              <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Analytics</h1>
-              <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Comprehensive platform performance and operational metrics.</p>
+      <div className="px-6 py-6 max-w-screen-xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Analytics</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Comprehensive platform performance and operational metrics.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={exportDailyRevenue}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-gray-200 text-gray-600 rounded-xl hover:border-gray-300 transition-all">
+              <Download size={12} /> Export CSV
+            </button>
+            <div className="flex gap-1 bg-white border border-gray-100 rounded-xl p-1 shadow-sm">
+              {[{ key: "7d", label: "7d" }, { key: "30d", label: "30d" }, { key: "90d", label: "90d" }, { key: "1y", label: "1y" }].map(({ key, label }) => (
+                <button key={key} onClick={() => setPeriod(key)}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                  style={period === key ? { background: CORAL, color: "white" } : { color: "#6B7280" }}>
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={exportDailyRevenue} className="px-3 py-1.5 text-xs font-bold border border-[#d4af37]/20 text-[#d4af37]/70 hover:border-[#d4af37] hover:text-[#d4af37] inline-flex items-center gap-1.5 tracking-wide transition-all">
-              <Download size={12} />
-              Export CSV
-            </button>
-            {["7d", "30d", "90d", "1y"].map((p) => (
-              <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 text-xs tracking-widest uppercase transition-all ${period === p ? "bg-[#d4af37] text-[#0a0a0a] font-bold" : "border border-[#d4af37]/20 text-[#9a9a9a] hover:border-[#d4af37]/50 hover:text-[#f8f6f3]"}`}>
-                {p}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Trend Snapshot */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: "Bookings", value: trendChanges.bookings ?? 0 },
-            { label: "Users", value: trendChanges.users ?? 0 },
-            { label: "Listings", value: trendChanges.listings ?? 0 },
-            { label: "Revenue", value: trendChanges.revenue ?? 0 },
-          ].map((item) => {
-            const positive = item.value >= 0;
-            return (
-              <div key={item.label} className="bg-[#111] p-4 border border-[#d4af37]/10">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-[#d4af37]/50">{item.label} Trend</p>
-                <div className={`mt-2 inline-flex items-center gap-1 text-sm font-bold ${positive ? "text-emerald-400" : "text-red-400"}`}>
-                  {positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                  {item.value > 0 ? "+" : ""}{item.value}%
-                </div>
-                <p className="text-[10px] text-[#9a9a9a] mt-1">vs previous period</p>
-              </div>
-            );
-          })}
+        {/* Trend cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[{ label: "Bookings", value: trendChanges.bookings ?? 0 }, { label: "Users", value: trendChanges.users ?? 0 }, { label: "Listings", value: trendChanges.listings ?? 0 }, { label: "Revenue", value: trendChanges.revenue ?? 0 }].map(item => (
+            <TrendCard key={item.label} label={item.label} value={item.value} />
+          ))}
         </div>
 
-        {/* Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <StatCard icon={Users} label="Total Users" value={overview.totalUsers || 0} />
-          <StatCard icon={Home} label="Total Houses" value={overview.totalHouses || 0} />
-          <StatCard icon={CalendarCheck} label="Total Bookings" value={overview.totalBookings || 0} />
-          <StatCard icon={ShieldCheck} label="Pending Verifications" value={overview.pendingVerifications || 0} />
-          <StatCard icon={DollarSign} label="Revenue" value={`ETB ${(overview.revenue || 0).toLocaleString()}`} subtext={`${overview.transactions || 0} transactions`} />
-          <StatCard icon={TrendingUp} label="Period" value={period.toUpperCase()} />
+        {/* Overview stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <StatCard icon={Users}      label="Total Users"             value={overview.totalUsers || 0}                              iconBg="#EBF3FB" />
+          <StatCard icon={Home}       label="Total Houses"            value={overview.totalHouses || 0}                             iconBg="#F0FDF4" />
+          <StatCard icon={CalendarCheck} label="Total Bookings"       value={overview.totalBookings || 0}                           iconBg="#FEF0EC" />
+          <StatCard icon={ShieldCheck}label="Pending Verifications"   value={overview.pendingVerifications || 0}                    iconBg="#FEF2F2" />
+          <StatCard icon={Wallet}     label="Revenue"                 value={`ETB ${(overview.revenue || 0).toLocaleString()}`} subtext={`${overview.transactions || 0} transactions`} iconBg="#ECFDF5" />
+          <StatCard icon={TrendingUp} label="Period"                  value={period.toUpperCase()}                                  iconBg="#FAF5FF" />
         </div>
 
         {/* Breakdowns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <BreakdownCard title="Users by Role" data={stats?.usersByRole} colorMap={roleColors} />
-          <BreakdownCard title="Bookings by Status" data={stats?.bookingsByStatus} colorMap={statusColors} />
-          <BreakdownCard title="Houses by Type" data={stats?.housesByType} colorMap={typeColors} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <BreakdownCard title="Users by Role"       data={stats?.usersByRole}      colorMap={roleColors} />
+          <BreakdownCard title="Bookings by Status"  data={stats?.bookingsByStatus} colorMap={statusColors} />
+          <BreakdownCard title="Houses by Type"      data={stats?.housesByType}     colorMap={typeColors} />
         </div>
 
-        {/* Revenue + Listing Quality */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-            <h3 className="text-[#f8f6f3] mb-4 text-sm font-bold tracking-wide">Revenue Quality</h3>
-            <div className="space-y-3 text-sm">
+        {/* Revenue quality + Listing performance */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Wallet size={15} style={{ color: CORAL }} /> Revenue Quality
+            </h3>
+            <div className="space-y-3">
               {[
-                { label: "Net Revenue", value: `ETB ${(revenueStats.netRevenue || 0).toLocaleString()}` },
-                { label: "Average Transaction", value: `ETB ${Math.round(revenueStats.averageTransaction || 0).toLocaleString()}` },
-                { label: "Total Refunds", value: `ETB ${(revenueStats.totalRefunds || 0).toLocaleString()}` },
+                { label: "Net Revenue",           value: `ETB ${(revenueStats.netRevenue || 0).toLocaleString()}` },
+                { label: "Average Transaction",   value: `ETB ${Math.round(revenueStats.averageTransaction || 0).toLocaleString()}` },
+                { label: "Total Refunds",         value: `ETB ${(revenueStats.totalRefunds || 0).toLocaleString()}` },
               ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between border-b border-[#d4af37]/5 pb-2">
-                  <span className="text-[#9a9a9a]">{label}</span>
-                  <span className="font-bold text-[#f8f6f3]">{value}</span>
+                <div key={label} className="flex items-center justify-between border-b border-gray-50 pb-2 last:border-0">
+                  <span className="text-sm text-gray-500">{label}</span>
+                  <span className="font-bold text-gray-800 text-sm">{value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-            <h3 className="text-[#f8f6f3] mb-4 text-sm font-bold tracking-wide">Listing Performance</h3>
-            <div className="space-y-3 text-sm">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Home size={15} style={{ color: CORAL }} /> Listing Performance
+            </h3>
+            <div className="space-y-3">
               {[
-                { label: "New Listings", value: listingStats.newListings || 0 },
-                { label: "Verified Listings", value: listingStats.verifiedListings || 0 },
-                { label: "Average Market Price", value: `ETB ${Math.round(listingStats.averagePrice || 0).toLocaleString()}` },
+                { label: "New Listings",          value: listingStats.newListings || 0 },
+                { label: "Verified Listings",     value: listingStats.verifiedListings || 0 },
+                { label: "Avg Market Price",      value: `ETB ${Math.round(listingStats.averagePrice || 0).toLocaleString()}` },
               ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between border-b border-[#d4af37]/5 pb-2">
-                  <span className="text-[#9a9a9a]">{label}</span>
-                  <span className="font-bold text-[#f8f6f3]">{value}</span>
+                <div key={label} className="flex items-center justify-between border-b border-gray-50 pb-2">
+                  <span className="text-sm text-gray-500">{label}</span>
+                  <span className="font-bold text-gray-800 text-sm">{value}</span>
                 </div>
               ))}
-              <div className="pt-1">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-[#d4af37]/50 mb-2">Top Property Types</p>
-                {topPropertyTypes.length > 0 ? (
-                  <div className="space-y-1">
-                    {topPropertyTypes.map(([type, count]) => (
-                      <p key={type} className="text-[#9a9a9a]"><span className="capitalize">{type}</span>: <span className="font-bold text-[#f8f6f3]">{count}</span></p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[#9a9a9a]/50">No property type distribution yet.</p>
-                )}
-              </div>
+              {topPropertyTypes.length > 0 && (
+                <div className="pt-1">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Top Property Types</p>
+                  {topPropertyTypes.map(([type, count]) => (
+                    <p key={type} className="text-sm text-gray-500 mb-0.5">
+                      <span className="capitalize">{type}</span>: <span className="font-bold text-gray-800">{count}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent activity */}
         {stats?.recentActivity?.length > 0 && (
-          <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-            <h3 className="text-[#f8f6f3] mb-4 text-sm font-bold tracking-wide flex items-center gap-2">
-              <BarChart3 size={16} className="text-[#d4af37]" /> Recent Activity (24h)
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <BarChart3 size={15} style={{ color: CORAL }} /> Recent Activity (24h)
             </h3>
             <div className="space-y-3">
               {stats.recentActivity.map((log, idx) => (
-                <div key={idx} className="flex items-center justify-between border-b border-[#d4af37]/5 pb-2 last:border-0">
+                <div key={idx} className="flex items-center justify-between border-b border-gray-50 pb-2 last:border-0">
                   <div>
-                    <span className="text-sm text-[#f8f6f3]">{log.action?.replace(/_/g, " ")}</span>
-                    <span className="text-xs text-[#9a9a9a] ml-2">by {log.performedBy?.name || "System"}</span>
+                    <span className="text-sm font-medium text-gray-700">{log.action?.replace(/_/g, " ")}</span>
+                    <span className="text-xs text-gray-400 ml-2">by {log.performedBy?.name || "System"}</span>
                   </div>
-                  <span className="text-xs text-[#9a9a9a]/50">{new Date(log.createdAt).toLocaleTimeString()}</span>
+                  <span className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleTimeString()}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
