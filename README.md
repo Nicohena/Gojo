@@ -1,4 +1,4 @@
-# 🏠 House Haven
+# 🏠 Gojo
 
 > A full-stack MERN rental marketplace that connects homeowners with renters through real-time features, secure payments, and smart recommendations.  
 > *Inspired by a critical problem raised by TikTok user **Yadeshi** — finding a reliable rental platform in Ethiopia is broken. I built this to fix it.*
