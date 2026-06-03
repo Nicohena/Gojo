@@ -3,11 +3,6 @@ import { createPortal } from "react-dom";
 import clsx from "clsx";
 import { X } from "lucide-react";
 
-/**
- * Modal Component
- * Accessible modal with focus management and keyboard navigation
- */
-
 const Modal = ({
   isOpen,
   onClose,
@@ -22,93 +17,53 @@ const Modal = ({
   const previousActiveElement = useRef(null);
 
   const sizeClasses = {
-    sm: "max-w-md",
-    md: "max-w-lg",
-    lg: "max-w-2xl",
-    xl: "max-w-4xl",
+    sm:   "max-w-md",
+    md:   "max-w-lg",
+    lg:   "max-w-2xl",
+    xl:   "max-w-4xl",
     full: "max-w-full mx-4",
   };
 
-  // Handle ESC key
   useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
-    };
-
+    const handleEscape = (e) => { if (e.key === "Escape" && isOpen) onClose(); };
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
-      // Prevent body scroll when modal is open
       document.body.style.overflow = "hidden";
-
-      // Save currently focused element
       previousActiveElement.current = document.activeElement;
-
-      // Focus the modal
-      if (modalRef.current) {
-        modalRef.current.focus();
-      }
+      modalRef.current?.focus();
     }
-
     return () => {
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
-
-      // Restore focus to previous element
-      if (previousActiveElement.current) {
-        previousActiveElement.current.focus();
-      }
+      previousActiveElement.current?.focus();
     };
   }, [isOpen, onClose]);
 
-  // Trap focus within modal
   useEffect(() => {
     if (!isOpen || !modalRef.current) return;
-
-    const focusableElements = modalRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    const focusable = modalRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
     const handleTab = (e) => {
       if (e.key !== "Tab") return;
-
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement.focus();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement.focus();
-        }
-      }
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last?.focus(); } }
+      else            { if (document.activeElement === last)  { e.preventDefault(); first?.focus(); } }
     };
-
     modalRef.current.addEventListener("keydown", handleTab);
-
-    return () => {
-      if (modalRef.current) {
-        modalRef.current.removeEventListener("keydown", handleTab);
-      }
-    };
+    return () => modalRef.current?.removeEventListener("keydown", handleTab);
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget && closeOnOverlayClick) {
-      onClose();
-    }
+    if (e.target === e.currentTarget && closeOnOverlayClick) onClose();
   };
 
-  const modalContent = (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
@@ -117,39 +72,38 @@ const Modal = ({
       <div
         ref={modalRef}
         className={clsx(
-          "bg-[#111] text-[#f8f6f3] border border-[#d4af37]/15 rounded-xl shadow-2xl w-full transform transition-all",
+          "bg-white rounded-2xl shadow-xl w-full",
           sizeClasses[size],
-          className,
+          className
         )}
         tabIndex={-1}
       >
-        {/* Modal Header */}
+        {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 border-b border-[#d4af37]/10">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             {title && (
-              <h2 id="modal-title" className="text-2xl font-bold text-[#f8f6f3]">
+              <h2 id="modal-title" className="text-lg font-bold text-gray-900">
                 {title}
               </h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-[#9a9a9a] hover:text-[#f8f6f3] transition-colors p-1 rounded-lg hover:bg-[#d4af37]/10"
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Close modal"
               >
-                <X className="h-6 w-6" />
+                <X size={18} />
               </button>
             )}
           </div>
         )}
 
-        {/* Modal Content */}
+        {/* Content */}
         <div className="p-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
-
-  return createPortal(modalContent, document.body);
 };
 
 export default Modal;

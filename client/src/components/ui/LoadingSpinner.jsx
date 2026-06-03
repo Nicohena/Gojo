@@ -21,10 +21,12 @@ const LoadingSpinner = ({
   };
 
   const variantClasses = {
-    primary: "border-[#d4af37] border-t-transparent shadow-[0_0_15px_rgba(212,175,55,0.2)]",
-    white: "border-[#f8f6f3] border-t-transparent",
-    secondary: "border-[#9a9a9a] border-t-transparent",
+    primary:   "border-t-transparent",
+    white:     "border-white border-t-transparent",
+    secondary: "border-gray-400 border-t-transparent",
   };
+
+  const primaryStyle = variant === "primary" ? { borderColor: "#E67E5F", borderTopColor: "transparent" } : {};
 
   return (
     <div
@@ -38,6 +40,7 @@ const LoadingSpinner = ({
           sizeClasses[size],
           variantClasses[variant],
         )}
+        style={primaryStyle}
         aria-label={label}
       />
       <span className="sr-only">{label}</span>
