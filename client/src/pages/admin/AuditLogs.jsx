@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
 import adminService from "../../api/adminService";
-import Navbar from "../../components/layout/Navbar";
-import { Link } from "react-router-dom";
-import {
-  ArrowLeft, Shield, AlertTriangle, Info, Loader2, Download, ChevronDown,
-} from "lucide-react";
+import { DashboardLayout } from "../../components/layout/DashboardLayout";
+import { Navbar } from "../../components/layout/Navbar";
+import { Shield, AlertTriangle, Info, Loader2, Download, ChevronDown, Search, ChevronLeft, ChevronRight } from "lucide-react";
+
+const CORAL = "#E67E5F";
 
 const severityConfig = {
-  low:      { color: "border border-cyan-500/20 bg-cyan-500/10 text-cyan-400", icon: Info },
-  medium:   { color: "border border-amber-500/20 bg-amber-500/10 text-amber-400", icon: AlertTriangle },
-  high:     { color: "border border-red-500/20 bg-red-500/10 text-red-400", icon: Shield },
-  critical: { color: "border border-red-700/30 bg-red-600/10 text-red-300", icon: Shield },
+  low:      { bg: "bg-blue-50",   text: "text-blue-600",  icon: Info },
+  medium:   { bg: "bg-amber-50",  text: "text-amber-600", icon: AlertTriangle },
+  high:     { bg: "bg-red-50",    text: "text-red-600",   icon: Shield },
+  critical: { bg: "bg-red-100",   text: "text-red-700",   icon: Shield },
 };
 
-const selectCls = "appearance-none bg-[#1a1a1a] border border-[#d4af37]/10 text-[#9a9a9a] px-4 py-2 text-sm focus:outline-none focus:border-[#d4af37]/40 hover:border-[#d4af37]/30 transition-all";
+const inputCls = "bg-white border border-gray-200 text-gray-700 px-3 py-2 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E67E5F]/30 focus:border-[#E67E5F] placeholder-gray-300 transition-all";
+const selectCls = "bg-white border border-gray-200 text-gray-600 px-3 py-2 text-sm rounded-xl focus:outline-none cursor-pointer appearance-none";
 
 const AuditLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -35,195 +36,213 @@ const AuditLogs = () => {
     setLoading(true);
     try {
       const data = await adminService.getLogs({
-        action: filterAction || undefined,
-        severity: filterSeverity || undefined,
-        targetType: filterTargetType || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        page, limit,
+        action: filterAction || undefined, severity: filterSeverity || undefined,
+        targetType: filterTargetType || undefined, startDate: startDate || undefined,
+        endDate: endDate || undefined, page, limit,
       });
       const logsList = data?.data?.logs || data?.logs || data || [];
       setLogs(Array.isArray(logsList) ? logsList : []);
-      setPagination({
-        total: Number(data?.data?.pagination?.total || 0),
-        page: Number(data?.data?.pagination?.page || page),
-        pages: Number(data?.data?.pagination?.pages || 1),
-        limit: Number(data?.data?.pagination?.limit || limit),
-      });
-    } catch (err) {
-      console.error("Failed to fetch logs", err);
-    } finally {
-      setLoading(false);
-    }
+      setPagination({ total: Number(data?.data?.pagination?.total || 0), page: Number(data?.data?.pagination?.page || page), pages: Number(data?.data?.pagination?.pages || 1), limit: Number(data?.data?.pagination?.limit || limit) });
+    } catch (err) { console.error("Failed to fetch logs", err); }
+    finally { setLoading(false); }
   };
 
-  const filteredLogs = logs.filter((log) => {
+  const filteredLogs = logs.filter(log => {
     if (!searchTerm) return true;
     return [log.action, log.targetType, log.performedBy?.name, log.performedBy?.email, log.details?.reason]
       .filter(Boolean).join(" ").toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const uniqueActions = [...new Set(logs.map((l) => l.action).filter(Boolean))];
+  const uniqueActions = [...new Set(logs.map(l => l.action).filter(Boolean))];
   const severityCounts = logs.reduce((acc, log) => {
-    const key = log?.severity || "low"; acc[key] = (acc[key] || 0) + 1; return acc;
+    const k = log?.severity || "low"; acc[k] = (acc[k] || 0) + 1; return acc;
   }, { low: 0, medium: 0, high: 0, critical: 0 });
 
   const exportCsv = () => {
     if (!filteredLogs.length) return;
-    const rows = [
-      ["Action", "Severity", "TargetType", "PerformedBy", "Reason", "CreatedAt"],
-      ...filteredLogs.map((log) => [
-        log.action || "", log.severity || "", log.targetType || "",
-        log.performedBy?.name || log.performedBy?.email || "System",
-        log.details?.reason || "", log.createdAt ? new Date(log.createdAt).toISOString() : "",
-      ]),
-    ];
-    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const rows = [["Action","Severity","TargetType","PerformedBy","Reason","CreatedAt"],
+      ...filteredLogs.map(log => [log.action || "", log.severity || "", log.targetType || "", log.performedBy?.name || log.performedBy?.email || "System", log.details?.reason || "", log.createdAt ? new Date(log.createdAt).toISOString() : ""])];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit-logs-page-${pagination.page}-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+    a.href = url; a.download = `audit-logs-p${pagination.page}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
+  const hasFilters = filterAction || filterSeverity || filterTargetType || startDate || endDate || searchTerm;
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <DashboardLayout>
       <Navbar />
-      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <Link to="/admin" className="p-2 border border-[#d4af37]/15 text-[#9a9a9a] hover:border-[#d4af37]/40 hover:text-[#d4af37] transition-all">
-              <ArrowLeft size={18} />
-            </Link>
-            <div>
-              <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Audit Logs</h1>
-              <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Monitor all administrative actions and system events.</p>
-            </div>
+      <div className="px-6 py-6 max-w-screen-xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Audit Logs</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Monitor all administrative actions and system events.</p>
           </div>
-          <span className="text-sm text-[#9a9a9a]/50">{filteredLogs.length} entries</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">{filteredLogs.length} entries</span>
+            <button onClick={exportCsv}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-gray-200 text-gray-600 rounded-xl hover:border-gray-300 transition-all">
+              <Download size={12} /> Export CSV
+            </button>
+          </div>
         </div>
 
-        {/* Severity Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {/* Severity summary cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Low", value: severityCounts.low || 0, cls: "text-cyan-400" },
-            { label: "Medium", value: severityCounts.medium || 0, cls: "text-amber-400" },
-            { label: "High", value: severityCounts.high || 0, cls: "text-red-400" },
-            { label: "Critical", value: severityCounts.critical || 0, cls: "text-red-300" },
-          ].map(({ label, value, cls }) => (
-            <div key={label} className="bg-[#111] border border-[#d4af37]/10 p-4">
-              <p className="text-[10px] uppercase tracking-widest font-bold text-[#d4af37]/50">{label}</p>
-              <p className={`text-2xl mt-1 ${cls}`} style={{ fontFamily: "'Playfair Display', serif" }}>{value}</p>
+            { label: "Low",      value: severityCounts.low || 0,      bg: "bg-blue-50",   text: "text-blue-600" },
+            { label: "Medium",   value: severityCounts.medium || 0,   bg: "bg-amber-50",  text: "text-amber-600" },
+            { label: "High",     value: severityCounts.high || 0,     bg: "bg-red-50",    text: "text-red-600" },
+            { label: "Critical", value: severityCounts.critical || 0, bg: "bg-red-100",   text: "text-red-700" },
+          ].map(({ label, value, bg, text }) => (
+            <div key={label} className={`rounded-2xl border border-gray-100 shadow-sm p-4 ${bg}`}>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{label}</p>
+              <p className={`text-2xl font-bold mt-1 ${text}`}>{value}</p>
             </div>
           ))}
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          <input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search logs..."
-            className="bg-[#1a1a1a] border border-[#d4af37]/10 text-[#f8f6f3] px-4 py-2 text-sm focus:outline-none focus:border-[#d4af37]/40 placeholder-[#9a9a9a]/40"
-          />
-          <div className="relative">
-            <select value={filterAction} onChange={(e) => { setPage(1); setFilterAction(e.target.value); }} className={selectCls}>
-              <option value="">All Actions</option>
-              {uniqueActions.map((a) => <option key={a} value={a}>{a.replace(/_/g, " ")}</option>)}
-            </select>
-            <ChevronDown size={12} className="absolute right-3 top-3 text-[#9a9a9a] pointer-events-none" />
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
+          <div className="flex flex-wrap gap-3 items-center">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-300" />
+              <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search logs…" className={`${inputCls} pl-9 w-full`} />
+            </div>
+
+            {/* Action */}
+            <div className="relative">
+              <select value={filterAction} onChange={e => { setPage(1); setFilterAction(e.target.value); }} className={selectCls}>
+                <option value="">All Actions</option>
+                {uniqueActions.map(a => <option key={a} value={a}>{a.replace(/_/g," ")}</option>)}
+              </select>
+              <ChevronDown size={12} className="absolute right-2.5 top-3 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* Target */}
+            <div className="relative">
+              <select value={filterTargetType} onChange={e => { setPage(1); setFilterTargetType(e.target.value); }} className={selectCls}>
+                <option value="">All Targets</option>
+                <option value="User">User</option>
+                <option value="House">House</option>
+                <option value="BookingRequest">Booking</option>
+                <option value="Payment">Payment</option>
+                <option value="System">System</option>
+              </select>
+              <ChevronDown size={12} className="absolute right-2.5 top-3 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* Severity */}
+            <div className="relative">
+              <select value={filterSeverity} onChange={e => { setPage(1); setFilterSeverity(e.target.value); }} className={selectCls}>
+                <option value="">All Severity</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+              <ChevronDown size={12} className="absolute right-2.5 top-3 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* Date range */}
+            <input type="date" value={startDate} onChange={e => { setPage(1); setStartDate(e.target.value); }} className={selectCls} aria-label="Start date" />
+            <input type="date" value={endDate}   onChange={e => { setPage(1); setEndDate(e.target.value); }}   className={selectCls} aria-label="End date" />
+
+            {hasFilters && (
+              <button onClick={() => { setFilterAction(""); setFilterSeverity(""); setFilterTargetType(""); setStartDate(""); setEndDate(""); setSearchTerm(""); setPage(1); }}
+                className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors">
+                Clear
+              </button>
+            )}
           </div>
-          <div className="relative">
-            <select value={filterTargetType} onChange={(e) => { setPage(1); setFilterTargetType(e.target.value); }} className={selectCls}>
-              <option value="">All Target Types</option>
-              <option value="User">User</option>
-              <option value="House">House</option>
-              <option value="BookingRequest">BookingRequest</option>
-              <option value="Payment">Payment</option>
-              <option value="System">System</option>
-            </select>
-            <ChevronDown size={12} className="absolute right-3 top-3 text-[#9a9a9a] pointer-events-none" />
-          </div>
-          <div className="relative">
-            <select value={filterSeverity} onChange={(e) => { setPage(1); setFilterSeverity(e.target.value); }} className={selectCls}>
-              <option value="">All Severity</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
-            </select>
-            <ChevronDown size={12} className="absolute right-3 top-3 text-[#9a9a9a] pointer-events-none" />
-          </div>
-          <input type="date" value={startDate} onChange={(e) => { setPage(1); setStartDate(e.target.value); }} className={selectCls} aria-label="Start date" />
-          <input type="date" value={endDate} onChange={(e) => { setPage(1); setEndDate(e.target.value); }} className={selectCls} aria-label="End date" />
-          {(filterAction || filterSeverity || filterTargetType || startDate || endDate || searchTerm) && (
-            <button onClick={() => { setFilterAction(""); setFilterSeverity(""); setFilterTargetType(""); setStartDate(""); setEndDate(""); setSearchTerm(""); setPage(1); }} className="text-xs text-[#d4af37] tracking-widest uppercase hover:text-[#b8941f]">
-              Clear
-            </button>
-          )}
-          <button onClick={exportCsv} className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-[#d4af37]/20 text-[#d4af37]/70 hover:border-[#d4af37] hover:text-[#d4af37] tracking-wide transition-all">
-            <Download size={12} /> Export CSV
-          </button>
         </div>
 
+        {/* Table */}
         {loading ? (
-          <div className="flex items-center justify-center py-20 gap-3">
-            <Loader2 className="animate-spin text-[#d4af37]" size={36} />
-            <span className="text-[#9a9a9a] tracking-wide">Loading logs...</span>
+          <div className="flex items-center justify-center py-24">
+            <div className="flex items-center gap-3">
+              <Loader2 className="animate-spin" size={26} style={{ color: CORAL }} />
+              <span className="text-gray-500 text-sm">Loading logs...</span>
+            </div>
           </div>
         ) : (
-          <div className="bg-[#111] border border-[#d4af37]/10 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[#d4af37]/10">
-                    {["Action", "Performed By", "Target", "Severity", "Date"].map((h) => (
-                      <th key={h} className="text-left px-5 py-3 text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">{h}</th>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    {["Action","Performed By","Target Type","Severity","Date / Details"].map(h => (
+                      <th key={h} className="text-left px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#d4af37]/5">
-                  {filteredLogs.map((log, idx) => {
-                    const sev = severityConfig[log.severity] || severityConfig.low;
-                    const SevIcon = sev.icon;
-                    return (
-                      <React.Fragment key={idx}>
-                        <tr className="hover:bg-[#d4af37]/3 transition-colors">
-                          <td className="px-5 py-4">
-                            <span className="text-sm text-[#f8f6f3]">{log.action?.replace(/_/g, " ")}</span>
-                            {log.details?.reason && <p className="text-xs text-[#9a9a9a] mt-1">Reason: {log.details.reason}</p>}
-                          </td>
-                          <td className="px-5 py-4 text-sm text-[#9a9a9a]">{log.performedBy?.name || log.performedBy?.email || "System"}</td>
-                          <td className="px-5 py-4 text-sm text-[#9a9a9a]">{log.targetType || "—"}</td>
-                          <td className="px-5 py-4">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${sev.color}`}>
-                              <SevIcon size={10} />
-                              {log.severity || "low"}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className="text-xs text-[#9a9a9a]/50">{log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}</span>
-                            <button onClick={() => setExpandedId((prev) => (prev === log._id ? null : log._id))} className="block text-xs text-[#d4af37]/60 hover:text-[#d4af37] mt-1 tracking-wide">
-                              {expandedId === log._id ? "Hide details" : "View details"}
-                            </button>
-                          </td>
-                        </tr>
-                        {expandedId === log._id && (
-                          <tr className="bg-[#1a1a1a]">
-                            <td colSpan={5} className="px-5 py-3 text-xs text-[#9a9a9a]">
-                              <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
-                                {JSON.stringify({ details: log.details || {}, metadata: log.metadata || {} }, null, 2)}
-                              </pre>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredLogs.length === 0 ? (
+                    <tr><td colSpan={5} className="px-5 py-16 text-center text-gray-400">
+                      No audit logs found{hasFilters ? " for the selected filters" : ""}.
+                    </td></tr>
+                  ) : (
+                    filteredLogs.map((log, idx) => {
+                      const sev = severityConfig[log.severity] || severityConfig.low;
+                      const SevIcon = sev.icon;
+                      const isExpanded = expandedId === (log._id || idx);
+                      return (
+                        <React.Fragment key={log._id || idx}>
+                          <tr className="hover:bg-gray-50/60 transition-colors">
+                            {/* Action */}
+                            <td className="px-5 py-4">
+                              <p className="font-medium text-gray-800">{log.action?.replace(/_/g, " ")}</p>
+                              {log.details?.reason && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{log.details.reason}</p>}
+                            </td>
+                            {/* Performed by */}
+                            <td className="px-5 py-4 text-gray-500">
+                              {log.performedBy?.name || log.performedBy?.email || "System"}
+                            </td>
+                            {/* Target type */}
+                            <td className="px-5 py-4">
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg">
+                                {log.targetType || "—"}
+                              </span>
+                            </td>
+                            {/* Severity */}
+                            <td className="px-5 py-4">
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full ${sev.bg} ${sev.text}`}>
+                                <SevIcon size={10} />
+                                {log.severity || "low"}
+                              </span>
+                            </td>
+                            {/* Date + expand */}
+                            <td className="px-5 py-4">
+                              <p className="text-xs text-gray-400">
+                                {log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}
+                              </p>
+                              <button
+                                onClick={() => setExpandedId(prev => (prev === (log._id || idx) ? null : (log._id || idx)))}
+                                className="text-xs font-medium mt-1 transition-colors"
+                                style={{ color: CORAL }}
+                              >
+                                {isExpanded ? "Hide details" : "View details"}
+                              </button>
                             </td>
                           </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                  {filteredLogs.length === 0 && (
-                    <tr><td colSpan={5} className="px-5 py-12 text-center text-[#9a9a9a]/50">No audit logs found{filterAction || filterSeverity || filterTargetType || startDate || endDate ? " for the selected filters" : ""}.</td></tr>
+                          {isExpanded && (
+                            <tr className="bg-gray-50">
+                              <td colSpan={5} className="px-5 py-3">
+                                <pre className="whitespace-pre-wrap break-all font-mono text-[11px] text-gray-600 bg-white border border-gray-100 rounded-xl p-4">
+                                  {JSON.stringify({ details: log.details || {}, metadata: log.metadata || {} }, null, 2)}
+                                </pre>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -231,19 +250,22 @@ const AuditLogs = () => {
           </div>
         )}
 
+        {/* Pagination */}
         {!loading && pagination.pages > 1 && (
-          <div className="mt-6 flex items-center justify-between">
-            <button disabled={pagination.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-4 py-2 border border-[#d4af37]/15 text-[#9a9a9a] text-sm hover:border-[#d4af37]/40 hover:text-[#f8f6f3] disabled:opacity-30 transition-all">
-              Previous
+          <div className="mt-4 flex items-center justify-between">
+            <button disabled={pagination.page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
+              className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-gray-300 disabled:opacity-30 transition-all">
+              <ChevronLeft size={14} /> Previous
             </button>
-            <span className="text-sm text-[#9a9a9a]">Page {pagination.page} of {pagination.pages}</span>
-            <button disabled={pagination.page >= pagination.pages} onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))} className="px-4 py-2 border border-[#d4af37]/15 text-[#9a9a9a] text-sm hover:border-[#d4af37]/40 hover:text-[#f8f6f3] disabled:opacity-30 transition-all">
-              Next
+            <span className="text-sm text-gray-500">Page {pagination.page} of {pagination.pages}</span>
+            <button disabled={pagination.page >= pagination.pages} onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
+              className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-gray-300 disabled:opacity-30 transition-all">
+              Next <ChevronRight size={14} />
             </button>
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

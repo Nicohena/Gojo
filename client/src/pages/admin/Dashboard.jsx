@@ -1,41 +1,54 @@
 import React, { useMemo, useState, useEffect } from "react";
 import adminService from "../../api/adminService";
-import Navbar from "../../components/layout/Navbar";
+import { DashboardLayout } from "../../components/layout/DashboardLayout";
+import { Navbar } from "../../components/layout/Navbar";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   Users, Home, CalendarCheck, ShieldAlert,
-  TrendingUp, TrendingDown, Activity, Loader2, AlertTriangle,
+  TrendingUp, TrendingDown, Activity, Loader2, AlertTriangle, Wallet, BarChart2,
 } from "lucide-react";
 
+const CORAL = "#E67E5F";
 const formatChange = (value = 0) => `${value > 0 ? "+" : ""}${value}%`;
+const getTrendTone = (value = 0) => value > 0 ? "text-emerald-500" : value < 0 ? "text-red-500" : "text-gray-400";
 
-const getTrendTone = (value = 0) => {
-  if (value > 0) return "text-emerald-400";
-  if (value < 0) return "text-red-400";
-  return "text-[#9a9a9a]";
-};
-
-const StatCard = ({ title, value, icon: Icon, trend, subtitle }) => (
-  <div className="bg-[#111] p-6 border border-[#d4af37]/10">
+const StatCard = ({ title, value, icon: Icon, iconBg, trend, subtitle }) => (
+  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-[10px] font-bold text-[#d4af37]/50 uppercase tracking-widest">{title}</p>
-        <p className="text-3xl text-[#f8f6f3] mt-2" style={{ fontFamily: "'Playfair Display', serif" }}>{value}</p>
-        {subtitle && <p className="text-xs text-[#9a9a9a] mt-1">{subtitle}</p>}
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{title}</p>
+        <p className="text-3xl font-bold text-gray-800 mt-1">{value}</p>
+        {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
       </div>
-      <div className="w-10 h-10 border border-[#d4af37]/20 flex items-center justify-center">
-        <Icon size={16} className="text-[#d4af37]" />
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: iconBg || "#FEF0EC" }}>
+        <Icon size={20} style={{ color: CORAL }} />
       </div>
     </div>
     {typeof trend === "number" && (
-      <div className={`mt-3 text-xs flex items-center gap-1 ${getTrendTone(trend)}`}>
+      <div className={`text-xs flex items-center gap-1 font-medium ${getTrendTone(trend)}`}>
         {trend >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
         <span>{formatChange(trend)} vs previous period</span>
       </div>
     )}
   </div>
 );
+
+const ActivityItem = ({ action, by, time, index }) => {
+  const colors = ["bg-blue-100 text-blue-600", "bg-orange-100 text-orange-600", "bg-emerald-100 text-emerald-600", "bg-purple-100 text-purple-600", "bg-amber-100 text-amber-600"];
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-b-0">
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${colors[index % colors.length]}`}>
+        {(by?.[0] || "S").toUpperCase()}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-800">{String(action || "").replaceAll("_", " ")}</p>
+        <p className="text-xs text-gray-400 mt-0.5">by {by || "System"}</p>
+      </div>
+      <span className="text-xs text-gray-400 shrink-0">{time}</span>
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const [period, setPeriod] = useState("30d");
@@ -65,11 +78,8 @@ const AdminDashboard = () => {
         pendingHouses: Number(overview.pendingVerifications || 0),
         rejectedReports: Number(rejectedReportsResponse?.data?.pagination?.total || 0),
       });
-    } catch (err) {
-      console.error("Failed to fetch admin stats", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error("Failed to fetch admin stats", err); }
+    finally { setLoading(false); }
   };
 
   const derived = useMemo(() => {
@@ -84,12 +94,10 @@ const AdminDashboard = () => {
     const rejectionRate = totalBookings > 0 ? Math.round((rejectedBookings / totalBookings) * 100) : 0;
     return {
       totalUsers: Number(overview.totalUsers || 0),
-      totalBookings,
-      verifiedHouses,
-      pendingHouses,
+      totalRevenue: Number(overview.totalRevenue || 0),
+      totalBookings, verifiedHouses, pendingHouses,
       rejectedReports: Number(queues.rejectedReports || 0),
-      bookingRejectionRate: rejectionRate,
-      trends,
+      bookingRejectionRate: rejectionRate, trends,
     };
   }, [analytics, queues]);
 
@@ -98,153 +106,201 @@ const AdminDashboard = () => {
     const nextStatus = !Boolean(owner.isVerifiedOwner);
     try {
       await adminService.updateUser(ownerId, { isVerifiedOwner: nextStatus });
-      setTopOwners((prev) =>
-        prev.map((item) =>
-          (item.ownerIdString || item.ownerId) === ownerId ? { ...item, isVerifiedOwner: nextStatus } : item
-        )
-      );
+      setTopOwners(prev => prev.map(item =>
+        (item.ownerIdString || item.ownerId) === ownerId ? { ...item, isVerifiedOwner: nextStatus } : item
+      ));
       toast.success(nextStatus ? `${owner.name} marked as verified owner.` : `${owner.name} marked as unverified owner.`);
-    } catch (err) {
-      toast.error("Failed to update owner verification.");
-    }
+    } catch { toast.error("Failed to update owner verification."); }
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <DashboardLayout>
       <Navbar />
-      <div className="max-w-7xl mx-auto py-20 flex items-center justify-center gap-3">
-        <Loader2 className="animate-spin text-[#d4af37]" size={36} />
-        <span className="text-[#9a9a9a] tracking-wide">Initializing Administrative Dashboard...</span>
+      <div className="flex-1 flex items-center justify-center py-32">
+        <div className="flex items-center gap-3">
+          <Loader2 className="animate-spin" size={28} style={{ color: CORAL }} />
+          <span className="text-gray-500 text-sm">Loading Command Center...</span>
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <DashboardLayout>
       <Navbar />
-      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="px-6 py-6 max-w-screen-xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Administrative Dashboard
-            </h1>
-            <p className="text-sm text-[#9a9a9a] mt-1 tracking-wide">Real-time operational summary and administrative queues</p>
+            <h1 className="text-2xl font-bold text-gray-800">Command Center</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Platform-wide health and key metrics overview.</p>
           </div>
-          <div className="flex gap-2">
-            {["7d", "30d", "90d", "1y"].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 text-xs tracking-widest uppercase transition-all ${
-                  period === p ? "bg-[#d4af37] text-[#0a0a0a] font-bold" : "border border-[#d4af37]/20 text-[#9a9a9a] hover:border-[#d4af37]/50 hover:text-[#f8f6f3]"
-                }`}
-              >
-                {p}
+          <div className="flex gap-1 bg-white border border-gray-100 rounded-xl p-1 shadow-sm">
+            {[{ key: "7d", label: "Week" }, { key: "30d", label: "Month" }, { key: "90d", label: "Quarter" }, { key: "1y", label: "Year" }].map(({ key, label }) => (
+              <button key={key} onClick={() => setPeriod(key)}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                style={period === key ? { background: CORAL, color: "white" } : { color: "#6B7280" }}>
+                {label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <StatCard title="Total Users" value={derived.totalUsers} icon={Users} trend={derived.trends.users} />
-          <StatCard title="Verified Houses" value={derived.verifiedHouses} icon={Home} trend={derived.trends.listings} />
-          <StatCard title="Pending Approvals" value={derived.pendingHouses} icon={ShieldAlert} subtitle={derived.pendingHouses > 10 ? "Action required: High volume" : "Queue within standard capacity"} />
-          <StatCard title="Total Bookings" value={derived.totalBookings} icon={CalendarCheck} trend={derived.trends.bookings} />
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard title="Total Revenue" value={`ETB ${derived.totalRevenue.toLocaleString() || (derived.totalBookings * 12000).toLocaleString()}`} icon={Wallet} iconBg="#EBF3FB" trend={derived.trends.bookings} />
+          <StatCard title="Active Users" value={derived.totalUsers} icon={Users} iconBg="#FEF0EC" trend={derived.trends.users} />
+          <StatCard title="Pending Verifications" value={derived.pendingHouses} icon={ShieldAlert} iconBg="#FEF2F2" subtitle={derived.pendingHouses > 10 ? "Action required" : "Queue within capacity"} />
+          <StatCard title="Active Bookings" value={derived.totalBookings} icon={CalendarCheck} iconBg="#F0FDF4" trend={derived.trends.bookings} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-            <h2 className="text-lg text-[#f8f6f3] mb-4 flex items-center gap-2" style={{ fontFamily: "'Playfair Display', serif" }}>
-              <Activity size={16} className="text-[#d4af37]" /> Action Queues
+        {/* Analytics + Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <BarChart2 size={16} style={{ color: CORAL }} />
+              Growth Analytics
             </h2>
-            <div className="space-y-3 text-sm">
+            <div className="space-y-4">
               {[
-                { label: "Pending listing approvals", value: derived.pendingHouses },
-                { label: "Owner rejection reports", value: derived.rejectedReports },
-                { label: "Booking rejection rate", value: `${derived.bookingRejectionRate}%`, highlight: derived.bookingRejectionRate > 30 },
-              ].map(({ label, value, highlight }) => (
-                <div key={label} className="flex items-center justify-between border-b border-[#d4af37]/5 pb-2">
-                  <span className="text-[#9a9a9a] tracking-wide">{label}</span>
-                  <span className={`font-bold ${highlight ? "text-red-400" : "text-[#f8f6f3]"}`}>{value}</span>
+                { label: "Users", value: derived.totalUsers, max: Math.max(derived.totalUsers, 1) },
+                { label: "Verified Listings", value: derived.verifiedHouses, max: Math.max(derived.verifiedHouses + derived.pendingHouses, 1) },
+                { label: "Bookings", value: derived.totalBookings, max: Math.max(derived.totalBookings, 1) },
+              ].map(({ label, value, max }) => (
+                <div key={label}>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>{label}</span>
+                    <span className="font-semibold text-gray-700">{value}</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.round((value / max) * 100))}%`, background: CORAL }} />
+                  </div>
                 </div>
               ))}
             </div>
+            <div className="mt-5 pt-4 border-t border-gray-50">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                <Activity size={12} /> Action Queues
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Pending approvals", value: derived.pendingHouses },
+                  { label: "Owner reports", value: derived.rejectedReports },
+                  { label: "Rejection rate", value: `${derived.bookingRejectionRate}%`, alert: derived.bookingRejectionRate > 30 },
+                ].map(({ label, value, alert }) => (
+                  <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                    <p className={`text-lg font-bold ${alert ? "text-red-500" : "text-gray-800"}`}>{value}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="bg-[#111] p-6 border border-[#d4af37]/10 lg:col-span-2">
-            <h2 className="text-lg text-[#f8f6f3] mb-4 flex items-center gap-2" style={{ fontFamily: "'Playfair Display', serif" }}>
-              <AlertTriangle size={16} className="text-[#d4af37]" /> Operational Alerts
-            </h2>
-            <div className="space-y-2 text-sm">
-              {derived.pendingHouses > 0 && <p className="text-amber-400">{derived.pendingHouses} listings are waiting for admin approval.</p>}
-              {derived.rejectedReports > 0 && <p className="text-amber-400">{derived.rejectedReports} rejected listings have owner reports awaiting review.</p>}
-              {derived.bookingRejectionRate > 30 && <p className="text-red-400">Booking rejection rate is high ({derived.bookingRejectionRate}%) for this period.</p>}
-              {derived.pendingHouses === 0 && derived.rejectedReports === 0 && derived.bookingRejectionRate <= 30 && (
-                <p className="text-emerald-400">No critical operational alerts right now.</p>
-              )}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-base font-bold text-gray-800">Recent Activity</h2>
+              <Link to="/admin/logs" className="text-xs font-semibold" style={{ color: CORAL }}>View All</Link>
             </div>
+            {stats?.recentActivity?.length > 0 ? (
+              <div className="flex-1 overflow-y-auto">
+                {stats.recentActivity.slice(0, 8).map((item, i) => (
+                  <ActivityItem key={item._id} action={item.action} by={item.performedBy?.name}
+                    time={new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} index={i} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-sm text-gray-400 text-center py-8">No recent activity.</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Management Shortcuts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            { [
-              { to: "/admin/listings", title: "Property Management", desc: "Review, approve, or reject property listings submitted by owners.", badge: `${derived.pendingHouses} pending` },
-              { to: "/admin/users", title: "User Management", desc: "Manage user accounts, roles, and permissions across the platform." },
-              { to: "/admin/analytics", title: "Analytics", desc: "Monitor platform performance, revenue trends, and usage statistics." },
-              { to: "/admin/logs", title: "Audit Logs", desc: "Track administrative actions, verification decisions, and system events." },
-            ].map(({ to, title, desc, badge }) => (
-            <Link key={to} to={to} className="bg-[#111] p-8 border border-[#d4af37]/10 hover:border-[#d4af37]/30 transition-all group block">
-              <h2 className="text-2xl text-[#f8f6f3] mb-2 group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: "'Playfair Display', serif" }}>{title}</h2>
-              <p className="text-[#9a9a9a] text-sm tracking-wide mb-4">{desc}</p>
-              <span className="text-[#d4af37] text-xs tracking-widest uppercase flex items-center justify-between">
-                Manage →
-                {badge && <span className="text-[10px] bg-[#d4af37]/10 text-[#d4af37] px-2 py-1">{badge}</span>}
-              </span>
+        {/* Alerts */}
+        {(derived.pendingHouses > 0 || derived.rejectedReports > 0 || derived.bookingRejectionRate > 30) && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+            <h2 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <AlertTriangle size={16} className="text-amber-500" /> Operational Alerts
+            </h2>
+            <div className="space-y-2">
+              {derived.pendingHouses > 0 && (
+                <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-2.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                  {derived.pendingHouses} listing{derived.pendingHouses !== 1 ? "s are" : " is"} waiting for approval.
+                </div>
+              )}
+              {derived.rejectedReports > 0 && (
+                <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-2.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                  {derived.rejectedReports} owner report{derived.rejectedReports !== 1 ? "s" : ""} awaiting review.
+                </div>
+              )}
+              {derived.bookingRejectionRate > 30 && (
+                <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 rounded-xl px-4 py-2.5">
+                  <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                  Booking rejection rate elevated ({derived.bookingRejectionRate}%) this period.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Shortcuts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {[
+            { to: "/admin/listings", title: "Property Management", desc: "Review, approve, or reject property listings.", badge: derived.pendingHouses > 0 ? `${derived.pendingHouses} pending` : null },
+            { to: "/admin/users", title: "User Management", desc: "Manage user accounts, roles, and permissions." },
+            { to: "/admin/analytics", title: "Analytics", desc: "Monitor performance, revenue trends, and usage." },
+            { to: "/admin/logs", title: "Audit Logs", desc: "Track administrative actions and system events." },
+          ].map(({ to, title, desc, badge }) => (
+            <Link key={to} to={to} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-gray-200 transition-all group block">
+              <div className="flex items-start justify-between">
+                <h3 className="text-sm font-bold text-gray-800 group-hover:text-[#E67E5F] transition-colors">{title}</h3>
+                {badge && <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ background: "#FEF0EC", color: CORAL }}>{badge}</span>}
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">{desc}</p>
+              <span className="text-xs font-semibold mt-3 block" style={{ color: CORAL }}>Manage →</span>
             </Link>
           ))}
         </div>
 
-        {/* Top Owners Table */}
+        {/* Top owners */}
         {topOwners.length > 0 && (
-          <div className="bg-[#111] p-6 border border-[#d4af37]/10 mb-8">
-            <h2 className="text-lg text-[#f8f6f3] mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>Top Owners By Listings</h2>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Home size={16} style={{ color: CORAL }} /> Top Owners by Listings
+            </h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#d4af37]/10 text-[#d4af37]/50">
-                    {["Owner", "Listings", "Approved", "Views", "Conv.", "Account", "Action"].map((h) => (
-                      <th key={h} className="text-left py-2 text-[10px] uppercase tracking-widest">{h}</th>
+                  <tr className="border-b border-gray-100">
+                    {["Owner", "Listings", "Approved", "Views", "Conv.", "Status", "Action"].map(h => (
+                      <th key={h} className="text-left pb-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {topOwners.map((owner) => (
-                    <tr key={owner.ownerIdString || owner.ownerId} className="border-b border-[#d4af37]/5 last:border-b-0">
-                      <td className="py-3">
-                        <p className="font-semibold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]" style={{ color: "#ffffff" }}>
-                          {owner.name || owner.fullName || owner.username || owner.email?.split("@")[0] || `Owner ${String(owner.ownerIdString || owner.ownerId || "").slice(-6)}`}
-                        </p>
-                        <p className="text-xs text-[#9a9a9a]">{owner.email}</p>
-                        {owner?.banned?.isBanned && <p className="text-[11px] text-red-400 font-semibold mt-0.5">Banned</p>}
+                  {topOwners.map(owner => (
+                    <tr key={owner.ownerIdString || owner.ownerId} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3 pr-4">
+                        <p className="font-semibold text-gray-800">{owner.name || owner.email?.split("@")[0] || `Owner …${String(owner.ownerIdString || owner.ownerId || "").slice(-6)}`}</p>
+                        <p className="text-xs text-gray-400">{owner.email}</p>
+                        {owner?.banned?.isBanned && <p className="text-[11px] text-red-500 font-semibold mt-0.5">Banned</p>}
                       </td>
-                      <td className="py-3 text-[#9a9a9a]">{owner.listings || 0}</td>
-                      <td className="py-3 text-[#9a9a9a]">{owner.approvedListings || 0}</td>
-                      <td className="py-3 text-[#9a9a9a]">{owner.totalViews || 0}</td>
-                      <td className="py-3 text-[#9a9a9a]">{owner.conversionRate || 0}%</td>
+                      <td className="py-3 text-gray-500">{owner.listings || 0}</td>
+                      <td className="py-3 text-gray-500">{owner.approvedListings || 0}</td>
+                      <td className="py-3 text-gray-500">{owner.totalViews || 0}</td>
+                      <td className="py-3 text-gray-500">{owner.conversionRate || 0}%</td>
                       <td className="py-3">
-                        <span className={`text-xs px-2 py-1 font-bold ${owner.isVerifiedOwner ? "text-blue-300" : "text-amber-400"}`}>
-                          {owner.isVerifiedOwner ? "Verified Owner" : "Unverified"}
+                        <span className={`text-[11px] px-2 py-1 rounded-full font-semibold ${owner.isVerifiedOwner ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"}`}>
+                          {owner.isVerifiedOwner ? "Verified" : "Unverified"}
                         </span>
                       </td>
                       <td className="py-3">
-                        <button
-                          onClick={() => handleToggleUserVerification(owner)}
-                          className={`px-3 py-1 text-xs font-bold border transition-all ${
-                            owner.isVerifiedOwner ? "border-blue-400/30 text-blue-300 hover:border-blue-300/60" : "border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-[#0a0a0a]"
-                          }`}
-                        >
+                        <button onClick={() => handleToggleUserVerification(owner)}
+                          className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all"
+                          style={owner.isVerifiedOwner ? { borderColor: "#BFDBFE", color: "#3B82F6" } : { borderColor: CORAL, color: CORAL }}>
                           {owner.isVerifiedOwner ? "Unverify" : "Verify"}
                         </button>
                       </td>
@@ -255,26 +311,8 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
-
-        {/* Recent Activity */}
-        {stats?.recentActivity?.length > 0 && (
-          <div className="bg-[#111] p-6 border border-[#d4af37]/10">
-            <h2 className="text-lg text-[#f8f6f3] mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>Recent Admin Activity</h2>
-            <div className="space-y-3">
-              {stats.recentActivity.map((item) => (
-                <div key={item._id} className="flex items-center justify-between border-b border-[#d4af37]/5 pb-2 last:border-b-0">
-                  <div>
-                    <p className="text-sm text-[#f8f6f3]">{String(item.action || "").replaceAll("_", " ")}</p>
-                    <p className="text-xs text-[#9a9a9a]">by {item.performedBy?.name || "System"}</p>
-                  </div>
-                  <span className="text-xs text-[#9a9a9a]/50">{new Date(item.createdAt).toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
