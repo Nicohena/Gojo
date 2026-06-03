@@ -1,15 +1,16 @@
 import React from "react";
 import { Sidebar } from "./Sidebar";
-import { Navbar } from "./Navbar";
 
-export const DashboardLayout = ({ children }) => {
+export const DashboardLayout = ({ children, footer }) => {
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a]">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        <main className="flex-1 p-8 bg-[#0a0a0a]">{children}</main>
+    <div className="min-h-screen flex flex-col" style={{ background: "#EBF3FB" }}>
+      {/* Sidebar + content row */}
+      <div className="flex flex-1">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
+      {/* Full-width footer slot */}
+      {footer && <div className="w-full">{footer}</div>}
     </div>
   );
 };

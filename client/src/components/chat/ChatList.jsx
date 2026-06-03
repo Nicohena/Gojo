@@ -2,7 +2,44 @@ import React, { useState, useEffect } from "react";
 import chatService from "../../api/chatService";
 import socket from "../../utils/socket";
 import { getImageUrl } from "../../utils/imageUtils";
-import { User, MessageCircle, Clock } from "lucide-react";
+import { Search, MessageCircle } from "lucide-react";
+
+const CORAL = "#E67E5F";
+
+function timeAgo(ts) {
+  if (!ts) return "";
+  const diff = (Date.now() - new Date(ts)) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) {
+    const h = Math.floor(diff / 3600);
+    const m = new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return h < 3 ? m : "Today";
+  }
+  if (diff < 172800) return "Yesterday";
+  return new Date(ts).toLocaleDateString("en-US", { weekday: "short" });
+}
+
+function ConvBadge({ label }) {
+  const styles = {
+    confirmed: { bg: "#D1FAE5", color: "#065F46" },
+    pending: { bg: "#FEF3C7", color: "#92400E" },
+    "past trip": { bg: "#F3F4F6", color: "#6B7280" },
+    approved: { bg: "#D1FAE5", color: "#065F46" },
+  };
+  const key = label?.toLowerCase();
+  const s = styles[key] || { bg: "#F3F4F6", color: "#6B7280" };
+  return (
+    <span
+      className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm"
+      style={{ background: s.bg, color: s.color }}
+    >
+      {label}
+    </span>
+  );
+}
+
+const TABS = ["All", "Unread", "Support"];
 
 const ChatList = ({
   onSelectConversation,
@@ -13,6 +50,8 @@ const ChatList = ({
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("All");
 
   useEffect(() => {
     fetchConversations();
@@ -21,23 +60,13 @@ const ChatList = ({
   useEffect(() => {
     if (!socket.connected) return;
 
-    socket.on("receive_message", (startMessage) => {
-      handleNewMessage(startMessage);
-    });
-
-    socket.on("message-sent", (sentMessage) => {
-      handleNewMessage(sentMessage);
-    });
-
+    socket.on("receive_message", handleNewMessage);
+    socket.on("message-sent", handleNewMessage);
     socket.on("user-status", ({ userId, status }) => {
       setOnlineUsers((prev) => {
-        const newSet = new Set(prev);
-        if (status === "online") {
-          newSet.add(userId);
-        } else {
-          newSet.delete(userId);
-        }
-        return newSet;
+        const next = new Set(prev);
+        status === "online" ? next.add(userId) : next.delete(userId);
+        return next;
       });
     });
 
@@ -51,194 +80,200 @@ const ChatList = ({
   const fetchConversations = async () => {
     try {
       const response = await chatService.getConversations();
-
-      let conversationsData = [];
-      if (Array.isArray(response)) {
-        conversationsData = response;
-      } else if (response?.data?.conversations) {
-        conversationsData = response.data.conversations;
-      } else if (response?.data && Array.isArray(response.data)) {
-        conversationsData = response.data;
-      }
+      let list = [];
+      if (Array.isArray(response)) list = response;
+      else if (response?.data?.conversations) list = response.data.conversations;
+      else if (response?.data && Array.isArray(response.data)) list = response.data;
 
       if (initialChatContext?.owner && currentUser) {
         const ownerId = initialChatContext.owner._id;
         const currentUserId = currentUser.id || currentUser._id;
-
-        if (ownerId && currentUserId && ownerId === currentUserId) {
-          setConversations(conversationsData);
-          return;
-        }
-
-        const existingConv = conversationsData.find(
-          (c) => c.participant?._id === ownerId,
-        );
-
-        if (existingConv) {
-          onSelectConversation(existingConv);
-        } else {
-          const ids = [currentUserId, ownerId].sort();
-          const tempRoomId = `${ids[0]}_${ids[1]}`;
-
-          const tempConv = {
-            roomId: tempRoomId,
-            participant: initialChatContext.owner,
-            unreadCount: 0,
-            lastMessage: null,
-            isTemp: true,
-          };
-
-          conversationsData.unshift(tempConv);
-          onSelectConversation(tempConv);
+        if (ownerId && currentUserId && ownerId !== currentUserId) {
+          const existing = list.find((c) => c.participant?._id === ownerId);
+          if (existing) {
+            onSelectConversation(existing);
+          } else {
+            const ids = [currentUserId, ownerId].sort();
+            const tempConv = {
+              roomId: `${ids[0]}_${ids[1]}`,
+              participant: initialChatContext.owner,
+              unreadCount: 0,
+              lastMessage: null,
+              isTemp: true,
+            };
+            list.unshift(tempConv);
+            onSelectConversation(tempConv);
+          }
         }
       }
 
-      setConversations(conversationsData);
+      setConversations(list);
 
-      if (conversationsData.length > 0) {
-        const userIds = conversationsData
-          .map((c) => c.participant?._id)
-          .filter(Boolean);
-        if (socket.connected) {
-          socket.emit("get-online-status", userIds, (statusMap) => {
-            const onlineSet = new Set();
-            Object.entries(statusMap).forEach(([id, status]) => {
-              if (status === "online") onlineSet.add(id);
-            });
-            setOnlineUsers(onlineSet);
-          });
-        }
+      const userIds = list.map((c) => c.participant?._id).filter(Boolean);
+      if (userIds.length > 0 && socket.connected) {
+        socket.emit("get-online-status", userIds, (statusMap) => {
+          const s = new Set();
+          Object.entries(statusMap).forEach(([id, st]) => { if (st === "online") s.add(id); });
+          setOnlineUsers(s);
+        });
       }
-    } catch (err) {
-      console.error("Failed to fetch conversations", err);
+    } catch {
       setConversations([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNewMessage = (message) => {
-    setConversations((prevConversations) => {
-      const existingConvIndex = prevConversations.findIndex(
-        (c) => c.roomId === message.roomId,
-      );
-
-      let updatedConversations = [...prevConversations];
-
-      if (existingConvIndex !== -1) {
-        const existingConv = updatedConversations[existingConvIndex];
-        const updatedConv = {
-          ...existingConv,
-          lastMessage: {
-            message: message.message,
-            timestamp: message.createdAt,
-            messageType: message.messageType,
-            isFromMe:
-              message.from === currentUser?.id ||
-              message.from?._id === currentUser?.id,
-          },
-          unreadCount:
-            message.from !== currentUser?.id &&
-            message.from?._id !== currentUser?.id &&
-            activeConversationId !== message.roomId
-              ? (existingConv.unreadCount || 0) + 1
-              : existingConv.unreadCount,
-        };
-
-        updatedConversations.splice(existingConvIndex, 1);
-        updatedConversations.unshift(updatedConv);
-      } else {
-        // Fallback: reload list for new room
-        // fetchConversations(); 
-      }
-      return updatedConversations;
+  const handleNewMessage = (msg) => {
+    setConversations((prev) => {
+      const idx = prev.findIndex((c) => c.roomId === msg.roomId);
+      if (idx === -1) return prev;
+      const updated = [...prev];
+      const conv = { ...updated[idx] };
+      const fromMe = msg.from === currentUser?.id || msg.from?._id === currentUser?.id;
+      conv.lastMessage = { message: msg.message, timestamp: msg.createdAt, messageType: msg.messageType, isFromMe: fromMe };
+      if (!fromMe && activeConversationId !== msg.roomId) conv.unreadCount = (conv.unreadCount || 0) + 1;
+      updated.splice(idx, 1);
+      updated.unshift(conv);
+      return updated;
     });
   };
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-full opacity-50">
-      <div className="w-6 h-6 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin mb-4" />
-      <span className="text-[10px] uppercase font-bold tracking-widest text-[#9a9a9a]">Syncing Decryption...</span>
-    </div>
-  );
+  // Derive booking status badge label from conversation metadata
+  function getBadge(conv) {
+    const st = conv.bookingStatus || conv.lastBookingStatus;
+    if (!st) return null;
+    const map = { approved: "Confirmed", confirmed: "Confirmed", pending: "Pending", completed: "Past Trip" };
+    return map[st] || null;
+  }
+
+  const filtered = conversations.filter((c) => {
+    const name = c.participant?.name || "";
+    const msg = c.lastMessage?.message || "";
+    if (search && !name.toLowerCase().includes(search.toLowerCase()) && !msg.toLowerCase().includes(search.toLowerCase())) return false;
+    if (activeTab === "Unread" && !c.unreadCount) return false;
+    return true;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: CORAL, borderTopColor: "transparent" }} />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 overflow-y-auto space-y-1 p-2">
-      {Array.isArray(conversations) &&
-        conversations.map((conv) => (
-          <div
-            key={conv.roomId}
-            onClick={() => onSelectConversation(conv)}
-            className={`p-4 rounded-xl cursor-pointer transition-all duration-300 flex items-center gap-4 relative group ${
-              activeConversationId === conv.roomId
-                ? "bg-[#d4af37]/10 border border-[#d4af37]/20 shadow-[0_0_20px_rgba(212,175,55,0.05)]"
-                : "border border-transparent hover:bg-white/5"
-            }`}
-          >
-            <div className="relative shrink-0">
-              {conv.participant?.avatar ? (
-                <img
-                  src={getImageUrl(conv.participant.avatar)}
-                  alt={conv.participant.name}
-                  className="w-14 h-14 rounded-xl object-cover border border-[#d4af37]/10 hover:border-[#d4af37]/40 transition-colors"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#d4af37]/10 text-[#d4af37] flex items-center justify-center font-bold text-xl uppercase group-hover:border-[#d4af37]/30 transition-all" style={{ fontFamily: "'Playfair Display', serif" }}>
-                  {conv.participant?.name?.[0]?.toUpperCase() || "U"}
-                </div>
-              )}
-              
-              {/* Online Status Indicator */}
-              {onlineUsers.has(conv.participant?._id) && (
-                <span className="absolute -bottom-1 -right-1 bg-emerald-500 border-2 border-[#0a0a0a] w-4 h-4 rounded-full shadow-lg"></span>
-              )}
-
-              {conv.unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#d4af37] text-[#0a0a0a] text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-lg border-2 border-[#0a0a0a] shadow-lg">
-                  {conv.unreadCount}
-                </span>
-              )}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-baseline mb-1">
-                <h3 className={`font-bold truncate text-[15px] ${activeConversationId === conv.roomId ? "text-[#d4af37]" : "text-[#f8f6f3]"}`} style={{ fontFamily: "'Playfair Display', serif" }}>
-                  {conv.participant?.name || "Access User"}
-                </h3>
-                <span className="text-[10px] text-[#9a9a9a]/60 font-black uppercase tracking-widest ml-2 flex items-center gap-1">
-                  <Clock size={10} />
-                  {conv.lastMessage?.timestamp &&
-                    new Date(conv.lastMessage.timestamp).toLocaleTimeString(
-                      [],
-                      { hour: "2-digit", minute: "2-digit" },
-                    )}
-                </span>
-              </div>
-              <p
-                className={`text-xs truncate ${conv.unreadCount > 0 ? "font-bold text-[#f8f6f3]" : "text-[#9a9a9a]/80"}`}
-              >
-                {conv.lastMessage?.isFromMe && (
-                  <span className="text-[#d4af37]/60 font-black mr-2 uppercase tracking-tighter text-[9px]">Self:</span>
-                )}
-                {conv.lastMessage?.messageType === "image"
-                  ? "Visual Dossier Sent"
-                  : conv.lastMessage?.messageType === "audio"
-                    ? "Voice Intelligence Shared"
-                    : conv.lastMessage?.message || "Channel initialization complete"}
-              </p>
-            </div>
-            
-            {activeConversationId === conv.roomId && (
-               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#d4af37] rounded-r-full shadow-[0_0_10px_rgba(212,175,55,0.5)]" />
-            )}
-          </div>
-        ))}
-      {(!Array.isArray(conversations) || conversations.length === 0) && (
-        <div className="p-12 text-center">
-          <MessageCircle className="mx-auto w-12 h-12 text-[#9a9a9a]/20 mb-4" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#9a9a9a]">No Secure Communication History</p>
+    <div className="flex flex-col h-full">
+      {/* Search */}
+      <div className="px-3 pb-3">
+        <div className="flex items-center gap-2 bg-blue-50 rounded-xl px-3 py-2">
+          <Search size={14} className="text-gray-400 shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search messages..."
+            className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+          />
         </div>
-      )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 px-3 pb-3">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+            style={
+              activeTab === tab
+                ? { background: CORAL, color: "white" }
+                : { background: "#F3F4F6", color: "#6B7280" }
+            }
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Conversation list */}
+      <div className="flex-1 overflow-y-auto space-y-0.5 px-2">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+            <MessageCircle size={32} className="text-gray-200 mb-3" />
+            <p className="text-sm text-gray-400">No messages yet</p>
+          </div>
+        ) : (
+          filtered.map((conv) => {
+            const isActive = activeConversationId === conv.roomId;
+            const isOnline = onlineUsers.has(conv.participant?._id);
+            const badge = getBadge(conv);
+            const lastText =
+              conv.lastMessage?.messageType === "image"
+                ? "📷 Image"
+                : conv.lastMessage?.messageType === "audio"
+                  ? "🎤 Voice message"
+                  : conv.lastMessage?.message || "Start a conversation";
+
+            return (
+              <button
+                key={conv.roomId}
+                onClick={() => onSelectConversation(conv)}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left relative"
+                style={isActive ? { background: "#FEF0EC", borderLeft: `3px solid ${CORAL}` } : {}}
+              >
+                {/* Unread dot */}
+                {conv.unreadCount > 0 && !isActive && (
+                  <span className="absolute top-3 left-1 w-2 h-2 rounded-full bg-red-500" />
+                )}
+
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  {conv.participant?.avatar ? (
+                    <img
+                      src={getImageUrl(conv.participant.avatar)}
+                      alt={conv.participant.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                      style={{ background: isActive ? CORAL : "#9CA3AF" }}
+                    >
+                      {conv.participant?.name?.[0]?.toUpperCase() || "U"}
+                    </div>
+                  )}
+                  {isOnline && (
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                  )}
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {conv.participant?.name || "Unknown"}
+                    </p>
+                    <span className="text-[10px] text-gray-400 shrink-0 ml-1">
+                      {timeAgo(conv.lastMessage?.timestamp || conv.updatedAt)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate mt-0.5">
+                    {conv.lastMessage?.isFromMe ? <span className="text-gray-400">You: </span> : null}
+                    {lastText}
+                  </p>
+                  {badge && (
+                    <div className="mt-1">
+                      <ConvBadge label={badge} />
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };
