@@ -8,7 +8,6 @@ import {
   CreditCard,
   Settings,
   LogOut,
-  User as UserIcon,
   LayoutDashboard,
   Home,
   Users,
@@ -18,38 +17,53 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getImageUrl } from "../../utils/imageUtils";
+import { disconnectSocket } from "../../utils/socket";
 import chatService from "../../api/chatService";
 
-const NavItem = ({ icon: Icon, label, active = false, count, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center justify-between px-4 py-3 transition-all duration-200 group border-l-2 ${
-      active
-        ? "border-[#d4af37] text-[#d4af37] bg-[#d4af37]/5"
-        : "border-transparent text-[#9a9a9a] hover:text-[#f8f6f3] hover:border-[#d4af37]/40"
-    }`}
-  >
-    <div className="flex items-center gap-3">
-      <Icon
-        size={18}
-        className={active ? "text-[#d4af37]" : "group-hover:text-[#d4af37] transition-colors"}
-      />
-      <span className="text-sm tracking-[0.05em]">{label}</span>
-    </div>
-    {count > 0 && (
-      <span
-        className={`text-[10px] font-bold px-1.5 py-0.5 ${
-          active
-            ? "bg-[#d4af37]/20 text-[#d4af37]"
-            : "bg-red-500/80 text-white"
-        }`}
-      >
-        {count}
-      </span>
-    )}
-  </button>
-);
+// ─── Brand ───────────────────────────────────────────────────────────────────
+const CORAL = "#E67E5F";
+const BROWN = "#3D2C29";
 
+function GojoLogo({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <polygon points="50,10 95,48 5,48" fill={BROWN} />
+      <rect x="18" y="44" width="64" height="46" fill={CORAL} />
+      <rect x="38" y="62" width="24" height="28" rx="2" fill="white" />
+    </svg>
+  );
+}
+
+// ─── Single nav item ──────────────────────────────────────────────────────────
+function NavItem({ icon: Icon, label, active = false, count, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all group"
+      style={
+        active
+          ? { background: "#FEF0EC", color: CORAL }
+          : { color: "#6B7280" }
+      }
+    >
+      <div className="flex items-center gap-3">
+        <Icon
+          size={18}
+          strokeWidth={active ? 2.5 : 1.8}
+          style={{ color: active ? CORAL : "#9CA3AF" }}
+        />
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      {count > 0 && (
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white min-w-[18px] text-center">
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 export const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,6 +72,7 @@ export const Sidebar = () => {
 
   const handleLogout = () => {
     logout();
+    disconnectSocket();
     navigate("/");
   };
 
@@ -65,10 +80,12 @@ export const Sidebar = () => {
     const fetchUnread = async () => {
       if (!user) return;
       try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
         const data = await chatService.getUnreadCount();
         setUnreadCount(data.data?.count || data.count || 0);
-      } catch (err) {
-        // Silently fail — badge just won't show
+      } catch {
+        // badge just won't show
       }
     };
     fetchUnread();
@@ -76,238 +93,83 @@ export const Sidebar = () => {
     return () => clearInterval(interval);
   }, [user]);
 
+  const path = location.pathname;
+
   return (
-    <aside className="w-64 border-r border-[#d4af37]/10 h-screen flex flex-col bg-[#0a0a0a] sticky top-0">
+    <aside
+      className="w-52 h-screen flex flex-col sticky top-0 border-r"
+      style={{ background: "white", borderColor: "#E5E7EB" }}
+    >
       {/* Logo */}
-      <div className="p-6 border-b border-[#d4af37]/10">
-        <div
-          onClick={() => navigate("/")}
-          className="flex items-center gap-3 cursor-pointer"
-        >
-          <img src="/logo-mark.svg" alt="Logo" className="w-8 h-8" />
-          <span
-            className="text-[#d4af37] tracking-[0.2em] text-lg font-bold"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            SMART RENT
+      <div className="px-5 py-5 border-b border-gray-100">
+        <button onClick={() => navigate("/")} className="flex items-center gap-2">
+          <GojoLogo size={28} />
+          <span className="text-lg font-bold tracking-tight" style={{ color: CORAL }}>
+            Gojo
           </span>
-        </div>
+        </button>
       </div>
 
-      <nav className="flex-1 py-6 overflow-y-auto">
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {user?.role === "owner" ? (
-          /* Owner Menu */
           <>
-            <div className="mb-6">
-              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
-                Overview
-              </p>
-              <div>
-                <NavItem
-                  icon={BookOpen}
-                  label="Dashboard"
-                  active={location.pathname === "/owner/dashboard"}
-                  onClick={() => navigate("/owner/dashboard")}
-                />
-                <NavItem
-                  icon={Search}
-                  label="Listings"
-                  active={location.pathname === "/owner/listings"}
-                  onClick={() => navigate("/owner/listings")}
-                />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
-                Management
-              </p>
-              <div>
-                <NavItem
-                  icon={BookOpen}
-                  label="Bookings"
-                  active={location.pathname === "/owner/bookings"}
-                  onClick={() => navigate("/owner/bookings")}
-                />
-                <NavItem
-                  icon={MessageSquare}
-                  label="Messages"
-                  active={location.pathname === "/messages"}
-                  onClick={() => navigate("/messages")}
-                  count={unreadCount}
-                />
-                <NavItem
-                  icon={CreditCard}
-                  label="Payments"
-                  active={location.pathname === "/payments"}
-                  onClick={() => navigate("/payments")}
-                />
-                <NavItem
-                  icon={Settings}
-                  label="Settings"
-                  active={location.pathname === "/settings"}
-                  onClick={() => navigate("/settings")}
-                />
-              </div>
-            </div>
+            <NavItem icon={LayoutDashboard} label="Dashboard" active={path === "/owner/dashboard"} onClick={() => navigate("/owner/dashboard")} />
+            <NavItem icon={Home} label="Listings" active={path === "/owner/listings"} onClick={() => navigate("/owner/listings")} />
+            <NavItem icon={BookOpen} label="Bookings" active={path === "/owner/bookings"} onClick={() => navigate("/owner/bookings")} />
+            <NavItem icon={MessageSquare} label="Messages" active={path === "/messages"} onClick={() => navigate("/messages")} count={unreadCount} />
+            <NavItem icon={CreditCard} label="Payments" active={path === "/payments"} onClick={() => navigate("/payments")} />
+            <NavItem icon={Settings} label="Settings" active={path === "/settings"} onClick={() => navigate("/settings")} />
           </>
         ) : user?.role === "admin" ? (
-          /* Admin Menu */
           <>
-            <div className="mb-6">
-              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
-                Administrative Setup
-              </p>
-              <div>
-                <NavItem
-                  icon={LayoutDashboard}
-                  label="Dashboard"
-                  active={location.pathname === "/admin"}
-                  onClick={() => navigate("/admin")}
-                />
-                <NavItem
-                  icon={Home}
-                  label="Listings"
-                  active={location.pathname === "/admin/listings"}
-                  onClick={() => navigate("/admin/listings")}
-                />
-                <NavItem
-                  icon={Users}
-                  label="Users"
-                  active={location.pathname === "/admin/users"}
-                  onClick={() => navigate("/admin/users")}
-                />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
-                Reporting & Analytics
-              </p>
-              <div>
-                <NavItem
-                  icon={BarChart2}
-                  label="Analytics"
-                  active={location.pathname === "/admin/analytics"}
-                  onClick={() => navigate("/admin/analytics")}
-                />
-                <NavItem
-                  icon={History}
-                  label="Audit Logs"
-                  active={location.pathname === "/admin/logs"}
-                  onClick={() => navigate("/admin/logs")}
-                />
-                <NavItem
-                  icon={Bell}
-                  label="Notifications"
-                  active={location.pathname === "/notifications"}
-                  onClick={() => navigate("/notifications")}
-                />
-                <NavItem
-                  icon={Settings}
-                  label="Settings"
-                  active={location.pathname === "/profile"}
-                  onClick={() => navigate("/profile")}
-                />
-              </div>
-            </div>
+            <NavItem icon={LayoutDashboard} label="Dashboard" active={path === "/admin"} onClick={() => navigate("/admin")} />
+            <NavItem icon={Home} label="Listings" active={path === "/admin/listings"} onClick={() => navigate("/admin/listings")} />
+            <NavItem icon={Users} label="Users" active={path === "/admin/users"} onClick={() => navigate("/admin/users")} />
+            <NavItem icon={BarChart2} label="Analytics" active={path === "/admin/analytics"} onClick={() => navigate("/admin/analytics")} />
+            <NavItem icon={History} label="Audit Logs" active={path === "/admin/logs"} onClick={() => navigate("/admin/logs")} />
+            <NavItem icon={Bell} label="Notifications" active={path === "/notifications"} onClick={() => navigate("/notifications")} />
+            <NavItem icon={Settings} label="Settings" active={path === "/profile"} onClick={() => navigate("/profile")} />
           </>
         ) : (
-          /* Tenant Menu (Default) */
+          /* Tenant */
           <>
-            <div className="mb-6">
-              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
-                Menu
-              </p>
-              <div>
-                <NavItem
-                  icon={Search}
-                  label="Explore"
-                  active={location.pathname === "/search"}
-                  onClick={() => navigate("/search")}
-                />
-                <NavItem
-                  icon={Heart}
-                  label="Saved Homes"
-                  active={location.pathname === "/saved"}
-                  onClick={() => navigate("/saved")}
-                />
-                <NavItem
-                  icon={BookOpen}
-                  label="My Bookings"
-                  active={location.pathname === "/tenant/dashboard"}
-                  onClick={() => navigate("/tenant/dashboard")}
-                />
-                <NavItem
-                  icon={MessageSquare}
-                  label="Messages"
-                  active={location.pathname === "/messages"}
-                  onClick={() => navigate("/messages")}
-                  count={unreadCount}
-                />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-[10px] font-bold text-[#d4af37]/40 uppercase tracking-widest px-6 mb-3">
-                Preferences
-              </p>
-              <div>
-                <NavItem
-                  icon={Bell}
-                  label="Notifications"
-                  active={location.pathname === "/notifications"}
-                  onClick={() => navigate("/notifications")}
-                />
-                {user?.role !== "owner" && (
-                  <NavItem
-                    icon={CreditCard}
-                    label="Payments"
-                    active={location.pathname === "/payments"}
-                    onClick={() => navigate("/payments")}
-                  />
-                )}
-                <NavItem
-                  icon={Settings}
-                  label="Settings"
-                  active={location.pathname === "/profile"}
-                  onClick={() => navigate("/profile")}
-                />
-              </div>
-            </div>
+            <NavItem icon={Search} label="Explore" active={path === "/search"} onClick={() => navigate("/search")} />
+            <NavItem icon={Heart} label="Saved Homes" active={path === "/saved"} onClick={() => navigate("/saved")} />
+            <NavItem icon={BookOpen} label="My Bookings" active={path === "/tenant/dashboard"} onClick={() => navigate("/tenant/dashboard")} />
+            <NavItem icon={MessageSquare} label="Messages" active={path === "/messages"} onClick={() => navigate("/messages")} count={unreadCount} />
+            <NavItem icon={Bell} label="Notifications" active={path === "/notifications"} onClick={() => navigate("/notifications")} />
+            <NavItem icon={CreditCard} label="Payments" active={path === "/payments"} onClick={() => navigate("/payments")} />
+            <NavItem icon={Settings} label="Settings" active={path === "/profile"} onClick={() => navigate("/profile")} />
           </>
         )}
       </nav>
 
-      {/* User Footer */}
-      <div className="p-4 border-t border-[#d4af37]/10">
-        <div className="flex items-center gap-3 px-2 py-2">
-          <div
+      {/* User footer */}
+      <div className="p-3 border-t border-gray-100">
+        <div className="flex items-center gap-2.5 px-2 py-2">
+          <button
             onClick={() => navigate("/profile")}
-            className="w-9 h-9 rounded-full border border-[#d4af37]/30 overflow-hidden cursor-pointer flex items-center justify-center bg-[#1a1a1a] shrink-0"
+            className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gray-100 shrink-0"
           >
             {user?.avatar ? (
-              <img src={getImageUrl(user.avatar)} alt="User" className="w-full h-full object-cover" />
+              <img src={getImageUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
-              <span
-                className="text-[#d4af37] text-sm font-bold"
-                style={{ fontFamily: "'Playfair Display', serif" }}
-              >
+              <span className="text-sm font-bold text-gray-500">
                 {user?.name?.[0]?.toUpperCase() || "U"}
               </span>
             )}
-          </div>
+          </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-[#f8f6f3] truncate">
-              {user?.name || "User Name"}
+            <p className="text-sm font-semibold text-gray-800 truncate">
+              {user?.name || "User"}
             </p>
-            <p className="text-[10px] text-[#d4af37]/60 uppercase tracking-widest">
-              {user?.role || "Tenant"}
-            </p>
+            <p className="text-xs text-gray-400 capitalize">{user?.role || "Tenant"}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="text-[#9a9a9a] hover:text-red-400 transition-colors"
+            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+            aria-label="Logout"
           >
             <LogOut size={15} />
           </button>

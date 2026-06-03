@@ -1,103 +1,97 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Bell, LogOut, Moon, Sun, CircleUser, ChevronDown } from "lucide-react";
+import { Bell, LogOut, CircleUser, ChevronDown, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getImageUrl } from "../../utils/imageUtils";
 import { useAuth } from "../../context/AuthContext";
 import userService from "../../api/userService";
 import { disconnectSocket } from "../../utils/socket";
-import { applyTheme, getStoredTheme } from "../../utils/theme";
+
+const CORAL = "#E67E5F";
+const BROWN = "#3D2C29";
+
+function GojoLogo({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <polygon points="50,10 95,48 5,48" fill={BROWN} />
+      <rect x="18" y="44" width="64" height="46" fill={CORAL} />
+      <rect x="38" y="62" width="24" height="28" rx="2" fill="white" />
+    </svg>
+  );
+}
 
 export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+
   const [notifications, setNotifications] = useState([]);
-  const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
-  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [loadingNotifs, setLoadingNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [theme, setTheme] = useState(getStoredTheme());
-  const profileMenuRef = useRef(null);
-  const notificationRef = useRef(null);
+  const profileRef = useRef(null);
+  const notifRef = useRef(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-
   const path = location.pathname;
+
+  // Which paths show this navbar
   const showNavbar =
     path === "/search" ||
     path === "/tenant/dashboard" ||
     path.startsWith("/owner/") ||
     path.startsWith("/admin") ||
     path === "/messages" ||
-    path === "/payments";
-  const showSearch =
-    path === "/search" || path === "/tenant/dashboard" || path.startsWith("/owner/");
+    path === "/payments" ||
+    path === "/notifications" ||
+    path === "/saved";
+
+  const showSearch = path === "/search" || path === "/tenant/dashboard" || path.startsWith("/owner/");
+
   const canShowNotifications =
     path === "/search" ||
     path.startsWith("/tenant") ||
     path.startsWith("/owner") ||
     path.startsWith("/admin") ||
     path === "/messages" ||
-    path === "/payments";
+    path === "/payments" ||
+    path === "/notifications" ||
+    path === "/saved";
 
+  // Close dropdowns on outside click
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
-        setShowProfileMenu(false);
-      }
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setShowNotificationsPanel(false);
-      }
+    const handler = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfileMenu(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifications(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Load notifications
   useEffect(() => {
-    const loadNotifications = async () => {
-      if (!user || !canShowNotifications) {
-        setNotifications([]);
-        return;
-      }
+    const load = async () => {
+      if (!user || !canShowNotifications) { setNotifications([]); return; }
       const userId = user.id || user._id;
       if (!userId) return;
-
       try {
-        setLoadingNotifications(true);
-        const response = await userService.getNotifications(userId);
-        const notifs =
-          response.data?.notifications || response.data?.data?.notifications || [];
-        setNotifications(notifs);
-      } catch (error) {
-        console.error("Failed to load notifications", error);
-      } finally {
-        setLoadingNotifications(false);
-      }
+        setLoadingNotifs(true);
+        const res = await userService.getNotifications(userId);
+        const list = res.data?.notifications || res.data?.data?.notifications || [];
+        setNotifications(list);
+      } catch { /* silent */ } finally { setLoadingNotifs(false); }
     };
-
-    loadNotifications();
-  }, [user, canShowNotifications]);
+    load();
+  }, [user, path]);
 
   const handleOpenNotifications = async () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    setShowNotificationsPanel((prev) => !prev);
-
+    if (!user) { navigate("/login"); return; }
+    setShowNotifications((v) => !v);
     if (unreadCount > 0) {
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setNotifications((p) => p.map((n) => ({ ...n, read: true })));
       try {
         const userId = user.id || user._id;
-        if (userId) {
-          await userService.markAllNotificationsRead(userId);
-        }
-      } catch (error) {
-        console.error("Failed to mark notifications as read", error);
-      }
+        if (userId) await userService.markAllNotificationsRead(userId);
+      } catch { /* silent */ }
     }
   };
 
@@ -110,72 +104,63 @@ export const Navbar = () => {
   if (!showNavbar) return null;
 
   return (
-    <header className="h-16 border-b border-[#d4af37]/10 bg-[#0a0a0a]/90 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between">
+    <header className="h-14 bg-white border-b border-gray-100 sticky top-0 z-40 flex items-center justify-between px-6">
       {/* Logo */}
-      <div className="flex items-center gap-3 cursor-pointer mr-8 shrink-0" onClick={() => navigate("/")}>
-        <img src="/logo-mark.svg" alt="Logo" className="w-8 h-8" />
-        <span className="text-[#d4af37] tracking-[0.2em] text-sm font-bold hidden lg:block" style={{ fontFamily: "'Playfair Display', serif" }}>
-          SMART RENT
-        </span>
-      </div>
+      <button onClick={() => navigate("/")} className="flex items-center gap-1.5 mr-6 shrink-0">
+        <GojoLogo size={24} />
+        <span className="text-base font-bold tracking-tight hidden lg:block" style={{ color: CORAL }}>Gojo</span>
+      </button>
 
       {/* Search */}
-      <div className="flex-1 max-w-xl">
+      <div className="flex-1 max-w-md">
         {showSearch && (
-          <div className="relative group">
+          <div className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2">
+            <Search size={14} className="text-gray-400 shrink-0" />
             <input
               type="text"
               placeholder="Search by location, city..."
-              className="w-full bg-[#1a1a1a] border border-[#d4af37]/10 text-[#f8f6f3] placeholder-[#9a9a9a] rounded-none py-2.5 px-4 text-sm focus:border-[#d4af37]/40 focus:outline-none transition-all tracking-wide"
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
               onKeyDown={(e) => e.key === "Enter" && navigate("/search")}
             />
           </div>
         )}
       </div>
 
-      {/* Right Controls */}
-      <div className="flex items-center gap-4">
+      {/* Right */}
+      <div className="flex items-center gap-1 ml-4">
         {/* Notifications */}
         {canShowNotifications && (
-          <div className="relative" ref={notificationRef}>
+          <div className="relative" ref={notifRef}>
             <button
               type="button"
               onClick={handleOpenNotifications}
-              className="relative p-2 text-[#9a9a9a] hover:text-[#d4af37] transition-colors"
+              className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Notifications"
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 bg-[#d4af37] text-[#0a0a0a] text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center text-white" style={{ background: CORAL }}>
                   {unreadCount}
                 </span>
               )}
             </button>
-            {showNotificationsPanel && (
-              <div className="absolute right-0 mt-3 w-80 bg-[#111] border border-[#d4af37]/15 shadow-2xl z-50">
-                <div className="px-4 py-3 border-b border-[#d4af37]/10 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#d4af37]/60 uppercase tracking-widest">
-                    Notifications
-                  </span>
-                  {loadingNotifications && (
-                    <span className="text-[10px] text-[#9a9a9a]">Loading...</span>
-                  )}
+
+            {/* Notifications panel */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-800">Notifications</span>
+                  {loadingNotifs && <span className="text-xs text-gray-400">Loading...</span>}
                 </div>
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-72 overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <p className="px-4 py-6 text-sm text-[#9a9a9a] text-center">
-                      No notifications yet.
-                    </p>
+                    <p className="px-4 py-6 text-sm text-gray-400 text-center">No notifications yet.</p>
                   ) : (
                     notifications.map((n) => (
-                      <div
-                        key={n._id}
-                        className={`px-4 py-3 text-sm border-b border-[#d4af37]/5 ${
-                          !n.read ? "bg-[#d4af37]/5" : ""
-                        }`}
-                      >
-                        <p className="font-semibold text-[#f8f6f3]">{n.title}</p>
-                        <p className="text-xs text-[#9a9a9a] mt-1">{n.message}</p>
-                        <p className="text-[10px] text-[#9a9a9a]/60 mt-1">
+                      <div key={n._id} className={`px-4 py-3 text-sm border-b border-gray-50 ${!n.read ? "bg-orange-50/50" : ""}`}>
+                        <p className="font-semibold text-gray-800">{n.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
                           {n.createdAt ? new Date(n.createdAt).toLocaleString() : ""}
                         </p>
                       </div>
@@ -187,60 +172,37 @@ export const Navbar = () => {
           </div>
         )}
 
-        {/* Profile Menu */}
-        <div ref={profileMenuRef} className="relative">
+        {/* Profile menu */}
+        <div ref={profileRef} className="relative">
           <button
             type="button"
-            onClick={() => setShowProfileMenu((prev) => !prev)}
-            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity p-2"
+            onClick={() => setShowProfileMenu((v) => !v)}
+            className="flex items-center gap-2 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <div className="w-8 h-8 border border-[#d4af37]/30 flex items-center justify-center overflow-hidden bg-[#1a1a1a]">
+            <div className="w-7 h-7 rounded-full overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
               {user?.avatar ? (
-                <img
-                  src={getImageUrl(user.avatar)}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
+                <img src={getImageUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <span
-                  className="text-[#d4af37] text-xs"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
-                >
-                  {user?.name?.[0]?.toUpperCase() || "A"}
-                </span>
+                <span className="text-xs font-bold text-gray-500">{user?.name?.[0]?.toUpperCase() || "U"}</span>
               )}
             </div>
-            <p className="text-sm text-[#f8f6f3] hidden md:block tracking-wide">
-              {user?.name || "Profile"}
-            </p>
-            <ChevronDown size={12} className="text-[#9a9a9a]" />
+            <span className="text-sm font-medium text-gray-700 hidden md:block">{user?.name || "Profile"}</span>
+            <ChevronDown size={12} className="text-gray-400" />
           </button>
 
           {showProfileMenu && (
-            <div className="absolute right-0 mt-2 w-52 bg-[#111] border border-[#d4af37]/15 shadow-2xl z-50 py-1">
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 py-1 overflow-hidden">
               <button
-                onClick={() => {
-                  setShowProfileMenu(false);
-                  navigate("/profile");
-                }}
-                className="w-full px-4 py-2.5 text-left text-sm text-[#f8f6f3] hover:bg-[#d4af37]/10 hover:text-[#d4af37] flex items-center gap-2 transition-colors tracking-wide"
+                onClick={() => { setShowProfileMenu(false); navigate("/profile"); }}
+                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
               >
-                <CircleUser size={14} />
+                <CircleUser size={14} className="text-gray-400" />
                 Profile
               </button>
-              <button
-                onClick={() =>
-                  setTheme((prev) => (prev === "dark" ? "light" : "dark"))
-                }
-                className="w-full px-4 py-2.5 text-left text-sm text-[#f8f6f3] hover:bg-[#d4af37]/10 hover:text-[#d4af37] flex items-center gap-2 transition-colors tracking-wide"
-              >
-                {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-                {theme === "dark" ? "Light Theme" : "Dark Theme"}
-              </button>
-              <div className="border-t border-[#d4af37]/10 my-1" />
+              <div className="border-t border-gray-100 my-1" />
               <button
                 onClick={handleLogout}
-                className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors tracking-wide"
+                className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-2 transition-colors"
               >
                 <LogOut size={14} />
                 Logout
