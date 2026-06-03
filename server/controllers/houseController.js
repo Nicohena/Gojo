@@ -42,7 +42,15 @@ const createHouse = asyncHandler(async (req, res) => {
 
   const houseData = {
     ...req.body,
-    ownerId: req.user._id
+    ownerId: req.user._id,
+    available: true,
+    // Auto-approve listings — no admin review required
+    verified: {
+      decision: 'approved',
+      status: true,
+      reviewedAt: new Date(),
+      verifiedAt: new Date(),
+    },
   };
 
   ensureCloudinaryImages(houseData.images);
