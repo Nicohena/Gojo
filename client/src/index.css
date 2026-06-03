@@ -32,11 +32,7 @@ html[data-theme="dark"] .bg-accent-30 { background-color: rgba(212,175,55,0.3) !
 
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
-}
-
-html[data-theme="dark"] body {
-  @apply bg-slate-900 text-slate-100;
+  @apply bg-white text-gray-900 antialiased;
 }
 
 html[data-theme="dark"] .dark-header {
@@ -69,4 +65,19 @@ html[data-theme="dark"] .dark-header span {
   .btn-primary {
     @apply bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dark transition-colors font-medium;
   }
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Gojo brand token */
+:root {
+  --gojo-coral: #E67E5F;
+  --gojo-brown: #3D2C29;
 }
