@@ -1,60 +1,48 @@
 import React from "react";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { TrendingUp, TrendingDown, CheckCircle } from "lucide-react";
 
-/**
- * Stat Card Component
- * Restyled for luxury dark theme.
- */
+const CORAL = "#E67E5F";
 
-export const StatCard = ({
-  icon: Icon,
-  label,
-  value,
-  trend,
-  trendValue,
-  color = "primary",
-}) => {
-  const isPositive = trend === "up";
+const ICON_STYLES = {
+  coral:  { bg: "#FEF0EC", color: CORAL },
+  amber:  { bg: "#FFFBEB", color: "#F59E0B" },
+  blue:   { bg: "#EFF6FF", color: "#3B82F6" },
+  purple: { bg: "#F5F3FF", color: "#8B5CF6" },
+  green:  { bg: "#F0FDF4", color: "#22C55E" },
+};
 
-  const colorClasses = {
-    primary: "bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20",
-    blue: "bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20", // Replaced blue with gold
-    orange: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
-    purple: "bg-purple-500/10 text-purple-400 border border-purple-500/20",
-  };
+export const StatCard = ({ icon: Icon, label, value, trend, trendValue, color = "coral" }) => {
+  const style = ICON_STYLES[color] || ICON_STYLES.coral;
+  const isUp      = trend === "up";
+  const isNeutral = trend === "neutral";
 
   return (
-    <div className="bg-[#111] rounded-2xl border border-[#d4af37]/5 p-8 flex flex-col justify-between h-full shadow-2xl hover:border-[#d4af37]/30 transition-all duration-500 group relative overflow-hidden">
-      {/* Subtle Background Icon Decoration */}
-      <div className="absolute right-[-10%] bottom-[-10%] opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-700 pointer-events-none">
-         <Icon size={120} className="text-white" />
-      </div>
-      
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <p className="text-[#9a9a9a] text-[10px] font-bold uppercase tracking-[0.2em] mb-2">
-            {label}
-          </p>
-          <h3 className="text-3xl font-bold text-[#f8f6f3] tracking-tight group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: "'Playfair Display', serif" }}>
-            {value}
-          </h3>
-        </div>
-        <div className={`p-4 rounded-xl shadow-lg transition-transform duration-500 group-hover:scale-110 ${colorClasses[color]}`}>
-          <Icon size={24} />
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between">
+      {/* Top row */}
+      <div className="flex items-start justify-between mb-6">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</p>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: style.bg }}>
+          <Icon size={18} style={{ color: style.color }} />
         </div>
       </div>
 
+      {/* Value */}
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+
+      {/* Trend */}
       {trendValue && (
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest pt-6 border-t border-[#d4af37]/5 mt-4">
-          <span
-            className={`flex items-center gap-1 bg-[#1a1a1a] px-2 py-0.5 rounded-full ${
-              isPositive ? "text-emerald-400" : "text-red-400"
-            }`}
-          >
-            {isPositive ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+        <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-50">
+          {isNeutral ? (
+            <CheckCircle size={13} className="text-green-500" />
+          ) : isUp ? (
+            <TrendingUp size={13} className="text-green-500" />
+          ) : (
+            <TrendingDown size={13} className="text-red-400" />
+          )}
+          <span className={`text-xs font-semibold ${isNeutral ? "text-green-600" : isUp ? "text-green-600" : "text-red-500"}`}>
             {trendValue}
           </span>
-          <span className="text-[#9a9a9a]/40">Comparative Cycle</span>
+          {!isNeutral && <span className="text-xs text-gray-400">vs last cycle</span>}
         </div>
       )}
     </div>
