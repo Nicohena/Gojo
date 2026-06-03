@@ -1,22 +1,16 @@
-import React, { useState, useEffect } from "react";
-import "./AddListing.css";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { DashboardLayout } from "../../components/layout/DashboardLayout";
 import { houseService } from "../../api/houseService";
-import { useNavigate, useParams } from "react-router-dom";
+import { getImageUrl } from "../../utils/imageUtils";
+import toast from "react-hot-toast";
 import {
-  ArrowLeft,
-  Check,
-  ChevronDown,
-  UploadCloud,
-  X,
-  Loader2,
+  ChevronDown, MapPin, X, Wifi, Car, Wind,
+  Coffee, Utensils, Dumbbell, Waves, Shield,
+  ImagePlus, Check, ArrowLeft, Save,
 } from "lucide-react";
 import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMap,
-  useMapEvents,
+  MapContainer, TileLayer, Marker, useMap, useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -24,255 +18,229 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2x, iconUrl: markerIcon, shadowUrl: markerShadow });
 
-const LocationMarker = ({ position, setPosition, setFormData }) => {
+const CORAL = "#E67E5F";
+
+// ── Shared styles ─────────────────────────────────────────────────────────────
+const inputCls = "w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:border-transparent transition";
+const labelCls = "block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5";
+
+// ── Amenities (valid server enum values) ─────────────────────────────────────
+const AMENITIES = [
+  { label: "Wifi",             icon: Wifi,     value: "wifi" },
+  { label: "Parking",          icon: Car,      value: "parking" },
+  { label: "Air Conditioning", icon: Wind,     value: "ac" },
+  { label: "Pool",             icon: Waves,    value: "pool" },
+  { label: "Gym",              icon: Dumbbell, value: "gym" },
+  { label: "Security",         icon: Shield,   value: "security" },
+  { label: "Furnished",        icon: Coffee,   value: "furnished" },
+  { label: "Balcony",          icon: Utensils, value: "balcony" },
+];
+
+// ── Counter ───────────────────────────────────────────────────────────────────
+function Counter({ value, onChange, min = 0 }) {
+  return (
+    <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden w-fit">
+      <button type="button" onClick={() => onChange(Math.max(min, value - 1))}
+        className="px-3 py-2 text-gray-500 hover:bg-gray-50 font-bold text-lg leading-none">−</button>
+      <span className="px-5 py-2 text-sm font-semibold text-gray-800 min-w-[3rem] text-center">{value}</span>
+      <button type="button" onClick={() => onChange(value + 1)}
+        className="px-3 py-2 text-gray-500 hover:bg-gray-50 font-bold text-lg leading-none">+</button>
+    </div>
+  );
+}
+
+// ── Map helpers ───────────────────────────────────────────────────────────────
+const LocationMarker = ({ setPosition, onReverse }) => {
   useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
       setPosition([lat, lng]);
-      const API_URL =
-        import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
       fetch(`${API_URL}/geocode/reverse?lat=${lat}&lon=${lng}`)
-        .then((res) => res.json())
-        .then((data) => {
-          const address = data.address || {};
-          setFormData((prev) => ({
-            ...prev,
-            address: data.display_name
-              ? data.display_name.split(",")[0]
-              : prev.address,
-            city: address.city || address.town || address.village || prev.city,
-            state: address.state || prev.state,
-            zip: address.postcode || prev.zip,
-          }));
-        })
-        .catch((err) => console.error("Reverse geocoding failed", err));
+        .then(r => r.json())
+        .then(data => {
+          const addr = data.address || {};
+          onReverse({
+            address: data.display_name ? data.display_name.split(",")[0] : "",
+            city: addr.city || addr.town || addr.village || "",
+            state: addr.state || "",
+          });
+        }).catch(() => {});
     },
   });
-  return position === null ? null : <Marker position={position} />;
+  return null;
 };
 
 const MapUpdater = ({ center }) => {
   const map = useMap();
-  useEffect(() => {
-    if (center) map.flyTo(center, 13);
-  }, [center, map]);
+  useEffect(() => { if (center) map.flyTo(center, 13); }, [center, map]);
   return null;
 };
 
+// ── Section card ──────────────────────────────────────────────────────────────
+function Section({ title, subtitle, children }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7 space-y-5">
+      <div className="border-b border-gray-50 pb-4">
+        <h2 className="text-base font-bold text-gray-900">{title}</h2>
+        {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 const EditListing = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const fileInputRef = useRef(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    propertyType: "Apartment",
-    price: "",
-    bedrooms: 2,
-    bathrooms: 2,
-    size: 1100,
-    maxOccupants: 4,
-    address: "",
-    city: "",
-    state: "",
-    zip: "",
-    amenities: [],
-    images: [],
+    title: "", description: "", propertyType: "apartment", price: "",
+    bedrooms: 1, bathrooms: 1, size: 0, maxOccupants: 2,
+    address: "", city: "", state: "", amenities: [], images: [],
   });
 
   const [mapCenter, setMapCenter] = useState([9.005401, 38.763611]);
-  const [markerPosition, setMarkerPosition] = useState([9.005318, 38.750106]);
+  const [markerPos, setMarkerPos] = useState([9.005401, 38.763611]);
 
-  const amenitiesList = [
-    "Wi-Fi",
-    "Air Conditioning",
-    "Swimming Pool",
-    "Dishwasher",
-    "Parking Spot",
-    "Gym",
-    "Pet Friendly",
-    "Balcony",
-    "Washer/Dryer",
-  ];
+  const set = (key, value) => setFormData(p => ({ ...p, [key]: value }));
 
-  const backendToFrontendAmenity = {
-    wifi: "Wi-Fi",
-    ac: "Air Conditioning",
-    pool: "Swimming Pool",
-    dishwasher: "Dishwasher",
-    parking: "Parking Spot",
-    gym: "Gym",
-    "pet-friendly": "Pet Friendly",
-    balcony: "Balcony",
-    laundry: "Washer/Dryer",
-  };
-
-  const frontendToBackendAmenity = {
-    "Wi-Fi": "wifi",
-    "Air Conditioning": "ac",
-    "Swimming Pool": "pool",
-    Dishwasher: "dishwasher",
-    "Parking Spot": "parking",
-    Gym: "gym",
-    "Pet Friendly": "pet-friendly",
-    Balcony: "balcony",
-    "Washer/Dryer": "laundry",
-  };
-
+  // Load existing data
   useEffect(() => {
-    const fetchHouse = async () => {
+    const load = async () => {
       try {
-        const response = await houseService.getHouseById(id);
-        const house = response.data?.data?.house || response.data?.data;
-        if (!house) throw new Error("House not found");
-
-        const mappedAmenities = (house.amenities || []).map(
-          (a) => backendToFrontendAmenity[a] || a,
-        );
+        const res = await houseService.getHouseById(id);
+        const house = res.data?.data?.house || res.data?.data || res.data;
+        if (!house) throw new Error("Not found");
 
         setFormData({
           title: house.title || "",
           description: house.description || "",
-          propertyType:
-            (house.propertyType || "apartment").charAt(0).toUpperCase() +
-            (house.propertyType || "apartment").slice(1),
+          propertyType: house.propertyType || "apartment",
           price: house.price || "",
-          bedrooms: house.rooms?.bedrooms || 2,
-          bathrooms: house.rooms?.bathrooms || 2,
+          bedrooms: house.rooms?.bedrooms ?? 1,
+          bathrooms: house.rooms?.bathrooms ?? 1,
           size: house.size || 0,
-          maxOccupants: house.rules?.maxOccupants || 4,
+          maxOccupants: house.rules?.maxOccupants ?? 2,
           address: house.location?.address || "",
           city: house.location?.city || "",
           state: house.location?.state || "",
-          zip: house.location?.zip || "",
-          amenities: mappedAmenities,
-          images: (house.images || []).map((img) => img.url || img),
+          amenities: house.amenities || [],
+          images: (house.images || []).map(img => img.url || img),
         });
 
-        if (house.location?.coordinates?.coordinates) {
+        if (house.location?.coordinates?.coordinates?.length === 2) {
           const [lng, lat] = house.location.coordinates.coordinates;
           setMapCenter([lat, lng]);
-          setMarkerPosition([lat, lng]);
+          setMarkerPos([lat, lng]);
         }
       } catch (err) {
-        console.error("Failed to fetch house", err);
+        toast.error("Failed to load listing.");
         navigate("/owner/listings");
       } finally {
         setLoading(false);
       }
     };
-    fetchHouse();
+    load();
   }, [id, navigate]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handleCityBlur = () => {
-    if (formData.city) {
-      const API_URL =
-        import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-      fetch(`${API_URL}/geocode/search?q=${encodeURIComponent(formData.city)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && data.length > 0) {
-            const { lat, lon } = data[0];
-            const newCenter = [parseFloat(lat), parseFloat(lon)];
-            setMapCenter(newCenter);
-            setMarkerPosition(newCenter);
-          }
-        })
-        .catch((err) => console.error("Forward geocoding failed", err));
-    }
+    if (!formData.city) return;
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    fetch(`${API_URL}/geocode/search?q=${encodeURIComponent(formData.city)}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d?.[0]) {
+          const c = [parseFloat(d[0].lat), parseFloat(d[0].lon)];
+          setMapCenter(c);
+          setMarkerPos(c);
+        }
+      }).catch(() => {});
   };
 
-  const handleAmenityToggle = (amenity) => {
-    setFormData((prev) => {
-      const isSelected = prev.amenities.includes(amenity);
-      return {
-        ...prev,
-        amenities: isSelected
-          ? prev.amenities.filter((a) => a !== amenity)
-          : [...prev.amenities, amenity],
-      };
-    });
-  };
-
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
+  const handleUpload = async (files) => {
     if (!files.length) return;
-    const uploadData = new FormData();
-    files.forEach((file) => uploadData.append("images", file));
+    const fd = new FormData();
+    files.forEach(f => fd.append("images", f));
     try {
-      const response = await houseService.uploadImages(uploadData);
-      const uploadedPaths = response.data.data || [];
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, ...uploadedPaths],
-      }));
-    } catch (error) {
-      console.error("Image upload failed:", error);
-    }
+      setUploading(true);
+      const res = await houseService.uploadImages(fd);
+      const paths = res.data?.data || [];
+      set("images", [...formData.images, ...paths]);
+    } catch { toast.error("Image upload failed."); }
+    finally { setUploading(false); }
   };
 
   const handleSubmit = async () => {
+    // Basic validation
+    if (!formData.title.trim()) { toast.error("Property title is required."); return; }
+    if (!formData.price || Number(formData.price) <= 0) { toast.error("Please enter a valid price."); return; }
+
     setSaving(true);
     try {
       const payload = {
         title: formData.title,
         description: formData.description,
         price: Number(formData.price),
-        propertyType: formData.propertyType.toLowerCase(),
+        propertyType: formData.propertyType,
         rooms: {
           bedrooms: Number(formData.bedrooms),
           bathrooms: Number(formData.bathrooms),
-          totalRooms: Number(formData.bedrooms) + 2,
+          totalRooms: Number(formData.bedrooms) + Number(formData.bathrooms),
         },
-        size: Number(formData.size),
-        amenities: formData.amenities.map(
-          (a) => frontendToBackendAmenity[a] || a.toLowerCase(),
-        ),
+        size: Number(formData.size) || 0,
+        amenities: formData.amenities,
         location: {
-          address: formData.address,
+          address: formData.address || "",
           city: formData.city,
           state: formData.state,
-          zip: formData.zip || "00000",
+          zip: "",
           country: "Ethiopia",
-          coordinates: {
-            type: "Point",
-            coordinates: [markerPosition[1], markerPosition[0]],
-          },
         },
-        images: formData.images.map((url, index) => ({
-          url,
-          isPrimary: index === 0,
-        })),
         rules: { maxOccupants: Number(formData.maxOccupants) },
       };
 
+      // Include coordinates only if moved
+      if (markerPos[0] !== 9.005401 || markerPos[1] !== 38.763611) {
+        payload.location.coordinates = {
+          type: "Point",
+          coordinates: [markerPos[1], markerPos[0]],
+        };
+      }
+
+      if (formData.images.length > 0) {
+        payload.images = formData.images.map((url, i) => ({
+          url: typeof url === "string" ? url : url?.url || url,
+          isPrimary: i === 0,
+        }));
+      }
+
       await houseService.updateHouse(id, payload);
+      toast.success("Listing updated successfully.");
       navigate("/owner/listings");
-    } catch (error) {
-      console.error("Failed to update listing:", error);
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) {
+      const fieldErrors = err.response?.data?.data?.errors;
+      if (fieldErrors?.length) {
+        fieldErrors.forEach(e => toast.error(`${e.field}: ${e.message}`));
+      } else {
+        toast.error(err.response?.data?.message || "Failed to update listing.");
+      }
+    } finally { setSaving(false); }
   };
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex flex-col items-center justify-center py-40">
-          <div className="w-12 h-12 border-4 border-[#d4af37] border-t-transparent rounded-full animate-spin mb-4" />
-          <span className="text-[#9a9a9a] uppercase tracking-widest text-xs font-bold">Loading Property Details...</span>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: CORAL, borderTopColor: "transparent" }} />
         </div>
       </DashboardLayout>
     );
@@ -280,369 +248,224 @@ const EditListing = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-10 px-4 mt-8">
-          <div className="flex items-center gap-6">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-3 bg-[#111] border border-[#d4af37]/20 rounded-full hover:border-[#d4af37] transition-all"
-            >
-              <ArrowLeft size={18} className="text-[#d4af37]" />
-            </button>
-            <div>
-              <h1 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Edit Property</h1>
-              <p className="text-[10px] text-[#9a9a9a] uppercase tracking-widest font-bold mt-1">Update property information and specifications</p>
-            </div>
+      <div className="py-8 px-4 md:px-8 max-w-4xl mx-auto w-full">
+        {/* Heading */}
+        <div className="flex items-center gap-3 mb-7">
+          <button
+            onClick={() => navigate("/owner/listings")}
+            className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft size={16} className="text-gray-600" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Edit Listing</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Update your property details.</p>
           </div>
         </div>
 
-        <div className="scroll-area mb-24">
-          <div className="form-container">
-            {/* Basic Information */}
-            <div className="section-card">
-              <div className="section-header">
-                <div className="section-title">General Information</div>
-                <div className="section-desc">Property details and pricing</div>
+        <div className="space-y-5 mb-24">
+          {/* ── Basics ───────────────────────────────────────────── */}
+          <Section title="Basic Information" subtitle="Property title, description and type">
+            <div>
+              <label className={labelCls}>Property Title *</label>
+              <input type="text" value={formData.title} onChange={e => set("title", e.target.value)}
+                placeholder="e.g., Cozy Villa in Bole" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Description</label>
+              <textarea value={formData.description} onChange={e => set("description", e.target.value)}
+                placeholder="Describe the ambiance, neighborhood, and special features..."
+                rows={4} className={`${inputCls} resize-none`} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Property Type</label>
+                <div className="relative">
+                  <select value={formData.propertyType} onChange={e => set("propertyType", e.target.value)}
+                    className={`${inputCls} appearance-none pr-10`}>
+                    <option value="apartment">Apartment</option>
+                    <option value="house">House</option>
+                    <option value="condo">Condo</option>
+                    <option value="townhouse">Townhouse</option>
+                    <option value="studio">Studio</option>
+                    <option value="room">Room</option>
+                  </select>
+                  <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
               </div>
-              <div className="form-grid">
-                <div className="form-group full-width">
-                  <label className="label">Property Title</label>
-                  <input
-                    type="text"
-                    name="title"
-                    className="input-field"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    placeholder="Grand Residence..."
-                  />
+              <div>
+                <label className={labelCls}>Price (ETB / night) *</label>
+                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                  <span className="px-3 py-2.5 bg-gray-50 text-xs font-bold text-gray-400 border-r border-gray-200">ETB</span>
+                  <input type="number" value={formData.price} onChange={e => set("price", e.target.value)}
+                    placeholder="3500" className="flex-1 px-3 py-2.5 text-sm text-gray-800 focus:outline-none" />
                 </div>
-                <div className="form-group full-width">
-                  <label className="label">Property Description</label>
-                  <textarea
-                    name="description"
-                    className="input-field"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Exquisite living spaces..."
-                  />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Specs ────────────────────────────────────────────── */}
+          <Section title="Property Specs" subtitle="Rooms, size and occupancy">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+              <div>
+                <label className={labelCls}>Bedrooms</label>
+                <Counter value={Number(formData.bedrooms)} onChange={v => set("bedrooms", v)} min={0} />
+              </div>
+              <div>
+                <label className={labelCls}>Bathrooms</label>
+                <Counter value={Number(formData.bathrooms)} onChange={v => set("bathrooms", v)} min={0} />
+              </div>
+              <div>
+                <label className={labelCls}>Max Guests</label>
+                <Counter value={Number(formData.maxOccupants)} onChange={v => set("maxOccupants", v)} min={1} />
+              </div>
+              <div>
+                <label className={labelCls}>Size (sq ft)</label>
+                <input type="number" value={formData.size} onChange={e => set("size", e.target.value)}
+                  className={inputCls} placeholder="0" />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Location ─────────────────────────────────────────── */}
+          <Section title="Location" subtitle="Address and map pin">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="space-y-4">
+                <div>
+                  <label className={labelCls}>Street Address</label>
+                  <input type="text" value={formData.address} onChange={e => set("address", e.target.value)}
+                    placeholder="e.g. 123 Bole Road" className={inputCls} />
                 </div>
-                <div className="form-group">
-                  <label className="label">Property Type</label>
-                  <div style={{ position: "relative" }}>
-                    <select
-                      name="propertyType"
-                      className="input-field"
-                      style={{ width: "100%", appearance: "none" }}
-                      value={formData.propertyType}
-                      onChange={handleInputChange}
-                    >
-                      <option value="Apartment">Apartment</option>
-                      <option value="House">House</option>
-                      <option value="Condo">Condo</option>
-                      <option value="Townhouse">Townhouse</option>
-                      <option value="Studio">Studio</option>
-                      <option value="Room">Room</option>
-                    </select>
-                    <ChevronDown
-                      style={{
-                        position: "absolute",
-                        right: "16px",
-                        top: "16px",
-                        pointerEvents: "none",
-                        color: "#d4af37",
-                      }}
-                      size={16}
-                    />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>City</label>
+                    <input type="text" value={formData.city} onChange={e => set("city", e.target.value)}
+                      onBlur={handleCityBlur} placeholder="e.g. Addis Ababa" className={inputCls} />
                   </div>
-                </div>
-                <div className="form-group">
-                  <label className="label">Monthly Rent (ETB)</label>
-                  <input
-                    type="number"
-                    name="price"
-                    className="input-field"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Property Details */}
-            <div className="section-card">
-              <div className="section-header">
-                <div className="section-title">Property Specifications</div>
-                <div className="section-desc">Rooms and occupancy</div>
-              </div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="label">Bedrooms</label>
-                  <input
-                    type="number"
-                    name="bedrooms"
-                    className="input-field"
-                    value={formData.bedrooms}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="label">Bathrooms</label>
-                  <input
-                    type="number"
-                    name="bathrooms"
-                    className="input-field"
-                    value={formData.bathrooms}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="label">Size (sq. ft.)</label>
-                  <input
-                    type="number"
-                    name="size"
-                    className="input-field"
-                    value={formData.size}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="label">Max Occupancy</label>
-                  <input
-                    type="number"
-                    name="maxOccupants"
-                    className="input-field"
-                    value={formData.maxOccupants}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Location */}
-            <div className="section-card">
-              <div className="section-header">
-                <div className="section-title">Geographic Coordinates</div>
-                <div className="section-desc">Global Positioning</div>
-              </div>
-              <div className="form-grid">
-                <div className="form-group full-width">
-                  <label className="label">Point of Interest (Address)</label>
-                  <input
-                    type="text"
-                    name="address"
-                    className="input-field"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="label">City</label>
-                  <input
-                    type="text"
-                    name="city"
-                    className="input-field"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    onBlur={handleCityBlur}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="label">State / Region</label>
-                  <input
-                    type="text"
-                    name="state"
-                    className="input-field"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group full-width">
-                  <label className="label">Map Location</label>
-                  <div className="map-placeholder">
-                    <MapContainer
-                      center={mapCenter}
-                      zoom={13}
-                      style={{ height: "100%", width: "100%", zIndex: 0 }}
-                    >
-                      <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
-                      <Marker position={markerPosition} />
-                      <LocationMarker
-                        position={markerPosition}
-                        setPosition={setMarkerPosition}
-                        setFormData={setFormData}
-                      />
-                      <MapUpdater center={mapCenter} />
-                    </MapContainer>
+                  <div>
+                    <label className={labelCls}>Region / State</label>
+                    <input type="text" value={formData.state} onChange={e => set("state", e.target.value)}
+                      placeholder="e.g. Oromia" className={inputCls} />
                   </div>
                 </div>
               </div>
+              <div className="relative rounded-2xl overflow-hidden border border-gray-200" style={{ height: 220 }}>
+                <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%", zIndex: 0 }}>
+                  <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Marker position={markerPos} />
+                  <LocationMarker setPosition={setMarkerPos} onReverse={({ address, city, state }) => {
+                    if (address) set("address", address);
+                    if (city) set("city", city);
+                    if (state) set("state", state);
+                  }} />
+                  <MapUpdater center={mapCenter} />
+                </MapContainer>
+                <button type="button"
+                  onClick={() => {
+                    navigator.geolocation?.getCurrentPosition(pos => {
+                      const c = [pos.coords.latitude, pos.coords.longitude];
+                      setMapCenter(c); setMarkerPos(c);
+                    });
+                  }}
+                  className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-white border border-gray-200 shadow rounded-lg px-3 py-1.5 text-[11px] font-semibold text-gray-600 hover:bg-gray-50 z-[999]">
+                  <MapPin size={12} style={{ color: CORAL }} />
+                  Use Current Location
+                </button>
+              </div>
             </div>
+          </Section>
 
-            {/* Amenities */}
-            <div className="section-card">
-              <div className="section-header">
-                <div className="section-title">Amenities</div>
-                <div className="section-desc">Available features and services</div>
-              </div>
-              <div className="amenities-grid">
-                {amenitiesList.map((amenity) => (
-                  <div
-                    key={amenity}
-                    className={`checkbox-group ${formData.amenities.includes(amenity) ? "checked" : ""}`}
-                    onClick={() => handleAmenityToggle(amenity)}
-                  >
-                    <div className="checkbox-custom">
-                      <Check size={14} />
-                    </div>
-                    <span style={{ fontSize: "12px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", color: formData.amenities.includes(amenity) ? "#d4af37" : "#9a9a9a" }}>{amenity}</span>
-                  </div>
-                ))}
-              </div>
+          {/* ── Amenities ────────────────────────────────────────── */}
+          <Section title="Amenities" subtitle="Features available at the property">
+            <div className="flex flex-wrap gap-2">
+              {AMENITIES.map(({ label, icon: Icon, value }) => {
+                const selected = formData.amenities.includes(value);
+                return (
+                  <button key={value} type="button"
+                    onClick={() => set("amenities", selected
+                      ? formData.amenities.filter(a => a !== value)
+                      : [...formData.amenities, value]
+                    )}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm border transition-all"
+                    style={selected
+                      ? { background: "#FEF0EC", color: CORAL, borderColor: CORAL }
+                      : { background: "white", color: "#374151", borderColor: "#E5E7EB" }
+                    }>
+                    <Icon size={13} />
+                    {label}
+                  </button>
+                );
+              })}
             </div>
+          </Section>
 
-            {/* Photos */}
-            <div className="section-card">
-              <div className="section-header">
-                <div className="section-title">Property Images</div>
-                <div className="section-desc">Upload high-quality photos of the property</div>
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "20px",
-                  marginBottom: "24px",
-                }}
-              >
-                {formData.images.map((img, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      aspectRatio: "1/1",
-                      position: "relative",
-                      borderRadius: "12px",
-                      overflow: "hidden",
-                      border: "1px solid rgba(212, 175, 55, 0.2)"
-                    }}
-                  >
-                    <img
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                      src={img}
-                      alt={`Dossier ${index + 1}`}
-                    />
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "8px",
-                        right: "8px",
-                        background: "rgba(0,0,0,0.8)",
-                        width: "28px",
-                        height: "28px",
-                        borderRadius: "8px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#ef4444",
-                        cursor: "pointer",
-                        border: "1px solid rgba(255,255,255,0.1)"
-                      }}
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          images: prev.images.filter((_, i) => i !== index),
-                        }))
-                      }
-                    >
-                      <X size={16} />
-                    </div>
-                    {index === 0 && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: "8px",
-                          left: "8px",
-                          background: "#d4af37",
-                          color: "#0a0a0a",
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                          fontSize: "8px",
-                          fontWeight: "900",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.1em"
-                        }}
-                      >
-                        Primary
+          {/* ── Photos ───────────────────────────────────────────── */}
+          <Section title="Photos" subtitle="Upload or remove property images">
+            {/* Existing images */}
+            {formData.images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                {formData.images.map((img, i) => (
+                  <div key={i} className="relative rounded-xl overflow-hidden aspect-video bg-gray-100 group">
+                    <img src={getImageUrl(img)} alt="" className="w-full h-full object-cover" />
+                    {i === 0 && (
+                      <div className="absolute top-2 left-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full text-gray-700">
+                        Cover
                       </div>
                     )}
+                    <button type="button"
+                      onClick={() => set("images", formData.images.filter((_, idx) => idx !== i))}
+                      className="absolute top-2 right-2 w-6 h-6 bg-white/90 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                      <X size={12} />
+                    </button>
                   </div>
                 ))}
               </div>
-              <div
-                className="upload-area"
-                onClick={() =>
-                  document.getElementById("edit-file-upload").click()
-                }
-              >
-                <input
-                  id="edit-file-upload"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleImageUpload}
-                />
-                <div className="upload-icon">
-                  <UploadCloud size={24} />
-                </div>
-                <div
-                  style={{
-                    fontWeight: "700",
-                    fontSize: "14px",
-                    marginBottom: "8px",
-                    color: "#f8f6f3",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em"
-                  }}
-                >
-                  Upload Images
-                </div>
-                <div
-                  style={{ fontSize: "10px", color: "#9a9a9a", textTransform: "uppercase", letterSpacing: "0.05em" }}
-                >
-                  Supported formats: JPG, PNG. Max size: 800KB.
-                </div>
-              </div>
+            )}
+
+            {/* Upload zone */}
+            <div
+              className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+              style={{ borderColor: "#E67E5F55" }}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => {
+                e.preventDefault();
+                const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
+                if (files.length) handleUpload(files);
+              }}
+            >
+              <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden"
+                onChange={e => handleUpload(Array.from(e.target.files))} />
+              <ImagePlus size={28} className="mx-auto mb-2 text-gray-300" />
+              <p className="text-sm font-semibold text-gray-600">
+                {uploading ? "Uploading..." : "Drag photos here or click to browse"}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG — max 800 KB each</p>
             </div>
-          </div>
+          </Section>
         </div>
 
-        {/* Actions Footer */}
-        <div className="actions-footer">
+        {/* ── Sticky bottom bar ─────────────────────────────────── */}
+        <div
+          className="fixed bottom-0 right-0 bg-white border-t border-gray-100 flex items-center justify-between px-10 py-4 z-50"
+          style={{ left: "13rem" }}
+        >
           <button
-            className="btn btn-secondary"
+            type="button"
             onClick={() => navigate("/owner/listings")}
+            className="text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
           >
             Cancel
           </button>
           <button
-            className="btn btn-primary"
+            type="button"
             onClick={handleSubmit}
             disabled={saving}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ background: CORAL }}
           >
-            {saving ? (
-              "Saving Changes..."
-            ) : (
-              <>
-                <Check size={16} /> Update Listing
-              </>
-            )}
+            <Save size={15} />
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
