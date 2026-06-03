@@ -1,81 +1,94 @@
-import React, { useState } from "react";
+import React, { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import Navbar from "../../components/layout/Navbar";
-import { User, Shield, Bell } from "lucide-react";
+import { User, Shield, SlidersHorizontal } from "lucide-react";
 import GeneralProfile from "../../components/settings/GeneralProfile";
 import SecuritySettings from "../../components/settings/SecuritySettings";
 import PreferencesSettings from "../../components/settings/PreferencesSettings";
 import VerifiedOwnerBadge from "../../components/ui/VerifiedOwnerBadge";
-import "../user/Settings.css";
+import { Navbar } from "../../components/layout/Navbar";
+
+const CORAL = "#E67E5F";
+
+const TABS = [
+  { id: "profile",     label: "Profile",     icon: User },
+  { id: "security",    label: "Security",    icon: Shield },
+  { id: "preferences", label: "Preferences", icon: SlidersHorizontal },
+];
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("general");
 
-  const tabs = [
-    { id: "general", label: "General Profile", icon: User },
-    { id: "security", label: "Security", icon: Shield },
-    { id: "preferences", label: "Preferences", icon: Bell },
-  ];
+  const profileRef  = useRef(null);
+  const securityRef = useRef(null);
+  const prefsRef    = useRef(null);
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "general": return <GeneralProfile />;
-      case "security": return <SecuritySettings />;
-      case "preferences": return <PreferencesSettings />;
-      default: return <GeneralProfile />;
-    }
+  const scrollTo = (id) => {
+    const map = { profile: profileRef, security: securityRef, preferences: prefsRef };
+    map[id]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen flex flex-col" style={{ background: "#EBF3FB" }}>
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex items-center gap-3">
-          <h1
-            className="text-4xl text-[#f8f6f3]"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            Account Settings
-          </h1>
-          {user?.role === "owner" && user?.isVerifiedOwner && <VerifiedOwnerBadge />}
-        </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Tab Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
-            <div className="bg-[#111] border border-[#d4af37]/10 overflow-hidden">
-              <nav>
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-5 py-4 text-sm text-left transition-all border-l-2 ${
-                        isActive
-                          ? "border-[#d4af37] text-[#d4af37] bg-[#d4af37]/5"
-                          : "border-transparent text-[#9a9a9a] hover:text-[#f8f6f3] hover:border-[#d4af37]/30"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="tracking-wide">{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          </aside>
+      <div className="flex flex-1">
+        {/* Left sidebar */}
+        <aside className="w-44 shrink-0 bg-white border-r border-gray-100 sticky top-14 h-[calc(100vh-3.5rem)] py-6 px-3">
+          <nav className="space-y-0.5">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => scrollTo(id)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 group transition-colors"
+              >
+                <Icon size={16} className="shrink-0 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                {label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-          {/* Main Content */}
-          <main className="flex-1">
-            <div className="bg-[#111] border border-[#d4af37]/10 p-6">
-              {renderContent()}
+        {/* Main */}
+        <main className="flex-1 py-8 px-6 md:px-10 max-w-3xl">
+          <div className="mb-8 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
+            {user?.role === "owner" && user?.isVerifiedOwner && <VerifiedOwnerBadge />}
+          </div>
+
+          <div ref={profileRef} className="scroll-mt-20 mb-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
+              <GeneralProfile />
             </div>
-          </main>
-        </div>
+          </div>
+
+          <div ref={securityRef} className="scroll-mt-20 mb-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
+              <SecuritySettings />
+            </div>
+          </div>
+
+          <div ref={prefsRef} className="scroll-mt-20 mb-10">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
+              <PreferencesSettings />
+            </div>
+          </div>
+        </main>
       </div>
+
+      <footer className="border-t border-gray-200 bg-white">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button onClick={() => navigate("/")} className="text-base font-bold" style={{ color: CORAL }}>Gojo</button>
+          <nav className="flex flex-wrap justify-center gap-5 text-xs text-gray-500">
+            <a href="#support" className="hover:text-gray-800">Support Center</a>
+            <a href="#terms" className="hover:text-gray-800">Terms of Service</a>
+            <a href="#privacy" className="hover:text-gray-800">Privacy Policy</a>
+            <button onClick={() => navigate("/owner/dashboard")} className="hover:text-gray-800">List your Property</button>
+          </nav>
+          <p className="text-xs text-gray-400">© 2024 Gojo Ethiopia. Built with hospitality.</p>
+        </div>
+      </footer>
     </div>
   );
 };

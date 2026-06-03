@@ -12,8 +12,6 @@ const mongoose = require("mongoose");
  */
 const connectDB = async ({ maxRetries = 10, initialDelayMs = 2000 } = {}) => {
   const opts = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     // Timeouts tuned for flaky networks / Atlas
     serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
