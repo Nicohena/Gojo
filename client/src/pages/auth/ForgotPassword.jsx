@@ -1,9 +1,23 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { authService } from "../../api/authService";
 import { Mail, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 
+const CORAL = "#E67E5F";
+const BROWN = "#3D2C29";
+
+function GojoLogo({ size = 44 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <polygon points="50,10 95,48 5,48" fill={BROWN} />
+      <rect x="18" y="44" width="64" height="46" fill={CORAL} />
+      <rect x="38" y="62" width="24" height="28" rx="2" fill="white" />
+    </svg>
+  );
+}
+
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -11,139 +25,105 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) {
-      setError("Please enter your email address");
-      return;
-    }
+    if (!email.trim()) { setError("Please enter your email address"); return; }
     setLoading(true);
     setError("");
     try {
       await authService.forgotPassword(email);
       setSent(true);
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to send reset email. Please try again."
-      );
+      setError(err.response?.data?.message || "Failed to send reset email. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4"
-      style={{
-        backgroundImage: `url('https://images.unsplash.com/photo-1616651283320-ee68a1113d94?auto=format&fit=crop&q=80&w=1600')`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="absolute inset-0 bg-[#0a0a0a]/88" />
-
-      <div className="relative z-10 w-full max-w-md">
+    <div className="min-h-screen flex flex-col" style={{ background: "#EBF3FB" }}>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-10">
         {/* Logo */}
-        <Link to="/" className="flex flex-col items-center gap-3 mb-10">
-          <img src="/logo-mark.svg" alt="Logo" className="w-12 h-12" />
-          <span
-            className="text-[#d4af37] tracking-[0.4em] text-2xl"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            SMART RENT
-          </span>
-        </Link>
+        <button onClick={() => navigate("/")} className="flex flex-col items-center gap-1.5 mb-8">
+          <GojoLogo size={52} />
+          <span className="text-xl font-bold tracking-tight" style={{ color: CORAL }}>Gojo</span>
+        </button>
 
         {/* Card */}
-        <div className="border border-[#d4af37]/20 bg-[#111]/80 backdrop-blur-xl p-10">
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-md p-8">
           {sent ? (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 border border-[#d4af37]/30 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="text-[#d4af37]" size={28} />
+            <div className="text-center py-4">
+              <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle size={28} className="text-green-500" />
               </div>
-              <h2
-                className="text-2xl text-[#f8f6f3] mb-3"
-                style={{ fontFamily: "'Playfair Display', serif" }}
-              >
-                Check Your Email
-              </h2>
-              <p className="text-[#9a9a9a] text-sm mb-8 leading-relaxed">
-                If an account exists with <strong className="text-[#f8f6f3]">{email}</strong>, we've sent password reset instructions to your inbox.
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Check Your Email</h2>
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                If an account exists with <strong className="text-gray-800">{email}</strong>, we've sent password reset instructions to your inbox.
               </p>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 px-8 py-3 border border-[#d4af37] text-[#d4af37] text-sm tracking-widest hover:bg-[#d4af37] hover:text-[#0a0a0a] transition-all"
+                className="inline-flex items-center gap-2 text-sm font-semibold hover:underline"
+                style={{ color: CORAL }}
               >
-                <ArrowLeft size={14} />
-                Back to Login
+                <ArrowLeft size={14} /> Back to Login
               </Link>
             </div>
           ) : (
             <>
-              <div className="mb-8">
-                <div className="w-12 h-12 border border-[#d4af37]/30 flex items-center justify-center mb-6">
-                  <Mail className="text-[#d4af37]" size={22} />
+              <div className="text-center mb-6">
+                <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
+                  <Mail size={22} style={{ color: CORAL }} />
                 </div>
-                <h2
-                  className="text-3xl text-[#f8f6f3] mb-2"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
-                >
-                  Forgot Password?
-                </h2>
-                <p className="text-[#9a9a9a] text-sm tracking-wide">
-                  Enter your email and we'll send you a link to reset your password.
-                </p>
+                <h2 className="text-2xl font-bold text-gray-900">Forgot Password?</h2>
+                <p className="text-sm text-gray-500 mt-1">Enter your email and we'll send you a reset link.</p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-[#d4af37]/60 uppercase tracking-widest mb-2">
-                    Email Address
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full bg-[#1a1a1a] border border-[#d4af37]/10 text-[#f8f6f3] placeholder-[#9a9a9a]/50 px-4 py-3.5 text-sm focus:border-[#d4af37]/50 focus:outline-none transition-all tracking-wide"
+                    placeholder="abebe@example.com"
                     autoFocus
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition"
                   />
                 </div>
 
                 {error && (
-                  <div className="border border-red-500/30 bg-red-500/10 text-red-400 p-3 text-sm flex items-center gap-2">
-                    <div className="w-1 h-1 rounded-full bg-red-400 shrink-0" />
-                    {error}
-                  </div>
+                  <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#d4af37] text-[#0a0a0a] py-4 font-bold text-sm tracking-[0.1em] hover:bg-[#b8941f] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+                  style={{ background: CORAL }}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin" size={16} />
-                      Sending...
-                    </>
-                  ) : (
-                    "Send Reset Link"
-                  )}
+                  {loading ? <><Loader2 size={16} className="animate-spin" /> Sending...</> : "Send Reset Link"}
                 </button>
               </form>
 
-              <div className="mt-6 text-center">
-                <Link
-                  to="/login"
-                  className="text-sm text-[#9a9a9a] hover:text-[#d4af37] transition-colors inline-flex items-center gap-1 tracking-wide"
-                >
-                  <ArrowLeft size={14} />
-                  Back to Login
+              <div className="mt-5 text-center">
+                <Link to="/login" className="text-sm font-medium inline-flex items-center gap-1 hover:underline" style={{ color: CORAL }}>
+                  <ArrowLeft size={14} /> Back to Login
                 </Link>
               </div>
             </>
           )}
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 bg-white">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-base font-bold tracking-tight" style={{ color: CORAL }}>Gojo</span>
+          <p className="text-xs text-gray-400">© 2024 Gojo Inc. Supports Chapa &amp; Stripe</p>
+          <nav className="flex items-center gap-5 text-sm text-gray-500">
+            <a href="#support" className="hover:text-gray-800">Support</a>
+            <a href="#about" className="hover:text-gray-800">About</a>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 };
