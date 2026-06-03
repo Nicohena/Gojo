@@ -2,89 +2,61 @@ import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import Modal from "../ui/Modal";
 import LoadingSpinner from "../ui/LoadingSpinner";
-import {
-  sanitizeString,
-  isValidEmail,
-  isValidPhone,
-} from "../../utils/validators";
+import { sanitizeString, isValidEmail, isValidPhone } from "../../utils/validators";
 import logger from "../../utils/logger";
-import { User, Mail, Phone, ShieldCheck, X } from "lucide-react";
+import { User, Mail, Phone, ShieldCheck } from "lucide-react";
 
-/**
- * User Edit Modal Component
- * Modal for editing user details with form validation
- * Restyled for luxury dark theme.
- */
+const CORAL = "#E67E5F";
+
+const inputCls = (hasError) =>
+  `w-full px-4 py-2.5 pl-10 rounded-lg border text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:border-transparent transition ${
+    hasError ? "border-red-400 focus:ring-red-200" : "border-gray-200 focus:ring-[#E67E5F]/30"
+  }`;
+
+const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5";
 
 const UserEditModal = ({ isOpen, onClose, user, onUserUpdated }) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    role: "tenant",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", role: "tenant" });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        role: user.role || "tenant",
-      });
+      setFormData({ name: user.name || "", email: user.email || "", phone: user.phone || "", role: user.role || "tenant" });
       setErrors({});
     }
   }, [user]);
 
   const validateForm = () => {
-    const newErrors = {};
-    if (!formData.name || formData.name.trim().length < 2) {
-      newErrors.name = "Full name required for record";
-    }
-    if (!formData.email || !isValidEmail(formData.email)) {
-      newErrors.email = "Invalid secure communication channel (Email)";
-    }
-    if (formData.phone && !isValidPhone(formData.phone)) {
-      newErrors.phone = "Invalid telecommunication format";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const e = {};
+    if (!formData.name || formData.name.trim().length < 2) e.name = "Full name is required.";
+    if (!formData.email || !isValidEmail(formData.email)) e.email = "Please enter a valid email address.";
+    if (formData.phone && !isValidPhone(formData.phone)) e.phone = "Invalid phone number format.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "email" ? value : sanitizeString(value),
-    }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+    setFormData((p) => ({ ...p, [name]: name === "email" ? value : sanitizeString(value) }));
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) {
-      toast.error("Protocol validation failed");
-      return;
-    }
-
+    if (!validateForm()) { toast.error("Please fix the highlighted errors."); return; }
     setIsSubmitting(true);
     try {
       const { default: adminService } = await import("../../api/adminService");
       const response = await adminService.updateUser(user._id, formData);
       const updatedUser = response?.data?.user || response?.user || response;
-
-      toast.success("Intelligence updated successfully");
-      logger.info("User details committed", { userId: user._id });
-
+      toast.success("User updated successfully.");
+      logger.info("User updated", { userId: user._id });
       onUserUpdated(updatedUser);
       onClose();
     } catch (err) {
-      logger.error("Failed to commit user details", err);
-      toast.error(err.response?.data?.message || "Secure update failed");
+      logger.error("Failed to update user", err);
+      toast.error(err.response?.data?.message || "Failed to update user.");
     } finally {
       setIsSubmitting(false);
     }
@@ -93,165 +65,68 @@ const UserEditModal = ({ isOpen, onClose, user, onUserUpdated }) => {
   if (!user) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Edit Intelligence Access"
-      size="md"
-      closeOnOverlayClick={!isSubmitting}
-    >
-      <form onSubmit={handleSubmit} className="p-2">
-        <div className="space-y-6">
-          {/* Name Field */}
-          <div className="form-group">
-            <label
-              htmlFor="name"
-              className="block text-[10px] font-black text-[#9a9a9a] uppercase tracking-widest mb-2"
-            >
-              Identity Alias (Full Name)
-            </label>
-            <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40 group-hover:text-[#d4af37] transition-colors">
-                <User size={18} />
-              </div>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className={`w-full bg-[#0a0a0a] border pl-12 pr-4 py-3 rounded-xl text-[#f8f6f3] outline-none transition-all ${
-                  errors.name
-                    ? "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.1)]"
-                    : "border-[#d4af37]/10 focus:border-[#d4af37]/40"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              />
-            </div>
-            {errors.name && (
-              <p className="mt-2 text-[10px] font-bold text-red-500 uppercase tracking-tighter">
-                {errors.name}
-              </p>
-            )}
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit User" size="md" closeOnOverlayClick={!isSubmitting}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name */}
+        <div>
+          <label htmlFor="name" className={labelCls}>Full Name</label>
+          <div className="relative">
+            <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input type="text" id="name" name="name" value={formData.name} onChange={handleChange}
+              disabled={isSubmitting} placeholder="Full Name" className={inputCls(!!errors.name)} />
           </div>
+          {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+        </div>
 
-          {/* Email Field */}
-          <div className="form-group">
-            <label
-              htmlFor="email"
-              className="block text-[10px] font-black text-[#9a9a9a] uppercase tracking-widest mb-2"
-            >
-              Communication Vector (Email)
-            </label>
-            <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40 group-hover:text-[#d4af37] transition-colors">
-                <Mail size={18} />
-              </div>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className={`w-full bg-[#0a0a0a] border pl-12 pr-4 py-3 rounded-xl text-[#f8f6f3] outline-none transition-all ${
-                  errors.email
-                    ? "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.1)]"
-                    : "border-[#d4af37]/10 focus:border-[#d4af37]/40"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              />
-            </div>
-            {errors.email && (
-              <p className="mt-2 text-[10px] font-bold text-red-500 uppercase tracking-tighter">
-                {errors.email}
-              </p>
-            )}
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className={labelCls}>Email Address</label>
+          <div className="relative">
+            <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input type="email" id="email" name="email" value={formData.email} onChange={handleChange}
+              disabled={isSubmitting} placeholder="email@example.com" className={inputCls(!!errors.email)} />
           </div>
+          {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+        </div>
 
-          {/* Phone Field */}
-          <div className="form-group">
-            <label
-              htmlFor="phone"
-              className="block text-[10px] font-black text-[#9a9a9a] uppercase tracking-widest mb-2"
-            >
-              Contact Interface (Phone)
-            </label>
-            <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40 group-hover:text-[#d4af37] transition-colors">
-                <Phone size={18} />
-              </div>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                placeholder="+251..."
-                className={`w-full bg-[#0a0a0a] border pl-12 pr-4 py-3 rounded-xl text-[#f8f6f3] outline-none transition-all ${
-                  errors.phone
-                    ? "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.1)]"
-                    : "border-[#d4af37]/10 focus:border-[#d4af37]/40"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              />
-            </div>
+        {/* Phone */}
+        <div>
+          <label htmlFor="phone" className={labelCls}>Phone Number</label>
+          <div className="relative">
+            <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleChange}
+              disabled={isSubmitting} placeholder="+251 9xx xxx xxx" className={inputCls(!!errors.phone)} />
           </div>
+          {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
+        </div>
 
-          {/* Role Field */}
-          <div className="form-group">
-            <label
-              htmlFor="role"
-              className="block text-[10px] font-black text-[#9a9a9a] uppercase tracking-widest mb-2"
-            >
-              Clearance Level (Role)
-            </label>
-            <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40 group-hover:text-[#d4af37] transition-colors z-10">
-                <ShieldCheck size={18} />
-              </div>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className="w-full bg-[#0a0a0a] border border-[#d4af37]/10 pl-12 pr-4 py-3 rounded-xl text-[#f8f6f3] outline-none transition-all focus:border-[#d4af37]/40 appearance-none disabled:opacity-50"
-              >
-                <option value="tenant">Tenant Clearance</option>
-                <option value="owner">Owner Authorization</option>
-                <option value="admin">Admin Intelligence</option>
-              </select>
-            </div>
-            <p className="mt-2 text-[10px] text-[#d4af37]/60 font-medium uppercase tracking-[0.05em]">
-              Altering clearance level will impact system accessibility
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-end pt-8 border-t border-[#d4af37]/10 mt-8">
-            <button
-              type="button"
-              onClick={onClose}
+        {/* Role */}
+        <div>
+          <label htmlFor="role" className={labelCls}>Role</label>
+          <div className="relative">
+            <ShieldCheck size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+            <select id="role" name="role" value={formData.role} onChange={handleChange}
               disabled={isSubmitting}
-              className="px-8 py-3 border border-[#d4af37]/10 text-[#9a9a9a] text-xs font-black uppercase tracking-widest rounded-xl hover:bg-white/5 transition-all outline-none"
-            >
-              Abort Update
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-8 py-3 bg-[#d4af37] text-[#0a0a0a] text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#b8941f] shadow-lg shadow-[#d4af37]/10 transition-all flex items-center justify-center gap-3 disabled:opacity-50 outline-none"
-            >
-              {isSubmitting ? (
-                <>
-                  <LoadingSpinner size="sm" variant="white" />
-                  Updating...
-                </>
-              ) : (
-                "Commit Changes"
-              )}
-            </button>
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#E67E5F]/30 focus:border-transparent appearance-none cursor-pointer disabled:opacity-50">
+              <option value="tenant">Tenant</option>
+              <option value="owner">Owner</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
+          <p className="mt-1 text-xs text-gray-400">Changing the role will affect the user's platform access.</p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 justify-end pt-2 border-t border-gray-100 mt-2">
+          <button type="button" onClick={onClose} disabled={isSubmitting}
+            className="px-5 py-2.5 border border-gray-200 text-sm font-semibold text-gray-600 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50">
+            Cancel
+          </button>
+          <button type="submit" disabled={isSubmitting}
+            className="px-5 py-2.5 text-sm font-semibold text-white rounded-xl flex items-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ background: CORAL }}>
+            {isSubmitting ? <><LoadingSpinner size="sm" variant="white" /> Saving…</> : "Save Changes"}
+          </button>
         </div>
       </form>
     </Modal>
