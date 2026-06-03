@@ -1,26 +1,73 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import paymentService from "../../api/paymentService";
-import Navbar from "../../components/layout/Navbar";
-import { TableRowSkeleton } from "../../components/ui/Skeleton";
-import { Receipt, RotateCcw, Loader2, Filter, Search, ChevronLeft, ChevronRight, Info, ExternalLink, CheckCircle2, AlertCircle, Clock, ShieldCheck, X } from "lucide-react";
-import logger from "../../utils/logger";
+import { DashboardLayout } from "../../components/layout/DashboardLayout";
+import {
+  Receipt,
+  RotateCcw,
+  Loader2,
+  CreditCard,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  X,
+  Plus,
+  Download,
+  SlidersHorizontal,
+  Home,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import socket from "../../utils/socket";
 import { motion, AnimatePresence } from "framer-motion";
 
+const CORAL = "#E67E5F";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(dateStr) {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
+
+function StatusBadge({ status }) {
+  const map = {
+    succeeded: { bg: "#D1FAE5", color: "#065F46", label: "Paid" },
+    paid:      { bg: "#D1FAE5", color: "#065F46", label: "Paid" },
+    processing:{ bg: "#FEF3C7", color: "#92400E", label: "Processing" },
+    pending:   { bg: "#FEF3C7", color: "#92400E", label: "Pending" },
+    failed:    { bg: "#FEE2E2", color: "#991B1B", label: "Failed" },
+    refunded:  { bg: "#E0E7FF", color: "#3730A3", label: "Refunded" },
+    cancelled: { bg: "#F3F4F6", color: "#6B7280", label: "Cancelled" },
+  };
+  const s = map[status] || map.pending;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+      style={{ background: s.bg, color: s.color }}
+    >
+      <CheckCircle2 size={11} />
+      {s.label}
+    </span>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 const PaymentHistory = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refundingId, setRefundingId] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 1 });
   const [filters, setFilters] = useState({ status: "", method: "" });
   const [showRefundModal, setShowRefundModal] = useState(null);
   const [refundReason, setRefundReason] = useState("");
-  
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const isOwner = user?.role === "owner";
+  const [refundingId, setRefundingId] = useState(null);
 
   const fetchPayments = useCallback(async (page = pagination.page) => {
     try {
@@ -28,379 +75,298 @@ const PaymentHistory = () => {
       const result = await paymentService.getPaymentHistory({
         page,
         limit: pagination.limit,
-        ...filters
+        ...filters,
       });
-      
       if (result.success) {
-        const fetchedPayments = result.data.payments || [];
-        setPayments(fetchedPayments);
+        setPayments(result.data.payments || []);
         setPagination(result.data.pagination);
-
-        // Re-check processing payments to prevent stale "processing" state.
-        const processingPayments = fetchedPayments.filter(
-          (p) => p.status === "processing"
-        );
-
-        if (processingPayments.length > 0) {
-          const statusChecks = await Promise.allSettled(
-            processingPayments.map((p) => paymentService.getPaymentStatus(p._id))
-          );
-
-          const statusMap = {};
-          statusChecks.forEach((check, index) => {
-            if (check.status === "fulfilled") {
-              const paymentId = processingPayments[index]._id;
-              const updatedStatus = check.value?.data?.status;
-              if (updatedStatus) statusMap[paymentId] = updatedStatus;
-            }
-          });
-
-          if (Object.keys(statusMap).length > 0) {
-            setPayments((prev) =>
-              prev.map((p) =>
-                statusMap[p._id] ? { ...p, status: statusMap[p._id] } : p
-              )
-            );
-          }
-        }
       }
-    } catch (err) {
-      logger.error("Failed to fetch payments", err);
+    } catch {
       toast.error("Failed to load payment history.");
     } finally {
       setLoading(false);
     }
   }, [pagination.page, pagination.limit, filters]);
 
-  useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+  useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
+  // Socket live updates
   useEffect(() => {
     if (!socket.connected) return;
-
-    const handlePaymentUpdate = (data) => {
-      setPayments(prev => prev.map(p => 
-        p._id === data.paymentId ? { ...p, status: data.status } : p
-      ));
-      
-      if (data.status === 'succeeded') {
-        toast.success(`Payment ETB ${data.amount?.toLocaleString()} succeeded!`, { icon: '💰' });
-      }
+    const update = (data) => {
+      setPayments((p) => p.map((x) => x._id === data.paymentId ? { ...x, status: data.status } : x));
     };
-
-    socket.on('payment:success', (data) => handlePaymentUpdate({ ...data, status: 'succeeded' }));
-    socket.on('payment:failed', (data) => handlePaymentUpdate({ ...data, status: 'failed' }));
-    socket.on('payment:update', handlePaymentUpdate);
-    socket.on('refund:processed', (data) => handlePaymentUpdate({ ...data, status: 'refunded' }));
-
+    socket.on("payment:success", (d) => update({ ...d, status: "succeeded" }));
+    socket.on("payment:failed",  (d) => update({ ...d, status: "failed" }));
+    socket.on("payment:update",  update);
+    socket.on("refund:processed",(d) => update({ ...d, status: "refunded" }));
     return () => {
-      socket.off('payment:success');
-      socket.off('payment:failed');
-      socket.off('payment:update');
-      socket.off('refund:processed');
+      socket.off("payment:success");
+      socket.off("payment:failed");
+      socket.off("payment:update");
+      socket.off("refund:processed");
     };
   }, []);
 
   const handleRefundSubmit = async () => {
-    if (!refundReason) {
-      toast.error("Please provide a reason for the refund.");
-      return;
-    }
-
+    if (!refundReason) { toast.error("Please provide a reason."); return; }
     setRefundingId(showRefundModal._id);
     try {
       await paymentService.processRefund(showRefundModal._id, { reason: refundReason });
-      toast.success("Refund processed successfully!");
+      toast.success("Refund processed successfully.");
       setShowRefundModal(null);
       setRefundReason("");
       fetchPayments();
     } catch (err) {
-      logger.error("Failed to refund", err);
-      toast.error(err.response?.data?.message || "Failed to process refund.");
+      toast.error(err.response?.data?.message || "Refund failed.");
     } finally {
       setRefundingId(null);
     }
   };
 
-  const getStatusBadge = (status) => {
-    const config = {
-      succeeded: { color: "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400", icon: <CheckCircle2 size={12} /> },
-      processing: { color: "border border-[#d4af37]/20 bg-[#d4af37]/10 text-[#d4af37]", icon: <Clock size={12} className="animate-pulse" /> },
-      pending: { color: "border border-amber-500/20 bg-amber-500/10 text-amber-400", icon: <Clock size={12} /> },
-      failed: { color: "border border-red-500/20 bg-red-500/10 text-red-400", icon: <AlertCircle size={12} /> },
-      refunded: { color: "border border-[#d4af37]/20 bg-[#d4af37]/5 text-[#d4af37]/80", icon: <RotateCcw size={12} /> },
-      cancelled: { color: "border border-[#9a9a9a]/20 bg-[#9a9a9a]/5 text-[#9a9a9a]", icon: <X size={12} /> }
-    };
+  // ── Placeholder saved card (cosmetic) ──
+  const savedCard = { last4: "4242", brand: "Visa", expires: "12/25" };
 
-    const cur = config[status] || config.pending;
-
-    return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black tracking-widest ${cur.color}`}>
-        {cur.icon}
-        {status.toUpperCase()}
-      </span>
-    );
-  };
+  // ── Footer ──
+  const footer = (
+    <footer className="border-t border-gray-200 bg-white">
+      <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <button onClick={() => navigate("/")} className="text-base font-bold" style={{ color: CORAL }}>Gojo</button>
+        <nav className="flex flex-wrap justify-center gap-5 text-xs text-gray-500">
+          <a href="#support" className="hover:text-gray-800">Support Center</a>
+          <a href="#trust"   className="hover:text-gray-800">Trust &amp; Safety</a>
+          <a href="#terms"   className="hover:text-gray-800">Terms of Service</a>
+          <a href="#privacy" className="hover:text-gray-800">Privacy Policy</a>
+          <button onClick={() => navigate("/owner/dashboard")} className="hover:text-gray-800">List your Property</button>
+        </nav>
+        <p className="text-xs text-gray-400">© 2024 Gojo Ethiopia. All rights reserved. Built with hospitality.</p>
+      </div>
+    </footer>
+  );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <Navbar />
-      <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        
-        {/* HeaderSection */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
-          <div>
-            <h1 className="text-4xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Financial Ledger
-            </h1>
-            <p className="mt-2 text-[#9a9a9a] text-[10px] uppercase font-bold tracking-[0.2em]">
-              Real-time audit of all secure estate transactions.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex bg-[#111] border border-[#d4af37]/10 rounded-xl overflow-hidden shadow-2xl">
-              <select 
-                value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[#9a9a9a] px-5 py-3 outline-none cursor-pointer focus:text-[#d4af37] transition-colors"
-              >
-                <option value="">Status: All</option>
-                <option value="succeeded">Succeeded</option>
-                <option value="processing">Processing</option>
-                <option value="failed">Failed</option>
-                <option value="refunded">Refunded</option>
-              </select>
-              <div className="w-px bg-[#d4af37]/10 self-stretch" />
-              <select 
-                value={filters.method}
-                onChange={(e) => setFilters(prev => ({ ...prev, method: e.target.value }))}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[#9a9a9a] px-5 py-3 outline-none cursor-pointer focus:text-[#d4af37] transition-colors"
-              >
-                <option value="">Gateway: All</option>
-                <option value="chapa">Chapa Core</option>
-                <option value="stripe">Stripe Global</option>
-              </select>
-            </div>
-            
-            <button 
-              onClick={() => fetchPayments(1)}
-              className="p-3 bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 transition-all rounded-xl"
-            >
-              <Filter size={18} />
-            </button>
-          </div>
+    <DashboardLayout footer={footer}>
+      <div className="py-8 px-6 md:px-10">
+        {/* ── Page heading ─────────────────────────────────────────── */}
+        <div className="mb-7">
+          <h1 className="text-3xl font-bold text-gray-900">Payment Methods</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage your saved cards and view transaction history.</p>
         </div>
 
-        {/* Content Section */}
-        <div className="bg-[#111] border border-[#d4af37]/10 rounded-2xl overflow-hidden shadow-2xl">
-          {loading ? (
-            <div className="p-8">
-              <table className="min-w-full">
-                <tbody className="divide-y divide-[#d4af37]/5">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                      <tr key={i} className="animate-pulse">
-                        <td className="py-8 px-6"><div className="h-4 bg-white/5 w-24 rounded-full"></div></td>
-                        <td className="py-8 px-6"><div className="h-4 bg-white/5 w-40 rounded-full"></div></td>
-                        <td className="py-8 px-6"><div className="h-4 bg-white/5 w-16 rounded-full"></div></td>
-                        <td className="py-8 px-6"><div className="h-6 bg-white/5 w-24 rounded-full"></div></td>
-                        <td className="py-8 px-6"><div className="h-4 bg-white/5 w-24 rounded-full"></div></td>
-                      </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : payments.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-[#d4af37]/5">
-                <thead className="bg-[#0a0a0a]">
-                  <tr>
-                    <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Descriptor</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Entity Intelligence</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Amount</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Clearance</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Vector</th>
-                    <th className="px-8 py-5 text-right text-[10px] font-black text-[#d4af37]/50 uppercase tracking-widest">Diagnostics</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#d4af37]/5">
-                  {payments.map((payment) => (
-                    <tr key={payment._id} className="hover:bg-[#d4af37]/3 transition-colors group">
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-[#d4af37] tracking-widest uppercase">
-                            #{payment.transactionId || payment._id.substring(0, 10).toUpperCase()}
-                          </span>
-                          <span className="text-[10px] text-[#9a9a9a]/40 mt-1 flex items-center gap-1 font-bold uppercase tracking-tight">
-                            <Clock size={10} />
-                            {new Date(payment.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-[#f8f6f3] group-hover:text-[#d4af37] transition-colors" style={{ fontFamily: "'Playfair Display', serif" }}>
-                            {payment.houseId?.title || "Property Payment"}
-                          </span>
-                          <span className="text-[10px] text-[#9a9a9a] uppercase font-bold tracking-widest mt-1">
-                            {isAdmin || isOwner ? `Identity: ${payment.userId?.name || 'Authorized User'}` : `Target: ${payment.ownerId?.name || 'Estate Owner'}`}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-[#f8f6f3]">
-                            {payment.currency} {payment.amount?.toLocaleString()}
-                          </span>
-                          <span className="text-[8px] text-[#9a9a9a]/40 uppercase font-bold tracking-widest mt-1">Total Payload</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        {getStatusBadge(payment.status)}
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                           <div className={`p-1.5 border rounded-lg ${payment.method === 'stripe' ? 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5' : 'border-[#d4af37]/20 text-[#d4af37] bg-[#d4af37]/5'}`}>
-                             {payment.method === 'stripe' ? <ShieldCheck size={14} /> : <div className="text-[7px] font-black uppercase">CHP</div>}
-                           </div>
-                           <span className="text-[10px] text-[#9a9a9a] uppercase font-bold tracking-widest">{payment.method} Interface</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-3 text-[#9a9a9a] opacity-0 group-hover:opacity-100 transition-opacity">
-                          {isAdmin && (payment.status === "succeeded") && (
-                            <button
-                              onClick={() => setShowRefundModal(payment)}
-                              className="p-2 border border-red-500/10 hover:bg-red-500/10 hover:text-red-400 transition-all rounded-lg"
-                              title="Initiate Reversal"
-                            >
-                              <RotateCcw size={14} />
-                            </button>
-                          )}
-                          <button className="p-2 border border-[#d4af37]/10 hover:bg-[#d4af37]/10 hover:text-[#d4af37] transition-all rounded-lg">
-                            <ExternalLink size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-24 text-center">
-              <div className="inline-block p-6 bg-[#0a0a0a] border border-[#d4af37]/10 rounded-[2rem] mb-6">
-                <Receipt size={48} className="text-[#d4af37]/20" />
-              </div>
-              <h3 className="text-2xl text-[#f8f6f3] mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>Ledger Empty</h3>
-              <p className="text-[#9a9a9a] max-w-xs mx-auto text-sm tracking-wide">
-                No financial history has been committed to this ledger search.
-              </p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* ── Left: Saved Cards ──────────────────────────────────── */}
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Saved Cards</h2>
 
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <div className="px-8 py-6 bg-[#0a0a0a] border-t border-[#d4af37]/5 flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#9a9a9a]/40 uppercase tracking-widest">
-                Dossier {pagination.page} / {pagination.pages}
-              </span>
-              <div className="flex items-center gap-3">
-                <button 
-                  disabled={pagination.page === 1 || loading}
-                  onClick={() => fetchPayments(pagination.page - 1)}
-                  className="p-2 border border-[#d4af37]/10 text-[#9a9a9a] disabled:opacity-20 hover:border-[#d4af37]/40 hover:text-[#d4af37] transition-all rounded-lg"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <div className="flex gap-2">
-                  {[...Array(pagination.pages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => fetchPayments(i + 1)}
-                      className={`h-10 w-10 text-[10px] font-black transition-all border rounded-lg ${
-                        pagination.page === i + 1 
-                          ? 'border-[#d4af37] bg-[#d4af37] text-[#0a0a0a]' 
-                          : 'border-[#d4af37]/10 text-[#9a9a9a] hover:border-[#d4af37]/40'
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+            {/* Card */}
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm mb-3">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-7 rounded-md flex items-center justify-center" style={{ background: "#EBF3FB" }}>
+                    <CreditCard size={16} style={{ color: CORAL }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {savedCard.brand} ending in {savedCard.last4}
+                    </p>
+                  </div>
                 </div>
-                <button 
-                  disabled={pagination.page === pagination.pages || loading}
-                  onClick={() => fetchPayments(pagination.page + 1)}
-                  className="p-2 border border-[#d4af37]/10 text-[#9a9a9a] disabled:opacity-20 hover:border-[#d4af37]/40 hover:text-[#d4af37] transition-all rounded-lg"
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                  Default
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-400">Expires {savedCard.expires}</p>
+                <button className="text-xs font-semibold hover:underline" style={{ color: CORAL }}>Edit</button>
+              </div>
+            </div>
+
+            {/* Add payment method */}
+            <button className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 text-gray-500 hover:border-gray-300 hover:bg-gray-50 transition-colors">
+              <Plus size={20} className="text-gray-400" />
+              <span className="text-sm font-medium">Add Payment Method</span>
+            </button>
+          </div>
+
+          {/* ── Right: Recent Transactions ─────────────────────────── */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Recent Transactions</h2>
+              <div className="flex items-center gap-2">
+                {/* Status filter */}
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-600 focus:outline-none"
                 >
-                  <ChevronRight size={18} />
+                  <option value="">All</option>
+                  <option value="succeeded">Paid</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
+                  <option value="refunded">Refunded</option>
+                </select>
+                <button
+                  onClick={() => fetchPayments(1)}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+                >
+                  <SlidersHorizontal size={13} />
+                  Filter
                 </button>
               </div>
             </div>
-          )}
+
+            {/* Transaction list */}
+            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-7 h-7 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: CORAL, borderTopColor: "transparent" }} />
+                </div>
+              ) : payments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+                  <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mb-3">
+                    <Receipt size={24} style={{ color: CORAL }} />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700">No transactions yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Your payment history will appear here.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="divide-y divide-gray-50">
+                    {payments.map((payment) => (
+                      <div key={payment._id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors group">
+                        {/* Icon */}
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#EBF3FB" }}>
+                          <Home size={16} style={{ color: CORAL }} />
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">
+                            {payment.houseId?.title || "Property Payment"}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">{fmt(payment.createdAt)}</p>
+                        </div>
+
+                        {/* Amount + status */}
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-gray-900">
+                            ${payment.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <div className="flex items-center justify-end gap-1.5 mt-1">
+                            <StatusBadge status={payment.status} />
+                            {/* Download */}
+                            <button className="p-1 text-gray-300 hover:text-gray-500 transition-colors" aria-label="Download receipt">
+                              <Download size={13} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Admin refund */}
+                        {isAdmin && (payment.status === "succeeded" || payment.status === "paid") && (
+                          <button
+                            onClick={() => setShowRefundModal(payment)}
+                            className="ml-2 p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Process refund"
+                          >
+                            <RotateCcw size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* View all / pagination */}
+                  {pagination.pages > 1 ? (
+                    <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between">
+                      <button
+                        disabled={pagination.page === 1}
+                        onClick={() => fetchPayments(pagination.page - 1)}
+                        className="text-xs text-gray-500 disabled:opacity-30 hover:text-gray-800 transition-colors"
+                      >
+                        ← Prev
+                      </button>
+                      <span className="text-xs text-gray-400">
+                        Page {pagination.page} of {pagination.pages}
+                      </span>
+                      <button
+                        disabled={pagination.page === pagination.pages}
+                        onClick={() => fetchPayments(pagination.page + 1)}
+                        className="text-xs text-gray-500 disabled:opacity-30 hover:text-gray-800 transition-colors"
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="px-5 py-3 border-t border-gray-50 text-center">
+                      <button
+                        className="text-sm font-semibold hover:underline"
+                        style={{ color: CORAL }}
+                        onClick={() => fetchPayments(1)}
+                      >
+                        View All Transactions
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Admin Refund Modal */}
+      {/* ── Refund modal (admin) ────────────────────────────────────── */}
       <AnimatePresence>
         {showRefundModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0a0a]/90 backdrop-blur-xl">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 30 }}
-              className="bg-[#111] border border-[#d4af37]/20 max-w-md w-full p-10 rounded-[2rem] overflow-hidden relative shadow-2xl"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md p-7"
             >
-              <button 
-                onClick={() => setShowRefundModal(null)}
-                className="absolute top-8 right-8 p-2 text-[#9a9a9a] hover:text-[#d4af37] transition-colors"
-              >
-                <X size={20} />
-              </button>
-
-              <div className="mb-10">
-                <div className="w-16 h-16 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center justify-center mb-6">
-                  <RotateCcw size={28} className="text-red-400" />
-                </div>
-                <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Reversal Audit</h2>
-                <p className="text-[#9a9a9a] text-sm mt-3 leading-relaxed">
-                  Executing a complete reversal of <span className="text-[#f8f6f3] font-bold">ETB {showRefundModal.amount.toLocaleString()}</span> for <span className="text-[#d4af37]">{showRefundModal.houseId?.title}</span>.
-                </p>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-bold text-gray-900">Process Refund</h2>
+                <button onClick={() => setShowRefundModal(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg">
+                  <X size={16} />
+                </button>
               </div>
 
-              <div className="space-y-8">
-                <div>
-                  <label className="text-[10px] font-black text-[#d4af37]/40 uppercase tracking-[0.2em] block mb-3">Reversal Justification</label>
-                  <textarea 
-                    value={refundReason}
-                    onChange={(e) => setRefundReason(e.target.value)}
-                    placeholder="Provide detailed reasoning for final record..."
-                    className="w-full bg-[#0a0a0a] border border-[#d4af37]/10 rounded-xl px-4 py-4 focus:border-[#d4af37]/40 outline-none transition-all resize-none h-32 text-sm text-[#f8f6f3] placeholder-[#9a9a9a]/20 font-medium"
-                  />
-                </div>
+              <p className="text-sm text-gray-600 mb-5">
+                Refunding <strong className="text-gray-800">${showRefundModal.amount?.toLocaleString()}</strong> for{" "}
+                <strong className="text-gray-800">{showRefundModal.houseId?.title || "this payment"}</strong>.
+              </p>
 
-                <div className="flex gap-4 pt-2">
-                  <button 
-                    onClick={() => setShowRefundModal(null)}
-                    className="flex-1 py-4 border border-[#d4af37]/10 text-[#9a9a9a] hover:bg-white/5 transition-all text-[10px] font-black tracking-widest uppercase rounded-xl"
-                  >
-                    Abort
-                  </button>
-                  <button 
-                    onClick={handleRefundSubmit}
-                    disabled={refundingId || !refundReason}
-                    className="flex-[2] py-4 bg-red-600 text-white font-black hover:bg-red-700 disabled:opacity-30 transition-all text-[10px] tracking-[0.2em] uppercase flex items-center justify-center gap-3 rounded-xl shadow-lg shadow-red-600/10"
-                  >
-                    {refundingId ? <Loader2 size={16} className="animate-spin" /> : "Commit Reversal"}
-                  </button>
-                </div>
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                <textarea
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Provide a reason for the refund..."
+                  rows={3}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowRefundModal(null); setRefundReason(""); }}
+                  className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRefundSubmit}
+                  disabled={!!refundingId || !refundReason}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  {refundingId ? <Loader2 size={15} className="animate-spin" /> : "Confirm Refund"}
+                </button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </DashboardLayout>
   );
 };
 
