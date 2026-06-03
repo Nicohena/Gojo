@@ -1,78 +1,67 @@
 import React, { useState } from "react";
 
-/**
- * Revenue Chart Component
- * Restyled for luxury dark theme.
- */
+const CORAL = "#E67E5F";
 
-export const RevenueChart = ({ data, loading }) => {
+export const RevenueChart = ({ data = [], loading = false }) => {
   const [timeRange, setTimeRange] = useState("6m");
-
-  const maxValue = data?.length ? Math.max(...data.map((d) => d.value)) : 10000;
+  const maxVal = data.length ? Math.max(...data.map((d) => d.value), 1) : 1;
 
   return (
-    <div className="bg-[#111] rounded-2xl border border-[#d4af37]/5 p-8 shadow-2xl h-full flex flex-col hover:border-[#d4af37]/20 transition-all duration-500">
-      <div className="flex items-center justify-between mb-10">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>Wealth Analytics</h3>
-          <p className="text-[9px] text-[#9a9a9a] font-bold uppercase tracking-widest mt-1">Accumulated Capital Trajectory</p>
+          <h3 className="text-base font-bold text-gray-900">Wealth Analytics</h3>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5">
+            Accumulated Capital Trajectory
+          </p>
         </div>
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
-          className="text-[10px] font-black uppercase tracking-widest bg-[#0a0a0a] border border-[#d4af37]/10 rounded-xl px-4 py-2 text-[#d4af37] outline-none focus:border-[#d4af37]/40 transition-all cursor-pointer shadow-inner"
+          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white text-gray-600 focus:outline-none"
         >
-          <option value="6m">Last 6 Iterations</option>
-          <option value="1y">Annual Cycle</option>
+          <option value="6m">Last 6 months</option>
+          <option value="1y">Annual</option>
         </select>
       </div>
 
+      {/* Chart */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#d4af37] border-t-transparent shadow-[0_0_15px_rgba(212,175,55,0.2)]"></div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: CORAL, borderTopColor: "transparent" }} />
         </div>
       ) : (
-        <div className="flex-1 flex items-end justify-between gap-3 md:gap-6 relative px-4 pb-10">
-          {/* Vertical Grid lines - sophisticated look */}
-          <div className="absolute inset-x-0 bottom-10 top-0 flex flex-col justify-between pointer-events-none -z-10 h-full">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="w-full border-t border-[#d4af37]/10 h-0" />
+        <div className="flex-1 flex items-end gap-3 pb-6 relative min-h-[160px]">
+          {/* Horizontal grid lines */}
+          <div className="absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between pointer-events-none">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="w-full border-t border-gray-100" />
             ))}
           </div>
 
-          {data.map((item, index) => {
-            const heightPercentage = Math.max(
-              (item.value / maxValue) * 100,
-              6,
-            );
-
+          {data.map((item, i) => {
+            const pct = Math.max((item.value / maxVal) * 100, 4);
+            const isLast = i === data.length - 1;
             return (
-              <div
-                key={index}
-                className="flex-1 flex flex-col items-center gap-4 group cursor-pointer h-full justify-end relative"
-              >
-                {/* Tooltip on hover */}
-                <div className="opacity-0 group-hover:opacity-100 absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 bg-[#d4af37] text-[#0a0a0a] text-[10px] font-black py-2 px-3 rounded-lg transition-all duration-300 pointer-events-none whitespace-nowrap z-20 shadow-xl scale-90 group-hover:scale-100 uppercase tracking-widest">
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative justify-end h-full">
+                {/* Tooltip */}
+                <div className="absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-gray-800 text-white text-[10px] font-semibold px-2 py-1 rounded-md whitespace-nowrap z-10">
                   ETB {item.value.toLocaleString()}
                 </div>
 
                 {/* Bar */}
                 <div
-                  className={`w-full max-w-[45px] rounded-t-lg transition-all duration-700 relative overflow-hidden group-hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] ${
-                    index === data.length - 1 
-                      ? "bg-gradient-to-t from-[#d4af37] to-[#f8f6f3]/40 shadow-lg shadow-[#d4af37]/20" 
-                      : "bg-[#2a2a2a] group-hover:bg-[#333] border border-[#d4af37]/15"
-                  }`}
-                  style={{ height: `${heightPercentage}%` }}
-                >
-                   {/* Scanning animation on hover for current bar */}
-                   {index === data.length - 1 && (
-                     <div className="absolute inset-0 bg-white/10 animate-pulse" />
-                   )}
-                </div>
+                  className="w-full max-w-[36px] rounded-t-lg transition-all duration-500"
+                  style={{
+                    height: `${pct}%`,
+                    background: isLast ? CORAL : "#D1D5DB",
+                    opacity: isLast ? 1 : 0.7,
+                  }}
+                />
 
                 {/* Label */}
-                <span className="text-[10px] font-black text-[#9a9a9a]/60 uppercase tracking-widest absolute bottom-0">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase absolute bottom-0">
                   {item.label}
                 </span>
               </div>
@@ -80,7 +69,6 @@ export const RevenueChart = ({ data, loading }) => {
           })}
         </div>
       )}
-      <div className="mt-4 text-[9px] text-center text-[#9a9a9a]/20 uppercase font-black tracking-[0.4em]">Secure Analytic Ledger Matrix 4.0</div>
     </div>
   );
 };
