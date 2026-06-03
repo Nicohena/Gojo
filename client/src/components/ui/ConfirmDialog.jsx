@@ -1,13 +1,37 @@
 import React, { useState } from "react";
 import Modal from "./Modal";
-import { AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, X } from "lucide-react";
 import clsx from "clsx";
 
-/**
- * Confirm Dialog Component
- * Accessible confirmation dialog to replace window.confirm()
- * Restyled for luxury dark/gold theme.
- */
+const CORAL = "#E67E5F";
+
+const variantConfig = {
+  warning: {
+    icon: AlertTriangle,
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-500",
+    buttonCls: "bg-amber-500 hover:bg-amber-600 text-white",
+  },
+  danger: {
+    icon: AlertTriangle,
+    iconBg: "bg-red-50",
+    iconColor: "text-red-500",
+    buttonCls: "bg-red-600 hover:bg-red-700 text-white",
+  },
+  info: {
+    icon: Info,
+    iconBg: "bg-orange-50",
+    iconColor: "text-orange-500",
+    buttonCls: "text-white",
+    buttonStyle: { background: CORAL },
+  },
+  success: {
+    icon: CheckCircle,
+    iconBg: "bg-emerald-50",
+    iconColor: "text-emerald-500",
+    buttonCls: "bg-emerald-600 hover:bg-emerald-700 text-white",
+  },
+};
 
 const ConfirmDialog = ({
   isOpen,
@@ -21,100 +45,53 @@ const ConfirmDialog = ({
   isLoading = false,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const variantConfig = {
-    warning: {
-      icon: AlertTriangle,
-      iconColor: "text-amber-500",
-      iconBg: "bg-amber-500/10 border-amber-500/20",
-      buttonColor: "bg-amber-600 hover:bg-amber-700 text-[#0a0a0a]",
-    },
-    danger: {
-      icon: AlertTriangle,
-      iconColor: "text-red-500",
-      iconBg: "bg-red-500/10 border-red-500/20",
-      buttonColor: "bg-red-600 hover:bg-red-700 text-white",
-    },
-    info: {
-      icon: Info,
-      iconColor: "text-[#d4af37]",
-      iconBg: "bg-[#d4af37]/10 border-[#d4af37]/20",
-      buttonColor: "bg-[#d4af37] hover:bg-[#b8941f] text-[#0a0a0a]",
-    },
-    success: {
-      icon: CheckCircle,
-      iconColor: "text-emerald-500",
-      iconBg: "bg-emerald-500/10 border-emerald-500/20",
-      buttonColor: "bg-emerald-600 hover:bg-emerald-700 text-white",
-    },
-  };
-
-  const config = variantConfig[variant];
-  const Icon = config.icon;
+  const config = variantConfig[variant] || variantConfig.warning;
+  const Icon   = config.icon;
+  const loading = isLoading || isProcessing;
 
   const handleConfirm = async () => {
     setIsProcessing(true);
     try {
       await onConfirm();
       onClose();
-    } catch (error) {
-      console.error("Confirmation action failed:", error);
+    } catch (err) {
+      console.error("Confirmation action failed:", err);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const loading = isLoading || isProcessing;
-
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="sm"
-      closeOnOverlayClick={!loading}
-      showCloseButton={false}
-    >
-      <div className="text-center py-4">
+    <Modal isOpen={isOpen} onClose={onClose} size="sm" closeOnOverlayClick={!loading} showCloseButton={false}>
+      <div className="text-center py-2">
         {/* Icon */}
-        <div
-          className={clsx(
-            "mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 border",
-            config.iconBg,
-          )}
-        >
-          <Icon
-            className={clsx("h-8 w-8", config.iconColor)}
-            aria-hidden="true"
-          />
+        <div className={clsx("mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4", config.iconBg)}>
+          <Icon size={26} className={config.iconColor} aria-hidden="true" />
         </div>
 
         {/* Title */}
-        <h3 className="text-2xl text-[#f8f6f3] mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>{title}</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
 
         {/* Message */}
-        {message && <p className="text-[#9a9a9a] mb-8 text-sm leading-relaxed">{message}</p>}
+        {message && <p className="text-sm text-gray-500 mb-6 leading-relaxed">{message}</p>}
 
         {/* Actions */}
-        <div className="flex flex-col-reverse sm:flex-row gap-3 justify-center">
+        <div className="flex gap-3 justify-center">
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-6 py-2.5 border border-[#d4af37]/20 text-[#d4af37] text-xs font-bold uppercase tracking-widest hover:border-[#d4af37] transition-all disabled:opacity-50"
+            className="flex-1 px-5 py-2.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             {cancelText}
           </button>
           <button
             onClick={handleConfirm}
             disabled={loading}
-            className={clsx(
-              "px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2",
-              config.buttonColor,
-            )}
+            className={clsx("flex-1 px-5 py-2.5 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2", config.buttonCls)}
+            style={config.buttonStyle}
           >
-            {loading && (
-              <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent" />
-            )}
-            {loading ? "Processing..." : confirmText}
+            {loading && <div className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />}
+            {loading ? "Processing…" : confirmText}
           </button>
         </div>
       </div>
@@ -123,49 +100,24 @@ const ConfirmDialog = ({
 };
 
 export const useConfirmDialog = () => {
-  const [dialogState, setDialogState] = useState({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
-    variant: "warning",
-    confirmText: "Confirm",
-    cancelText: "Cancel",
+  const [state, setState] = useState({
+    isOpen: false, title: "", message: "", onConfirm: () => {},
+    variant: "warning", confirmText: "Confirm", cancelText: "Cancel",
   });
 
-  const confirm = ({
-    title,
-    message,
-    onConfirm,
-    variant = "warning",
-    confirmText = "Confirm",
-    cancelText = "Cancel",
-  }) => {
-    return new Promise((resolve) => {
-      setDialogState({
-        isOpen: true,
-        title,
-        message,
-        onConfirm: async () => {
-          await onConfirm();
-          resolve(true);
-        },
-        variant,
-        confirmText,
-        cancelText,
+  const confirm = ({ title, message, onConfirm, variant = "warning", confirmText = "Confirm", cancelText = "Cancel" }) =>
+    new Promise((resolve) => {
+      setState({
+        isOpen: true, title, message, variant, confirmText, cancelText,
+        onConfirm: async () => { await onConfirm(); resolve(true); },
       });
     });
-  };
 
-  const closeDialog = () => {
-    setDialogState((prev) => ({ ...prev, isOpen: false }));
-  };
+  const closeDialog = () => setState((p) => ({ ...p, isOpen: false }));
 
   return {
     confirm,
-    ConfirmDialog: () => (
-      <ConfirmDialog {...dialogState} onClose={closeDialog} />
-    ),
+    ConfirmDialog: () => <ConfirmDialog {...state} onClose={closeDialog} />,
   };
 };
 

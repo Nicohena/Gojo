@@ -1,122 +1,152 @@
 import React, { useState } from "react";
-import { Shield, Trash2, Mail, Info, CheckCircle } from "lucide-react";
+import { Shield, Eye, EyeOff, Trash2, CheckCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { authService } from "../../api/authService";
 import userService from "../../api/userService";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
+const CORAL = "#E67E5F";
+
+const inputCls =
+  "w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition bg-white";
+const labelCls = "block text-sm font-medium text-gray-700 mb-1";
+
 const SecuritySettings = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [success, setSuccess] = useState(false);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
-  const handleSendResetEmail = async () => {
-    if (!user?.email) {
-      toast.error("No email address found for your account");
-      return;
-    }
+  const setPass = (key) => (e) => setPasswords((p) => ({ ...p, [key]: e.target.value }));
 
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (passwords.newPass !== passwords.confirm) { toast.error("New passwords don't match"); return; }
+    if (passwords.newPass.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     try {
       setLoading(true);
-      await authService.forgotPassword(user.email);
-      setEmailSent(true);
-      toast.success("Password reset link sent to your email");
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to send password reset email"
-      );
+      await userService.updatePassword({
+        currentPassword: passwords.current,
+        newPassword: passwords.newPass,
+      });
+      setSuccess(true);
+      setPasswords({ current: "", newPass: "", confirm: "" });
+      toast.success("Password updated");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update password");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== "DELETE") {
-      toast.error('Please type "DELETE" to confirm');
-      return;
-    }
-
+  const handleDelete = async () => {
+    if (deleteText !== "DELETE") { toast.error('Type "DELETE" to confirm'); return; }
     try {
       setDeleteLoading(true);
       const userId = user?.id || user?._id;
       await userService.deleteUser(userId);
-      toast.success("Your account has been deleted");
+      toast.success("Account deleted");
       logout();
       navigate("/");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to delete account");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete account");
     } finally {
       setDeleteLoading(false);
     }
   };
 
   return (
-    <div className="max-w-2xl">
-      <div className="mb-10">
-        <h2 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
-          Security Settings
-        </h2>
-        <p className="text-sm text-[#9a9a9a] mt-2 tracking-wide">
-          Maintain your account security and authentication credentials.
-        </p>
+    <div>
+      {/* Section heading */}
+      <div className="flex items-center gap-2 mb-6">
+        <Shield size={18} style={{ color: CORAL }} />
+        <h2 className="text-lg font-bold text-gray-900">Security Settings</h2>
       </div>
 
-      {/* Change Password Section */}
-      <div className="mb-12 pb-12 border-b border-[#d4af37]/10">
-        <h3 className="text-sm font-bold text-[#d4af37] mb-6 flex items-center gap-3 uppercase tracking-widest">
-          <Mail size={18} />
-          Update Password
-        </h3>
-
-        <p className="text-sm text-[#9a9a9a] mb-6 leading-relaxed">
-          To update your password, a secure reset link will be dispatched to your registered email address.
-          Follow the instructions provided in the correspondence to establish new credentials.
-        </p>
-
-        <div className="bg-[#111] border border-[#d4af37]/10 rounded-xl p-6 mb-6">
-          <div className="flex items-center gap-3 mb-1">
-            <Mail size={14} className="text-[#d4af37]/60" />
-            <span className="text-[10px] uppercase font-bold text-[#9a9a9a] tracking-widest">
-              Registered Email
-            </span>
+      <form onSubmit={handleUpdatePassword} className="space-y-4">
+        {/* Current password */}
+        <div>
+          <label className={labelCls}>Current Password</label>
+          <div className="relative">
+            <input
+              type={showCurrent ? "text" : "password"}
+              value={passwords.current}
+              onChange={setPass("current")}
+              placeholder="••••••••"
+              required
+              className={`${inputCls} pr-10`}
+            />
+            <button type="button" onClick={() => setShowCurrent((v) => !v)} className="absolute inset-y-0 right-0 px-3 text-gray-400 hover:text-gray-600">
+              {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
-          <p className="text-sm text-[#f8f6f3] pl-[26px]">{user?.email || "—"}</p>
         </div>
 
-        {emailSent ? (
-          <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 animate-in fade-in duration-500">
-            <CheckCircle size={20} className="text-emerald-400 shrink-0" />
-            <div>
-              <p className="text-sm font-bold text-emerald-400">Reset link sent</p>
-              <p className="text-xs text-[#9a9a9a] mt-1">
-                Check your inbox at <span className="text-[#f8f6f3]">{user?.email}</span>. The link will expire in 30 minutes.
-              </p>
+        {/* New + Confirm */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>New Password</label>
+            <div className="relative">
+              <input
+                type={showNew ? "text" : "password"}
+                value={passwords.newPass}
+                onChange={setPass("newPass")}
+                placeholder="Min 8 characters"
+                required
+                className={`${inputCls} pr-10`}
+              />
+              <button type="button" onClick={() => setShowNew((v) => !v)} className="absolute inset-y-0 right-0 px-3 text-gray-400 hover:text-gray-600">
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSendResetEmail}
-            disabled={loading}
-            className="w-full bg-[#d4af37] text-[#0a0a0a] font-bold text-xs uppercase tracking-[0.2em] py-4 rounded-xl hover:bg-[#b8941f] transition-all disabled:opacity-50"
-          >
-            {loading ? "Dispatching..." : "Dispatch Reset Link"}
-          </button>
-        )}
-      </div>
+          <div>
+            <label className={labelCls}>Confirm New Password</label>
+            <input
+              type="password"
+              value={passwords.confirm}
+              onChange={setPass("confirm")}
+              placeholder="Repeat password"
+              required
+              className={inputCls}
+            />
+          </div>
+        </div>
 
-      {/* Delete Account Section */}
-      <div className="bg-red-500/5 border border-red-500/10 p-8 rounded-2xl">
-        <h3 className="text-sm font-bold text-red-500 mb-2 flex items-center gap-3 uppercase tracking-widest">
-          <Trash2 size={18} />
-          Delete Account
-        </h3>
-        <p className="text-xs text-[#9a9a9a] mb-6 leading-relaxed">
+        {success && (
+          <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+            <CheckCircle size={15} />
+            Password updated successfully.
+          </div>
+        )}
+
+        <div className="flex justify-end pt-1">
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ background: CORAL }}
+          >
+            {loading ? "Updating..." : "Update Password"}
+          </button>
+        </div>
+      </form>
+
+      {/* ── Delete account ──────────────────────────────────────────── */}
+      <div className="mt-8 pt-6 border-t border-gray-100">
+        <div className="flex items-center gap-2 mb-2">
+          <Trash2 size={16} className="text-red-500" />
+          <h3 className="text-sm font-bold text-red-600">Delete Account</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-4 leading-relaxed">
           Permanently delete your account and all associated data. This action cannot be undone.
         </p>
 
@@ -124,39 +154,33 @@ const SecuritySettings = () => {
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
-            className="px-6 py-3 text-[10px] font-bold text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500/10 transition-all uppercase tracking-widest"
+            className="px-4 py-2 text-xs font-semibold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
           >
             Delete My Account
           </button>
         ) : (
-          <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-            <p className="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Info size={12} />
-              Type <strong>DELETE</strong> to confirm
-            </p>
+          <div className="space-y-3">
+            <p className="text-xs text-red-500 font-medium">Type <strong>DELETE</strong> to confirm:</p>
             <input
               type="text"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
-              placeholder="Type DELETE"
-              className="w-full bg-[#0a0a0a] border border-red-500/20 rounded-xl px-5 py-3 text-red-500 focus:border-red-500 outline-none transition-all mb-4 uppercase font-mono text-sm"
+              value={deleteText}
+              onChange={(e) => setDeleteText(e.target.value)}
+              placeholder="DELETE"
+              className="w-full px-4 py-2.5 rounded-lg border border-red-200 text-sm text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200 bg-white"
             />
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
                 type="button"
-                onClick={handleDeleteAccount}
-                disabled={deleteLoading || deleteConfirmText !== "DELETE"}
-                className="flex-1 px-4 py-3 text-[10px] font-bold text-[#0a0a0a] bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all uppercase tracking-widest"
+                onClick={handleDelete}
+                disabled={deleteLoading || deleteText !== "DELETE"}
+                className="px-5 py-2 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                {deleteLoading ? "Deleting..." : "Confirm Deletion"}
+                {deleteLoading ? "Deleting..." : "Confirm Delete"}
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setDeleteConfirmText("");
-                }}
-                className="px-6 py-3 text-[10px] font-bold text-[#9a9a9a] border border-[#d4af37]/10 rounded-xl hover:bg-white/5 transition-all uppercase tracking-widest"
+                onClick={() => { setShowDeleteConfirm(false); setDeleteText(""); }}
+                className="px-5 py-2 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
