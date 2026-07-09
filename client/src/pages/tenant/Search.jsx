@@ -4,6 +4,7 @@ import { HouseCard } from "../../components/pieces/HouseCard";
 import { Map as MapIcon, SlidersHorizontal, Loader2, X } from "lucide-react";
 import { houseService } from "../../api/houseService";
 import userService from "../../api/userService";
+import configService from "../../api/configService";
 import { useAuth } from "../../context/AuthContext";
 
 const CORAL = "#E67E5F";
@@ -47,6 +48,7 @@ const SearchPage = () => {
   const [error, setError] = useState(null);
   const [savedHomeIds, setSavedHomeIds] = useState([]);
   const [savingId, setSavingId] = useState(null);
+  const [fairPriceThreshold, setFairPriceThreshold] = useState(3000);
 
   const [filters, setFilters] = useState({
     verified: false,
@@ -61,6 +63,18 @@ const SearchPage = () => {
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
   const [priceDraft, setPriceDraft] = useState({ min: "", max: "" });
   const [amenitiesDraft, setAmenitiesDraft] = useState([]);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const config = await configService.getConfig();
+        setFairPriceThreshold(config?.pricing?.fairPriceThreshold || 3000);
+      } catch {
+        setFairPriceThreshold(3000);
+      }
+    };
+    loadConfig();
+  }, []);
 
   // Fetch houses
   useEffect(() => {
@@ -181,7 +195,7 @@ const SearchPage = () => {
                   sqft: house.size || 0,
                   verified: house.verified?.status,
                   match: house.matchScore,
-                  isFair: house.price < 3000,
+                  isFair: house.price < fairPriceThreshold,
                   image: house.images?.[0]?.url || house.images?.[0],
                   views: house.viewCount || 0,
                 }}
