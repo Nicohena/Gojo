@@ -215,9 +215,23 @@ const DetailsPage = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-[#0a0a0a]">
-        <div className="w-16 h-16 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin" />
-        <p className="text-[#d4af37] font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Loading Details...</p>
+      <div className="min-h-screen bg-[#f8fafc] px-6 py-10 text-[#0f172a]">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <div className="h-8 w-40 animate-pulse rounded-full bg-slate-200" />
+          <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
+            <div className="space-y-4 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="h-72 w-full animate-pulse rounded-[1.5rem] bg-slate-200" />
+              <div className="h-6 w-2/3 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-4 w-full animate-pulse rounded-full bg-slate-200" />
+              <div className="h-4 w-5/6 animate-pulse rounded-full bg-slate-200" />
+            </div>
+            <div className="space-y-4 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="h-8 w-1/2 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-20 animate-pulse rounded-[1.25rem] bg-slate-100" />
+              <div className="h-20 animate-pulse rounded-[1.25rem] bg-slate-100" />
+            </div>
+          </div>
+        </div>
       </div>
     );
 
