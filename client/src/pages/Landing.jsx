@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { houseService } from "../api/houseService";
 import contactService from "../api/contactService";
+import configService from "../api/configService";
 import toast from "react-hot-toast";
 
 // ─── Brand colors ────────────────────────────────────────────────────────────
@@ -88,17 +89,17 @@ const PLACEHOLDER_CARDS = [
 ];
 
 // ─── ETB ↔ USD toggle ─────────────────────────────────────────────────────────
-const USD_RATE = 0.0174; // approximate
+// Currency rate will be loaded from backend config
 
-function formatPrice(etbPrice, showUsd) {
+function formatPrice(etbPrice, showUsd, usdRate = 0.0174) {
   if (showUsd) {
-    return `$${(etbPrice * USD_RATE).toFixed(0)}`;
+    return `$${(etbPrice * usdRate).toFixed(0)}`;
   }
   return `${etbPrice.toLocaleString()} ETB`;
 }
 
 // ─── Property card ────────────────────────────────────────────────────────────
-function PropertyCard({ card, showUsd, onCardClick }) {
+function PropertyCard({ card, showUsd, onCardClick, usdRate = 0.0174 }) {
   const [liked, setLiked] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
   const total = card.images_count || 1;
@@ -176,7 +177,7 @@ function PropertyCard({ card, showUsd, onCardClick }) {
         <p className="text-xs text-gray-500 mt-0.5">{card.title}</p>
         <p className="text-sm mt-1">
           <span className="font-semibold text-gray-900">
-            {formatPrice(card.price, showUsd)}
+            {formatPrice(card.price, showUsd, usdRate)}
           </span>
           <span className="text-gray-500 font-normal"> night</span>
         </p>
@@ -194,6 +195,7 @@ export default function LandingPage() {
   const [showUsd, setShowUsd] = useState(false);
   const [houses, setHouses] = useState([]);
   const [loadingHouses, setLoadingHouses] = useState(true);
+  const [usdRate, setUsdRate] = useState(0.0174); // default fallback
 
   // Search state
   const [where, setWhere] = useState("");
@@ -206,6 +208,22 @@ export default function LandingPage() {
       navigate(getRedirectPath(user.role));
     }
   }, [user, authLoading, navigate]);
+
+  // Load app configuration (currency rates, etc.)
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const config = await configService.getConfig();
+        if (config?.currency?.usdRate) {
+          setUsdRate(config.currency.usdRate);
+        }
+      } catch (err) {
+        console.error('Failed to load config:', err);
+        // Use default rate
+      }
+    };
+    loadConfig();
+  }, []);
 
   // Fetch featured houses
   useEffect(() => {
@@ -454,6 +472,7 @@ export default function LandingPage() {
               card={card}
               showUsd={showUsd}
               onCardClick={(id) => navigate(`/details/${id}`)}
+              usdRate={usdRate}
             />
           ))}
         </div>
