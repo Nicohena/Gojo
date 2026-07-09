@@ -6,16 +6,16 @@ import { Star, Loader2, User } from "lucide-react";
  * Restyled for luxury dark theme.
  */
 const ReviewCard = ({ review }) => (
-  <div className="bg-[#111] border border-[#d4af37]/5 rounded-2xl p-6 hover:border-[#d4af37]/20 transition-all group shadow-xl">
+  <div className="border border-slate-200 rounded-2xl p-6 shadow-sm">
     <div className="flex items-center gap-4 mb-4">
-      <div className="w-12 h-12 bg-gradient-to-br from-[#d4af37] to-[#b8941f] rounded-full flex items-center justify-center text-[#0a0a0a] font-black text-lg border-2 border-[#111] shadow-lg group-hover:scale-105 transition-transform" style={{ fontFamily: "'Playfair Display', serif" }}>
+      <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center text-slate-700 font-bold text-lg">
         {review.tenantId?.name?.charAt(0)?.toUpperCase() || "?"}
       </div>
       <div>
-        <p className="font-bold text-[#f8f6f3] text-sm group-hover:text-[#d4af37] transition-colors">
+        <p className="font-semibold text-slate-900 text-base">
           {review.tenantId?.name || "Guest"}
         </p>
-        <p className="text-[10px] text-[#9a9a9a]/60 uppercase font-black tracking-widest mt-0.5">
+        <p className="text-sm text-slate-500 font-normal">
           {new Date(review.createdAt).toLocaleDateString("en-US", {
             month: "long",
             year: "numeric",
@@ -30,19 +30,19 @@ const ReviewCard = ({ review }) => (
           size={14}
           className={
             s <= review.score
-              ? "text-amber-500 fill-amber-500"
-              : "text-[#1a1a1a] fill-none"
+              ? "text-slate-900 fill-slate-900"
+              : "text-slate-200 fill-slate-200"
           }
         />
       ))}
     </div>
     {review.comment && (
-      <p className="text-sm text-[#9a9a9a] leading-relaxed italic border-l-2 border-[#d4af37]/20 pl-4 py-1 group-hover:border-[#d4af37] transition-colors">{review.comment}</p>
+      <p className="text-base text-slate-700 leading-relaxed">{review.comment}</p>
     )}
   </div>
 );
 
-const ratingLabels = ["", "Vulnerable", "Neutral", "Refined", "Superior", "Elite"];
+const ratingLabels = ["", "Terrible", "Bad", "Okay", "Good", "Excellent"];
 
 const ReviewsSection = ({
   ratings,
@@ -58,47 +58,34 @@ const ReviewsSection = ({
   onSubmitRating,
 }) => {
   return (
-    <div className="pt-20 border-t border-[#d4af37]/10">
-      <div className="flex items-center justify-between mb-12">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-[#d4af37]/10 rounded-2xl flex items-center justify-center border border-[#d4af37]/20">
-             <Star className="text-[#d4af37] fill-[#d4af37]/20" size={28} />
-          </div>
-          <div>
-            <h3 className="text-3xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Reviews
-            </h3>
-            <p className="text-[10px] text-[#9a9a9a] uppercase font-bold tracking-[0.2em] mt-1">
-              {averageRating?.toFixed(1) || "New"} Rating · {ratings?.length || 0} Reviews
-            </p>
-          </div>
-        </div>
+    <div>
+      <div className="flex items-center gap-2 mb-8">
+        <Star className="text-slate-900 fill-slate-900" size={24} />
+        <h3 className="text-[1.375rem] font-semibold text-slate-900">
+          {averageRating?.toFixed(1) || "New"} · {ratings?.length || 0} reviews
+        </h3>
       </div>
 
       {/* Existing Reviews */}
       {ratings?.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {ratings.map((review, idx) => (
             <ReviewCard key={idx} review={review} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 bg-[#111] border border-[#d4af37]/5 rounded-[2rem] mb-16 shadow-inner">
-           <Star size={40} className="mx-auto text-[#9a9a9a]/20 mb-4" />
-           <p className="text-[10px] text-[#9a9a9a] uppercase font-bold tracking-[0.3em]">No Reviews Yet</p>
+        <div className="text-center py-12 border border-slate-200 rounded-2xl mb-12 bg-slate-50">
+           <Star size={32} className="mx-auto text-slate-300 mb-3" />
+           <p className="text-sm text-slate-500 font-semibold uppercase tracking-wide">No Reviews Yet</p>
         </div>
       )}
 
       {/* Submit Review Form */}
       {user && user.role === "tenant" && (
-        <div className="bg-[#111] border border-[#d4af37]/10 rounded-3xl p-10 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
-             <User size={120} className="text-[#d4af37]" />
-          </div>
+        <div className="border border-slate-200 rounded-2xl p-8 bg-white shadow-sm">
+          <h4 className="text-xl font-semibold text-slate-900 mb-6">Write a Review</h4>
           
-          <h4 className="text-2xl text-[#f8f6f3] mb-8" style={{ fontFamily: "'Playfair Display', serif" }}>Write a Review</h4>
-          
-          <div className="flex flex-col md:flex-row md:items-center gap-6 mb-10">
+          <div className="flex items-center gap-6 mb-6">
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((s) => (
                 <button
@@ -107,47 +94,44 @@ const ReviewsSection = ({
                   onClick={() => setRatingScore(s)}
                   onMouseEnter={() => setRatingHover(s)}
                   onMouseLeave={() => setRatingHover(0)}
-                  className="transition-all hover:scale-125 focus:outline-none"
+                  className="focus:outline-none transition-transform hover:scale-110"
                 >
                   <Star
-                    size={32}
-                    className={`transition-all duration-300 ${
+                    size={28}
+                    className={
                       s <= (ratingHover || ratingScore)
-                        ? "text-amber-500 fill-amber-500 shadow-lg"
-                        : "text-[#1a1a1a] fill-none"
-                    }`}
+                        ? "text-slate-900 fill-slate-900"
+                        : "text-slate-200 fill-none"
+                    }
                   />
                 </button>
               ))}
             </div>
             {ratingScore > 0 && (
-              <span className="text-[10px] font-black text-[#d4af37] uppercase tracking-[0.3em] bg-[#1a1a1a] px-5 py-2 rounded-full border border-[#d4af37]/10 animate-in fade-in zoom-in duration-300">
-                Rating: {ratingLabels[ratingScore]}
+              <span className="text-sm font-semibold text-slate-900 bg-slate-100 px-4 py-1.5 rounded-full">
+                {ratingLabels[ratingScore]}
               </span>
             )}
           </div>
 
-          <div className="relative mb-8">
+          <div className="mb-6">
             <textarea
               value={ratingComment}
               onChange={(e) => setRatingComment(e.target.value)}
               placeholder="Tell us about your stay..."
               rows={4}
-              className="w-full bg-[#0a0a0a] border border-[#d4af37]/10 rounded-2xl p-5 text-[#f8f6f3] placeholder-[#9a9a9a]/20 outline-none focus:border-[#d4af37]/40 focus:ring-4 focus:ring-[#d4af37]/5 transition-all text-sm leading-relaxed"
+              className="w-full border border-slate-300 rounded-xl p-4 text-slate-900 placeholder-slate-400 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all text-base leading-relaxed"
             />
-            <div className="absolute bottom-4 right-4 text-[10px] font-bold text-[#9a9a9a]/40 uppercase tracking-widest">Share your experience</div>
           </div>
 
           <button
             onClick={onSubmitRating}
             disabled={ratingLoading || ratingScore === 0}
-            className="w-full md:w-auto px-10 py-4 bg-[#d4af37] text-[#0a0a0a] rounded-xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#b8941f] transition-all disabled:opacity-40 flex items-center justify-center gap-4 shadow-xl shadow-[#d4af37]/10"
+            className="px-8 py-3 bg-[#E67E5F] text-white rounded-xl font-semibold hover:bg-[#d97153] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {ratingLoading ? (
               <Loader2 className="animate-spin" size={18} />
-            ) : (
-              <Star size={18} />
-            )}
+            ) : null}
             Submit Review
           </button>
         </div>
