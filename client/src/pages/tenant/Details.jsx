@@ -248,28 +248,33 @@ const DetailsPage = () => {
     .filter(Boolean)
     .join(", ");
 
+  const hostAvatar = getImageUrl(
+    house.ownerId?.avatar ||
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100",
+  );
+
   return (
-    <div className="bg-[#0a0a0a] min-h-screen pb-32 text-[#f8f6f3] selection:bg-[#d4af37]/30">
+    <div className="bg-[#f8fafc] min-h-screen text-[#0f172a] selection:bg-[#d4af37]/20">
       {/* ── Navigation Node ── */}
-      <nav className="sticky top-0 z-40 w-full bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-[#d4af37]/10">
+      <nav className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-8 h-24 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-3 text-[#9a9a9a] hover:text-[#d4af37] text-[10px] font-black uppercase tracking-[0.3em] transition-all group"
+            className="flex items-center gap-3 text-slate-600 hover:text-slate-900 text-sm font-semibold uppercase tracking-[0.3em] transition-all"
           >
-            <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-            <span>Go Back</span>
+            <ChevronLeft size={18} className="text-slate-600" />
+            <span>Back to listings</span>
           </button>
           <div className="flex items-center gap-4">
             <button
               type="button"
-              className="p-3.5 bg-white/5 border border-white/10 rounded-2xl hover:border-[#d4af37]/40 hover:text-[#d4af37] transition-all"
+              className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl hover:bg-slate-200 transition-all"
               onClick={() => {
                 const link = window.location.href;
                 navigator.clipboard.writeText(link).then(() => toast.success("Property link copied to clipboard."));
               }}
             >
-              <Share size={18} />
+              <Share size={18} className="text-slate-700" />
             </button>
             <button
               type="button"
@@ -277,205 +282,148 @@ const DetailsPage = () => {
               disabled={saving}
               className={`p-3.5 rounded-2xl border transition-all ${
                 isSaved
-                  ? "bg-red-500/10 border-red-500/30 text-red-500"
-                  : "bg-white/5 border-white/10 text-[#9a9a9a] hover:border-[#d4af37]/40 hover:text-[#d4af37]"
+                  ? "bg-rose-500/10 border-rose-500/30 text-rose-600"
+                  : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              <Heart size={18} className={isSaved ? "fill-current" : ""} />
+              <Heart size={18} className={isSaved ? "fill-current" : "text-slate-700"} />
             </button>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-8 pt-16">
-        {/* ── Asset Identification ── */}
-        <div className="flex flex-col xl:flex-row justify-between items-start gap-8 mb-16">
-          <div className="max-w-3xl">
-            <div className="flex flex-wrap items-center gap-4 mb-6">
-               {house.verified?.status && <VerifiedBadge />}
-               {matchScore && <SmartMatchBadge percentage={matchScore} />}
-               <FairPriceBadge score={priceFairness?.score} />
+      <main className="max-w-7xl mx-auto px-8 pb-24 pt-8">
+        <div className="mb-6">
+          <h1 className="text-[2rem] font-bold text-slate-900 mb-2">
+            {house.title}
+          </h1>
+          <div className="flex items-center gap-4 text-sm text-slate-900 font-semibold">
+            <div className="flex items-center gap-1">
+              <Star size={16} className="fill-slate-900" />
+              <span>{house.averageRating?.toFixed(1) || "New"}</span>
             </div>
-            <h1 className="text-6xl font-black text-[#f8f6f3] tracking-tighter mb-4 leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-              {house.title}
-            </h1>
-            <div className="flex items-center gap-8 text-[11px] font-black uppercase tracking-[0.2em] text-[#9a9a9a]">
-              <div className="flex items-center gap-2">
-                <Star size={16} className="fill-amber-500 text-amber-500" />
-                <span className="text-[#f8f6f3]">{house.averageRating?.toFixed(1) || "New Property"}</span>
-                <span className="opacity-40 underline cursor-pointer hover:text-[#d4af37] transition-colors">
-                  {house.ratings?.length || 0} reviews
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowMap(true)}
-                className="flex items-center gap-2 hover:text-[#d4af37] transition-all group"
-              >
-                <MapPin size={16} className="text-[#d4af37]/60" />
-                <span className="underline decoration-[#d4af37]/20 group-hover:decoration-[#d4af37]">
-                  {fullAddress}
-                </span>
-              </button>
+            <span className="underline cursor-pointer">{house.ratings?.length || 0} reviews</span>
+            <span>·</span>
+            <div className="flex items-center gap-1">
+              <MapPin size={16} className="text-slate-500" />
+              <span className="underline cursor-pointer">{fullAddress}</span>
             </div>
           </div>
         </div>
 
-        {/* ── Visual Assets ── */}
         <PhotoGrid images={house.images} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
-          <div className="lg:col-span-8 space-y-20">
-            {/* ── Property Details ── */}
-            <div className="flex justify-between items-center pb-12 border-b border-[#d4af37]/10">
+        <div className="grid gap-20 lg:grid-cols-[2fr_1fr] mt-12">
+          {/* Left Column */}
+          <div className="space-y-8">
+            <div className="flex items-center justify-between pb-6 border-b border-gray-200">
               <div>
-                <h2 className="text-3xl text-[#f8f6f3] mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>
-                  {house.propertyType}
+                <h2 className="text-[1.375rem] font-semibold text-slate-900 mb-1">
+                  Entire rental unit hosted by {house.ownerId?.name || "Host"}
                 </h2>
-                <div className="flex items-center gap-4 text-[10px] text-[#9a9a9a] font-black uppercase tracking-[0.3em]">
-                   <span>{house.rooms?.bedrooms} Bedrooms</span>
-                   <div className="w-1.5 h-1.5 rounded-full bg-[#d4af37]/40" />
-                   <span>{house.rooms?.bathrooms} Bathrooms</span>
-                   <div className="w-1.5 h-1.5 rounded-full bg-[#d4af37]/40" />
-                   <span>{house.size?.toLocaleString()} SQFT</span>
+                <div className="flex items-center gap-2 text-base text-slate-600">
+                  <span>{house.rooms?.bedrooms || 0} bedrooms</span>
+                  <span>·</span>
+                  <span>{house.rooms?.bathrooms || 0} bathrooms</span>
+                  <span>·</span>
+                  <span>{house.size?.toLocaleString() || "N/A"} sqft</span>
                 </div>
               </div>
-              <div className="group relative">
-                <div className="absolute inset-0 bg-[#d4af37] rounded-full blur-xl opacity-0 group-hover:opacity-20 transition-opacity" />
-                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-[#d4af37]/20 shadow-2xl">
-                  <img
-                    src={getImageUrl(house.ownerId?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100")}
-                    alt="Owner"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
+              <div className="w-14 h-14 rounded-full overflow-hidden shrink-0">
+                <img src={hostAvatar} alt="Host avatar" className="w-full h-full object-cover" />
               </div>
             </div>
 
-            {/* ── Highlights ── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div className="py-6 border-b border-gray-200 space-y-6">
               {[
-                { icon: ShieldCheck, label: "Verified Property", sub: "Physically audited for your safety." },
-                { icon: MapPin, label: "Great Location", sub: "Prime area with easy access." },
-                { icon: Calendar, label: "Flexible Cancellation", sub: "Full refund within 48h." }
-              ].map((item, i) => (
-                <div key={i} className="flex flex-col gap-4 p-8 bg-[#111] border border-[#d4af37]/5 rounded-[2rem] hover:border-[#d4af37]/20 transition-all">
-                  <div className="w-12 h-12 bg-[#d4af37]/10 rounded-xl flex items-center justify-center text-[#d4af37]">
-                    <item.icon size={24} />
-                  </div>
+                {
+                  icon: ShieldCheck,
+                  label: "Verified host",
+                  text: "Host has completed identity verification.",
+                },
+                {
+                  icon: MapPin,
+                  label: "Great location",
+                  text: "Recent guests gave the location a 5-star rating.",
+                },
+                {
+                  icon: Calendar,
+                  label: "Flexible dates",
+                  text: "Easily update your schedule before booking.",
+                },
+              ].map((item, idx) => (
+                <div key={idx} className="flex gap-4">
+                  <item.icon size={28} className="text-slate-900 shrink-0" />
                   <div>
-                    <p className="font-bold text-[#f8f6f3] text-sm mb-1">{item.label}</p>
-                    <p className="text-[10px] text-[#9a9a9a] uppercase font-bold tracking-widest leading-relaxed">
-                      {item.sub}
-                    </p>
+                    <div className="font-semibold text-base text-slate-900">{item.label}</div>
+                    <div className="text-slate-500 text-sm mt-0.5">{item.text}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* ── Property Description ── */}
-            <div className="space-y-8 pt-12 border-t border-[#d4af37]/10">
-              <h3 className="text-2xl text-[#f8f6f3]" style={{ fontFamily: "'Playfair Display', serif" }}>About this property</h3>
-              <p className="text-[#9a9a9a] leading-[2] font-medium text-lg italic">
-                {house.description}
-              </p>
+            <div className="py-6 border-b border-gray-200">
+              <h2 className="text-[1.375rem] font-semibold text-slate-900 mb-4">About this space</h2>
+              <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap">{house.description}</p>
             </div>
 
-            <PropertyDetails house={house} />
+            <div className="py-6 border-b border-gray-200">
+              <PropertyDetails house={house} />
+            </div>
 
-            {/* ── Operational Utilities ── */}
-            <div className="pt-20 border-t border-[#d4af37]/10">
-              <h3 className="text-3xl font-black text-[#f8f6f3] mb-12" style={{ fontFamily: "'Playfair Display', serif" }}>
-                Prime Amenities
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
+            <div className="py-6 border-b border-gray-200">
+              <h3 className="text-[1.375rem] font-semibold text-slate-900 mb-6">What this place offers</h3>
+              <div className="grid sm:grid-cols-2 gap-y-4 gap-x-6">
                 {house.amenities?.map((amenity, idx) => (
-                  <div key={idx} className="flex items-center gap-5 group">
-                    <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-[#9a9a9a] group-hover:bg-[#d4af37]/10 group-hover:text-[#d4af37] transition-all">
-                       <Wifi size={20} />
-                    </div>
-                    <span className="font-bold text-[#9a9a9a] uppercase tracking-widest text-[11px] group-hover:text-[#f8f6f3] transition-colors">{amenity}</span>
+                  <div key={idx} className="flex items-center gap-4 text-slate-700 text-base">
+                    <Wifi size={24} className="text-slate-900 shrink-0" />
+                    <span>{amenity}</span>
                   </div>
                 ))}
               </div>
-              {house.amenities?.length > 6 && (
-                <button className="mt-16 px-12 py-4 border border-[#d4af37]/20 rounded-2xl font-black text-[10px] text-[#d4af37] uppercase tracking-[0.3em] hover:bg-[#d4af37]/5 hover:border-[#d4af37]/60 transition-all shadow-xl">
-                  Show all {house.amenities?.length} amenities
-                </button>
-              )}
             </div>
 
-            <HouseRules rules={house.rules} />
+            <div className="py-6 border-b border-gray-200">
+              <HouseRules rules={house.rules} />
+            </div>
 
-            <HostSection owner={house.ownerId} onStartChat={handleStartChat} />
-
-            <ReviewsSection
-              ratings={house.ratings}
-              averageRating={house.averageRating}
-              user={user}
-              ratingScore={ratingScore}
-              setRatingScore={setRatingScore}
-              ratingHover={ratingHover}
-              setRatingHover={setRatingHover}
-              ratingComment={ratingComment}
-              setRatingComment={setRatingComment}
-              ratingLoading={ratingLoading}
-              onSubmitRating={handleSubmitRating}
-            />
+            <div className="py-6 border-b border-gray-200">
+              <HostSection owner={house.ownerId} onStartChat={handleStartChat} />
+            </div>
+            
+            <div className="py-6 border-b border-gray-200">
+              <ReviewsSection
+                ratings={house.ratings}
+                averageRating={house.averageRating}
+                user={user}
+                ratingScore={ratingScore}
+                setRatingScore={setRatingScore}
+                ratingHover={ratingHover}
+                setRatingHover={setRatingHover}
+                ratingComment={ratingComment}
+                setRatingComment={setRatingComment}
+                ratingLoading={ratingLoading}
+                onSubmitRating={handleSubmitRating}
+              />
+            </div>
           </div>
 
-          {/* ── Commitment Widget ── */}
-          <div className="lg:col-span-4 relative">
-            <div className="sticky top-32">
+          {/* Right Column */}
+          <div className="relative">
+            <div className="sticky top-28 space-y-6">
               <BookingWidget house={house} user={user} />
-              
-              <div className="mt-10 p-8 bg-amber-500/5 border border-amber-500/10 rounded-[2rem]">
-                 <div className="flex items-center gap-3 text-amber-500 mb-4">
-                    <Info size={18} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Booking Security</span>
-                 </div>
-                 <p className="text-[10px] text-amber-500/60 font-bold leading-relaxed uppercase tracking-widest">
+              <div className="border border-slate-200 bg-white p-6 rounded-2xl shadow-sm flex items-start gap-4">
+                <Info size={24} className="text-[#E67E5F] shrink-0" />
+                <div>
+                  <div className="font-semibold text-slate-900 mb-1">Booking security</div>
+                  <p className="text-sm text-slate-600 leading-relaxed">
                     Your payment is held securely and only released to the host after the booking is finalized.
-                 </p>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* ── Similar Properties ── */}
-        {displayedSimilarHouses.length > 0 && (
-          <div className="mt-40 border-t border-[#d4af37]/10 pt-24 pb-20">
-            <div className="flex justify-between items-end mb-16">
-               <div>
-                  <p className="text-[#d4af37] text-[10px] font-black uppercase tracking-[0.4em] mb-4">Recommendations</p>
-                  <h2 className="text-5xl font-black text-[#f8f6f3] tracking-tighter" style={{ fontFamily: "'Playfair Display', serif" }}>
-                    Similar Properties
-                  </h2>
-               </div>
-               <button onClick={() => navigate("/search")} className="text-[10px] font-black text-[#9a9a9a] hover:text-[#d4af37] uppercase tracking-[0.3em] transition-all">View All Properties</button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-              {displayedSimilarHouses.map((h) => (
-                <HouseCard
-                  key={h._id}
-                  house={{
-                    id: h._id,
-                    title: h.title,
-                    location: `${h.location?.city || "Global"}, ${h.location?.state || "Territory"}`,
-                    price: h.price,
-                    rating: h.averageRating || 0,
-                    beds: h.rooms?.bedrooms || 0,
-                    sqft: h.size || 0,
-                    verified: h.verified?.status,
-                    match: h.matchScore,
-                    isFair: h.price < 5000,
-                    image: h.images?.[0]?.url || h.images?.[0],
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </main>
 
       <PropertyMapModal
