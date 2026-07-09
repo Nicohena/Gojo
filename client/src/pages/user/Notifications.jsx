@@ -254,8 +254,14 @@ const NotificationsPage = () => {
 
         {/* ── Content ──────────────────────────────────────────────── */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: CORAL, borderTopColor: "transparent" }} />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 h-4 w-1/3 animate-pulse rounded-full bg-slate-200" />
+                <div className="mb-2 h-4 w-full animate-pulse rounded-full bg-slate-200" />
+                <div className="h-4 w-5/6 animate-pulse rounded-full bg-slate-200" />
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="border border-red-200 bg-red-50 text-red-600 rounded-xl p-5 text-sm text-center">{error}</div>
