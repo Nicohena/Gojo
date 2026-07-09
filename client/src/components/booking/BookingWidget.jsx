@@ -150,68 +150,52 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
   };
 
   return (
-    <div className="bg-[#111] border border-[#d4af37]/20 rounded-[3rem] p-10 shadow-[0_0_100px_rgba(0,0,0,1)] w-full">
-      <div className="flex justify-between items-start mb-10">
-        <div className="flex flex-col">
-          <span className="text-[10px] text-[#9a9a9a]/40 font-black uppercase tracking-[0.3em] mb-1">
-            Rent
+    <div className="bg-white text-slate-950 border border-slate-200 rounded-2xl p-6 shadow-xl w-full sticky top-28">
+      <div className="flex justify-between items-end mb-6">
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-bold text-slate-900">
+            ETB {house.price?.toLocaleString()}
           </span>
-          <div className="flex items-baseline gap-2">
-            <span
-              className="text-4xl font-bold text-[#d4af37]"
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
-              ETB {house.price?.toLocaleString()}
-            </span>
-            <span className="text-[10px] text-[#9a9a9a] font-bold uppercase tracking-widest">
-              / Month
-            </span>
-          </div>
+          <span className="text-base text-slate-600 font-normal">
+            / month
+          </span>
         </div>
-        <div className="flex flex-col items-end">
-          <div className="flex items-center gap-1.5 bg-[#d4af37]/10 px-3 py-1.5 rounded-xl border border-[#d4af37]/10">
-            <Star size={14} className="fill-amber-500 text-amber-500" />
-            <span className="text-sm font-black text-[#f8f6f3]">
-              {house.averageRating?.toFixed(1) || "New"}
-            </span>
-          </div>
-          <span className="text-[9px] text-[#9a9a9a]/50 font-bold uppercase tracking-widest mt-2 underline">
-            {house.ratings?.length || 0} Ratings
+        <div className="flex items-center gap-1 mb-1 text-sm font-semibold text-slate-900">
+          <Star size={14} className="fill-slate-900 text-slate-900" />
+          <span>
+            {house.averageRating?.toFixed(1) || "New"}
+          </span>
+          <span className="text-slate-500 font-normal underline decoration-slate-300 ml-1">
+            {house.ratings?.length || 0} reviews
           </span>
         </div>
       </div>
 
-      <div className="space-y-4 mb-10">
-        <div className="grid grid-cols-1 border border-[#d4af37]/10 rounded-[2rem] overflow-hidden bg-[#0a0a0a]/50">
-          <div className="p-5 border-b border-[#d4af37]/10 hover:bg-[#d4af37]/5 transition-all relative group">
-            <p className="text-[9px] font-black text-[#d4af37]/40 uppercase tracking-[0.2em] mb-2">
-              Move-in (Check-in)
+      <div className="space-y-4 mb-6">
+        <div className="grid grid-cols-2 border border-gray-400 rounded-xl overflow-hidden bg-white">
+          <div className="p-3 border-r border-gray-400 focus-within:ring-2 focus-within:ring-black relative">
+            <p className="text-[10px] font-bold text-slate-900 uppercase tracking-wide mb-1">
+              Check-in
             </p>
-            <div className="flex items-center gap-4">
-              <Calendar size={18} className="text-[#d4af37]/60" />
-              <input
-                type="date"
-                value={startDate}
-                min={new Date().toISOString().split("T")[0]}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full text-sm font-bold text-[#f8f6f3] bg-transparent outline-none cursor-pointer selection:bg-[#d4af37]/20"
-              />
-            </div>
+            <input
+              type="date"
+              value={startDate}
+              min={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full text-sm font-normal text-slate-900 bg-transparent outline-none cursor-pointer"
+            />
           </div>
-          <div className="p-5 hover:bg-[#d4af37]/5 transition-all relative group">
-            <p className="text-[9px] font-black text-[#d4af37]/40 uppercase tracking-[0.2em] mb-2">
-              Move-out (Check-out)
+          <div className="p-3 focus-within:ring-2 focus-within:ring-black relative">
+            <p className="text-[10px] font-bold text-slate-900 uppercase tracking-wide mb-1">
+              Check-out
             </p>
-            <div className="flex items-center gap-4">
-              <Calendar size={18} className="text-[#d4af37]/60" />
-              <input
-                type="date"
-                value={endDate}
-                min={startDate || new Date().toISOString().split("T")[0]}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full text-sm font-bold text-[#f8f6f3] bg-transparent outline-none cursor-pointer selection:bg-[#d4af37]/20"
-              />
-            </div>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate || new Date().toISOString().split("T")[0]}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full text-sm font-normal text-slate-900 bg-transparent outline-none cursor-pointer"
+            />
           </div>
         </div>
 
@@ -222,11 +206,11 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3 text-red-500 p-4 bg-red-500/5 rounded-2xl border border-red-500/20"
+              className="flex items-center gap-3 text-red-600 p-4 bg-red-50 rounded-xl border border-red-200"
             >
               <AlertCircle size={18} className="shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                 Selected dates are already booked
+              <span className="text-xs font-semibold">
+                Selected dates are already booked
               </span>
             </motion.div>
           )}
@@ -236,10 +220,10 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
               key="min-lease-info"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center gap-3 text-[#d4af37] p-4 bg-[#d4af37]/5 rounded-2xl border border-[#d4af37]/10"
+              className="flex items-center gap-3 text-slate-800 p-4 bg-slate-100 rounded-xl"
             >
               <ShieldCheck size={18} className="shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest">
+              <span className="text-xs font-semibold">
                 Minimum Rental Duration: {house.minLeaseDuration} Months
               </span>
             </motion.div>
@@ -257,42 +241,22 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
           hasOverlapError ||
           authLoading
         }
-        className="w-full py-6 bg-[#d4af37] text-[#0a0a0a] text-[10px] font-black uppercase tracking-[0.3em] rounded-[2rem] hover:bg-[#b8941f] transition-all shadow-2xl shadow-[#d4af37]/20 mb-4 disabled:opacity-20 disabled:cursor-not-allowed group relative overflow-hidden"
+        className="w-full py-3.5 bg-[#E67E5F] text-white text-base font-semibold rounded-xl hover:bg-[#d97153] transition-all mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <AnimatePresence mode="wait">
-          {bookingLoading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center justify-center gap-3"
-            >
-              <Loader2 className="animate-spin" size={20} />
-              <span>Sending Request...</span>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="text"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center justify-center gap-3"
-            >
-              <CreditCard
-                size={18}
-                className="group-hover:rotate-12 transition-transform"
-              />
-              <span>
-                {isOwner ? "Owner of Property" : "Request Booking"}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {bookingLoading ? (
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="animate-spin" size={20} />
+            <span>Sending Request...</span>
+          </div>
+        ) : (
+          <span>
+            {isOwner ? "Owner of Property" : "Reserve"}
+          </span>
+        )}
       </button>
 
-      <p className="text-[9px] text-center text-[#9a9a9a]/40 font-black uppercase tracking-[0.4em] mb-10">
-        Money held securely until move-in
+      <p className="text-sm text-slate-500 text-center mb-6">
+        You won't be charged yet
       </p>
 
       <AnimatePresence>
@@ -301,33 +265,21 @@ const BookingWidget = ({ house, user: propUser, onBookingSuccess }) => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="space-y-5 pt-8 border-t border-[#d4af37]/10 overflow-hidden"
+            className="space-y-5 pt-8 border-t border-slate-200 overflow-hidden"
           >
-            <div className="flex justify-between items-center text-[11px] font-bold tracking-widest uppercase">
-              <span className="text-[#9a9a9a] underline decoration-[#d4af37]/20">
-                Rental Period ({diffDays} nights)
-              </span>
-              <span className="text-[#f8f6f3]">
-                ETB {subtotal.toLocaleString()}
-              </span>
+            <div className="flex justify-between items-center text-base text-slate-600">
+              <span className="underline">ETB {house.price?.toLocaleString()} x {diffDays} {diffDays === 1 ? 'month' : 'months'}</span>
+              <span className="text-slate-900">ETB {subtotal.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center text-[11px] font-bold tracking-widest uppercase">
-              <span className="text-[#9a9a9a] underline decoration-[#d4af37]/20">
-                Service Fee ({Math.round(serviceFeeRate * 100)}%)
-              </span>
-              <span className="text-[#f8f6f3]">ETB {serviceFee.toLocaleString()}</span>
+            <div className="flex justify-between items-center text-base text-slate-600">
+              <span className="underline">Service Fee</span>
+              <span className="text-slate-900">ETB {serviceFee.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between pt-6 border-t border-[#d4af37]/20">
-              <span
-                className="text-xl font-black text-[#d4af37] tracking-tighter"
-                style={{ fontFamily: "'Playfair Display', serif" }}
-              >
-                Total Rent
+            <div className="flex justify-between pt-6 border-t border-slate-200">
+              <span className="text-base font-bold text-slate-900">
+                Total
               </span>
-              <span
-                className="text-xl font-black text-[#f8f6f3] tracking-tighter"
-                style={{ fontFamily: "'Playfair Display', serif" }}
-              >
+              <span className="text-base font-bold text-slate-900">
                 ETB {total.toLocaleString()}
               </span>
             </div>
