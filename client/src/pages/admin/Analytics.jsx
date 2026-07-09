@@ -117,10 +117,16 @@ const AdminAnalytics = () => {
   if (loading) return (
     <DashboardLayout>
       <Navbar />
-      <div className="flex items-center justify-center py-32">
-        <div className="flex items-center gap-3">
-          <Loader2 className="animate-spin" size={28} style={{ color: CORAL }} />
-          <span className="text-gray-500 text-sm">Loading analytics...</span>
+      <div className="mx-auto max-w-screen-xl px-6 py-6">
+        <div className="mb-6 h-8 w-40 animate-pulse rounded-full bg-slate-200" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div key={idx} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-3 h-4 w-1/3 animate-pulse rounded-full bg-slate-200" />
+              <div className="mb-2 h-8 w-2/3 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-3 w-1/2 animate-pulse rounded-full bg-slate-200" />
+            </div>
+          ))}
         </div>
       </div>
     </DashboardLayout>
