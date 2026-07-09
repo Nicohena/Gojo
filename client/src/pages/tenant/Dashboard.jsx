@@ -72,9 +72,10 @@ function Avatar({ name = "", size = 36, color = "#6B7280" }) {
 }
 
 // ─── Gojo Rewards placeholder data ───────────────────────────────────────────
-const REWARDS_BALANCE = 12450;
-const REWARDS_NEXT = 15000;
-const REWARDS_COMPLETED = 8;
+// These defaults are used while data is loading, actual values come from user.rewards
+const DEFAULT_REWARDS_BALANCE = 0;
+const DEFAULT_REWARDS_NEXT = 15000;
+const DEFAULT_REWARDS_COMPLETED = 0;
 
 // ─── Favorite places placeholder images ──────────────────────────────────────
 const FAVE_PLACEHOLDERS = [
@@ -108,6 +109,12 @@ const TenantDashboard = () => {
   const [savedHomes, setSavedHomes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paymentBooking, setPaymentBooking] = useState(null);
+
+  // Use rewards from user object, with defaults as fallback
+  const rewards = user?.rewards || {};
+  const rewardsBalance = rewards.balance ?? DEFAULT_REWARDS_BALANCE;
+  const rewardsNext = rewards.nextTierThreshold ?? DEFAULT_REWARDS_NEXT;
+  const rewardsCompleted = rewards.tasksCompleted ?? DEFAULT_REWARDS_COMPLETED;
 
   useEffect(() => {
     const load = async () => {
@@ -174,7 +181,7 @@ const TenantDashboard = () => {
       : FAVE_PLACEHOLDERS;
 
   const firstName = user?.name?.split(" ")[0] || "there";
-  const progressPct = Math.min((REWARDS_BALANCE / REWARDS_NEXT) * 100, 100);
+  const progressPct = Math.min((rewardsBalance / rewardsNext) * 100, 100);
 
   return (
     <DashboardLayout>
@@ -344,20 +351,20 @@ const TenantDashboard = () => {
             </p>
             <div className="flex items-baseline gap-1.5 mt-1 mb-4">
               <span className="text-3xl font-bold text-gray-900">
-                {REWARDS_BALANCE.toLocaleString()}
+                {rewardsBalance.toLocaleString()}
               </span>
               <span className="text-sm text-gray-400 font-medium">pts</span>
             </div>
 
             <div className="flex justify-between text-sm text-gray-600 mb-1.5">
               <span>Completed Stays</span>
-              <span className="font-bold text-gray-900">{REWARDS_COMPLETED}</span>
+              <span className="font-bold text-gray-900">{rewardsCompleted}</span>
             </div>
 
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600">Next Tier: Gold</span>
+              <span className="text-gray-600">Next Tier: {rewards.tier || 'Silver'}</span>
               <span className="text-xs font-bold" style={{ color: CORAL }}>
-                {(REWARDS_NEXT - REWARDS_BALANCE).toLocaleString()} pts away
+                {(rewardsNext - rewardsBalance).toLocaleString()} pts away
               </span>
             </div>
 
