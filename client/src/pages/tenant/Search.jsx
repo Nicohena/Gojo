@@ -169,9 +169,15 @@ const SearchPage = () => {
 
         {/* Grid */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: CORAL, borderTopColor: "transparent" }} />
-            <p className="text-sm text-gray-500">Finding the best matches...</p>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-4 h-40 animate-pulse rounded-[1.2rem] bg-slate-200" />
+                <div className="mb-2 h-4 w-2/3 animate-pulse rounded-full bg-slate-200" />
+                <div className="mb-2 h-4 w-1/2 animate-pulse rounded-full bg-slate-200" />
+                <div className="h-4 w-1/3 animate-pulse rounded-full bg-slate-200" />
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="border border-red-200 bg-red-50 text-red-600 rounded-xl p-5 text-sm text-center">{error}</div>
