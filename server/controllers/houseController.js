@@ -17,7 +17,7 @@ const { getPriceFairness } = require('../utils/priceFairness');
 const notificationService = require('../utils/notificationService');
 
 const isCloudinaryUrl = (url) =>
-  typeof url === 'string' && /^https?:\/\/res\.cloudinary\.com\//i.test(url);
+  typeof url === 'string' && (/^https?:\/\/res\.cloudinary\.com\//i.test(url) || /^https?:\/\/images\.unsplash\.com\//i.test(url));
 
 const ensureCloudinaryImages = (images = []) => {
   if (!Array.isArray(images)) return;
