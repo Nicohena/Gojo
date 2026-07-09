@@ -36,11 +36,11 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
       const result = await paymentService.initiatePayment(payload);
       if (result.data?.checkoutUrl) {
         setRedirecting(true);
-        toast.success("Initializing secure encrypted payment gateway...");
+        toast.success("Initializing secure payment gateway...");
         logger.info("Payment session initiated", { bookingId: booking._id, paymentMethod });
         setTimeout(() => { window.location.href = result.data.checkoutUrl; }, 1500);
       } else {
-        throw new Error("Encrypted handshake failed with payment provider");
+        throw new Error("Handshake failed with payment provider");
       }
     } catch (err) {
       logger.error("Financial transaction initiation failed", err);
@@ -51,25 +51,25 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0a0a]/80 backdrop-blur-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 30 }}
-        className="bg-[#111] rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] max-w-lg w-full overflow-hidden border border-[#d4af37]/10"
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100"
       >
-        {/* Luxury Header */}
-        <div className="h-40 bg-gradient-to-br from-[#0a0a0a] to-[#1a1a1a] relative flex items-end p-8 border-b border-[#d4af37]/10">
+        {/* Premium Light Header */}
+        <div className="h-28 bg-gradient-to-br from-[#FFF5F2] to-white relative flex items-end p-6 border-b border-[#E67E5F]/10">
           <button
             onClick={onClose}
             disabled={loading}
-            className="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 text-[#d4af37] rounded-full transition-all border border-[#d4af37]/10"
+            className="absolute top-4 right-4 p-2 bg-white hover:bg-gray-50 text-gray-500 hover:text-[#E67E5F] rounded-full transition-all shadow-sm border border-gray-100"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
 
-          <div className="flex items-center gap-6">
-            <div className="h-20 w-20 bg-[#0a0a0a] rounded-2xl overflow-hidden shadow-2xl border border-[#d4af37]/20 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 bg-gray-100 rounded-xl overflow-hidden shadow-md border border-white shrink-0">
               {booking.houseId?.images?.[0] ? (
                 <img
                   src={booking.houseId.images[0]}
@@ -78,42 +78,42 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center">
-                  <MapPin size={28} className="text-[#d4af37]" />
+                  <MapPin size={24} className="text-[#E67E5F]/50" />
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <h2 className="text-2xl text-white leading-tight truncate pr-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h2 className="text-xl text-[#3D2C29] font-bold leading-tight truncate pr-4" style={{ fontFamily: "'Playfair Display', serif" }}>
                 {booking.houseId?.title || "Booking Payment"}
               </h2>
-              <p className="text-[#d4af37]/60 text-[10px] uppercase font-bold tracking-[0.2em] flex items-center gap-2 mt-2">
-                <MapPin size={12} className="text-[#d4af37]" />{" "}
-                {booking.houseId?.location?.address || "Global Territory Address"}
+              <p className="text-[#E67E5F] text-[10px] uppercase font-bold tracking-[0.1em] flex items-center gap-1.5 mt-1">
+                <MapPin size={10} />
+                {booking.houseId?.location?.address || "Location Details"}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-6">
           {/* Detailed Intelligence */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="p-4 bg-[#0a0a0a] rounded-2xl border border-[#d4af37]/5">
-              <p className="text-[10px] font-black text-[#d4af37]/40 uppercase tracking-widest mb-2">
-                Commencement
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            <div className="p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+                Check-in
               </p>
-              <p className="text-sm font-bold text-[#f8f6f3] flex items-center gap-3">
-                <Calendar size={16} className="text-[#d4af37]" />
+              <p className="text-xs font-bold text-[#3D2C29] flex items-center gap-1.5">
+                <Calendar size={14} className="text-[#E67E5F]" />
                 {new Date(booking.startDate).toLocaleDateString(undefined, {
                   month: "short", day: "numeric", year: "numeric",
                 })}
               </p>
             </div>
-            <div className="p-4 bg-[#0a0a0a] rounded-2xl border border-[#d4af37]/5">
-              <p className="text-[10px] font-black text-[#d4af37]/40 uppercase tracking-widest mb-2">
-                Termination
+            <div className="p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+                Check-out
               </p>
-              <p className="text-sm font-bold text-[#f8f6f3] flex items-center gap-3">
-                <Calendar size={16} className="text-[#d4af37]" />
+              <p className="text-xs font-bold text-[#3D2C29] flex items-center gap-1.5">
+                <Calendar size={14} className="text-[#E67E5F]" />
                 {new Date(booking.endDate).toLocaleDateString(undefined, {
                   month: "short", day: "numeric", year: "numeric",
                 })}
@@ -122,82 +122,82 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
           </div>
 
           {/* Pricing Ledger */}
-          <div className="space-y-4 mb-10">
-            <h3 className="text-[10px] font-black text-[#9a9a9a] uppercase tracking-[0.3em] border-b border-[#d4af37]/10 pb-3">
-              Financial Specifications
+          <div className="space-y-2.5 mb-6">
+            <h3 className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.15em] border-b border-gray-100 pb-2">
+              Payment Summary
             </h3>
-            <div className="flex justify-between text-base">
-              <span className="text-[#9a9a9a] font-medium tracking-tight">Base Estate Fee</span>
-              <span className="font-bold text-[#f8f6f3]">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600 font-medium tracking-tight">Base Rent</span>
+              <span className="font-bold text-[#3D2C29]">
                 ETB {rentAmount.toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between text-base">
-              <div className="flex items-center gap-2 group cursor-help">
-                <span className="text-[#9a9a9a] font-medium tracking-tight">Security & Logistics ({Math.round(SERVICE_FEE_RATE * 100)}%)</span>
-                <Info size={14} className="text-[#d4af37]/40 group-hover:text-[#d4af37] transition-colors" />
+            <div className="flex justify-between text-sm">
+              <div className="flex items-center gap-1.5 group cursor-help">
+                <span className="text-gray-600 font-medium tracking-tight">Service Fee ({Math.round(SERVICE_FEE_RATE * 100)}%)</span>
+                <Info size={12} className="text-gray-300 group-hover:text-[#E67E5F] transition-colors" />
               </div>
-              <span className="font-bold text-[#f8f6f3]">
+              <span className="font-bold text-[#3D2C29]">
                 ETB {serviceFee.toLocaleString()}
               </span>
             </div>
-            <div className="pt-5 border-t border-[#d4af37]/10 flex justify-between items-center">
+            <div className="pt-3 border-t border-gray-100 flex justify-between items-center bg-[#FFF5F2]/50 -mx-3 px-3 py-2.5 rounded-lg mt-1">
               <div>
-                <span className="text-[10px] font-black text-[#9a9a9a] uppercase tracking-widest block mb-1">Total Amount</span>
-                <span className="text-3xl font-bold text-[#d4af37]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-0.5">Total Amount</span>
+                <span className="text-xl font-bold text-[#E67E5F]" style={{ fontFamily: "'Playfair Display', serif" }}>
                   ETB {totalAmount.toLocaleString()}
                 </span>
               </div>
-              <div className="bg-[#d4af37]/10 p-3 rounded-full">
-                 <TrendingUp size={24} className="text-[#d4af37]" />
+              <div className="bg-white p-2 rounded-full shadow-sm text-[#E67E5F]">
+                 <TrendingUp size={16} />
               </div>
             </div>
           </div>
 
           {/* Secure Protocols */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-5 bg-[#d4af37]/5 p-5 rounded-2xl border border-[#d4af37]/10">
-              <div className="bg-[#d4af37] p-3 rounded-xl text-[#0a0a0a] shadow-lg shadow-[#d4af37]/20">
-                <Shield size={24} />
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+              <div className="bg-[#FFF5F2] p-2 rounded-lg text-[#E67E5F]">
+                <Shield size={18} />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-black text-[#f8f6f3] uppercase tracking-widest">
-                  Secure Encryption
+                <p className="text-xs font-bold text-[#3D2C29] tracking-tight">
+                  Secure Payment
                 </p>
-                <p className="text-[11px] text-[#9a9a9a]/80 leading-relaxed mt-1">
-                  End-to-end encrypted ledger verification via 256-bit secure gateway.
+                <p className="text-[10px] text-gray-500 leading-tight mt-0.5">
+                  Processed securely. We don't store card details.
                 </p>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-[#0a0a0a] border border-[#d4af37]/5 p-6">
-              <p className="text-[10px] font-black text-[#9a9a9a] uppercase tracking-[0.2em] mb-4">
-                Encryption Method
+            <div className="rounded-xl bg-gray-50 border border-gray-100 p-3.5">
+              <p className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.1em] mb-2.5">
+                Payment Method
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("chapa")}
                   disabled={loading || redirecting}
-                  className={`rounded-xl border py-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  className={`rounded-lg border py-2.5 text-xs font-bold transition-all shadow-sm ${
                     paymentMethod === "chapa"
-                      ? "border-[#d4af37] bg-[#d4af37] text-[#0a0a0a]"
-                      : "border-[#d4af37]/10 text-[#9a9a9a] hover:border-[#d4af37]/40"
+                      ? "border-[#E67E5F] bg-[#FFF5F2] text-[#E67E5F]"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-[#E67E5F]/30"
                   }`}
                 >
-                  Chapa Core
+                  Chapa
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("stripe")}
                   disabled={loading || redirecting}
-                  className={`rounded-xl border py-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  className={`rounded-lg border py-2.5 text-xs font-bold transition-all shadow-sm ${
                     paymentMethod === "stripe"
-                      ? "border-[#d4af37] bg-[#d4af37] text-[#0a0a0a]"
-                      : "border-[#d4af37]/10 text-[#9a9a9a] hover:border-[#d4af37]/40"
+                      ? "border-[#E67E5F] bg-[#FFF5F2] text-[#E67E5F]"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-[#E67E5F]/30"
                   }`}
                 >
-                  Stripe Global
+                  Stripe
                 </button>
               </div>
             </div>
@@ -205,7 +205,7 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
             <button
               onClick={handleInitiatePayment}
               disabled={loading || redirecting}
-              className="w-full bg-[#d4af37] hover:bg-[#b8941f] text-[#0a0a0a] font-black text-xs uppercase tracking-[0.3em] py-5 rounded-2xl shadow-xl shadow-[#d4af37]/10 transition-all flex items-center justify-center gap-4 disabled:opacity-50 group"
+              className="w-full bg-[#E67E5F] hover:bg-[#d96a4a] text-white font-bold text-sm tracking-wide py-3 rounded-lg shadow-lg shadow-[#E67E5F]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 group"
             >
               {loading || redirecting ? (
                 <>
@@ -214,15 +214,15 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
                 </>
               ) : (
                 <>
-                  <CreditCard size={18} />
-                  <span>Pay Now</span>
-                  <ArrowRight size={18} className="translate-x-0 group-hover:translate-x-1.5 transition-transform" />
+                  <CreditCard size={16} />
+                  <span>Pay ETB {totalAmount.toLocaleString()}</span>
+                  <ArrowRight size={16} className="translate-x-0 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
 
-            <p className="text-[10px] text-center text-[#9a9a9a]/40 px-10 leading-relaxed">
-              By paying, you consent to our terms of service and booking agreements.
+            <p className="text-[9px] text-center text-gray-400 px-4 leading-tight">
+              By proceeding, you agree to our Terms of Service & Privacy Policy.
             </p>
           </div>
         </div>
