@@ -195,6 +195,33 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
+  // Rewards/Loyalty points system
+  rewards: {
+    balance: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    tier: {
+      type: String,
+      enum: ['bronze', 'silver', 'gold', 'platinum'],
+      default: 'bronze'
+    },
+    tasksCompleted: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    nextTierThreshold: {
+      type: Number,
+      default: 15000,
+      min: 0
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
+  },
   // Password reset fields
   resetPasswordToken: String,
   resetPasswordExpire: Date
